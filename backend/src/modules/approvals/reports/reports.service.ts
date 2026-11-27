@@ -45,10 +45,12 @@ async function toRows(rows: SourceRow[]) {
     const kind = r.kinds.find(k => k in TYPES) as keyof typeof TYPES | undefined
     const portion = r.regularization?.portion === 'FIRST_HALF' ? 'First half' : r.regularization?.portion === 'SECOND_HALF' ? 'Second half' : leave ?
       [leave.fromSecondHalf ? 'Starts in second half' : '', leave.toFirstHalf ? 'Ends in first half' : ''].filter(Boolean).join('; ') || 'Whole days' : r.regularization ? 'Whole days' : null
+    // (team requests are about employees - leave, attendance - never a whole company: the query names those features)
+    const employee = r.employee!
     return {
-      id: r.id, employeeCode: r.employee.employeeCode,
-      employee: [r.employee.firstName, r.employee.middleName, r.employee.lastName].filter(Boolean).join(' '),
-      company: r.employee.company.code, department: r.employee.department?.name ?? null,
+      id: r.id, employeeCode: employee.employeeCode,
+      employee: [employee.firstName, employee.middleName, employee.lastName].filter(Boolean).join(' '),
+      company: employee.company.code, department: employee.department?.name ?? null,
       kind: kind ? TYPES[kind] : 'Request', summary: r.summary, from, to, portion,
       days: leave?.days.toNumber() ?? r.compOffClaim?.days.toNumber() ?? null,
       reason, sourceAvailable: source !== null, raisedAt: r.createdAt, raisedBy: person(r.requestedById),

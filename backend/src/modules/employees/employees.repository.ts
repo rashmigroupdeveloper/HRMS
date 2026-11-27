@@ -461,7 +461,7 @@ export async function listForPayrollRun(companyId: number, from: Date, to: Date,
   return rows.map((row) => ({ ...row, salaries: row.salaries.map((salary) => ({ ...salary, lines: linesAsNumbers(salary.lines) })) }))
 }
 
-// What a pay run's deductions need to know about its people (payroll stage 4): birth date (the EPS age limit), gender
+// What a pay run's deductions and checks need to know about its people (payroll stages 4-5): birth date (the EPS age limit), gender
 // (gendered professional-tax slabs), disability (the higher ESIC ceiling), joining / leaving (ESIC coverage, the TDS
 // months), the payroll facts of their statutory details, and their salaries up to `to` (ESIC coverage is decided by the
 // salary at the start of each ESIC period).
@@ -476,15 +476,25 @@ export async function listPayrollFacts(employeeIds: number[], to: Date, db: DbCl
       isPhysicallyDisabled: true,
       dateOfJoining: true,
       dateOfLeaving: true,
-      statutory: { select: { pfApplicable: true, pfOnFullWages: true, epsMember: true, taxRegime: true } },
+      statutory: { select: { pfApplicable: true, pfOnFullWages: true, epsMember: true, taxRegime: true, uan: true, esicIpNumber: true } },
       salaries: {
         where: { effectiveFrom: { lte: to } },
         orderBy: { effectiveFrom: 'asc' },
         select: { effectiveFrom: true, lines: { select: { salaryComponentId: true, monthlyAmount: true } } },
       },
+      // the run's checks (stage 5): which identity documents they have (the type only - never a number) and their salary
+      // account's IFSC and holder (never the account number)
+      identityDocuments: { select: { type: true } },
+      bankAccounts: { where: { isSalaryAccount: true }, select: { ifsc: true, accountHolderName: true } },
     },
   })
-  return rows.map((row) => ({ ...row, salaries: row.salaries.map((salary) => ({ ...salary, lines: linesAsNumbers(salary.lines) })) }))
+  return rows.map(({ identityDocuments, bankAccounts, ...row }) => ({
+    ...row,
+    salaries: row.salaries.map((salary) => ({ ...salary, lines: linesAsNumbers(salary.lines) })),
+    hasPan: identityDocuments.some((d) => d.type === 'PAN'),
+    hasAadhaar: identityDocuments.some((d) => d.type === 'AADHAAR'),
+    salaryAccount: bankAccounts[0] ? { complete: !!bankAccounts[0].ifsc && !!bankAccounts[0].accountHolderName } : null,
+  }))
 }
 
 // The salary that applies today (the newest one already in effect), with its monthly breakup in the components'

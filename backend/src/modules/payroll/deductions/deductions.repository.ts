@@ -4,12 +4,13 @@ import { prisma, type DbClient } from '#core/db/prisma'
 // their taxable earnings and income tax - for the month's TDS.
 
 // Every line of the people's earlier runs of the tax year (pay months from..before `beforePayMonth`, any company of the
-// group: a transfer keeps one year's tax), other than this run, with what the TDS needs of each component
+// group: a transfer keeps one year's tax), other than this run, with what the TDS needs of each component. `finalisedOnly`
+// (the payroll setting tdsCountsDraftRuns off - the default, stage 5): only finalised runs count
 // data access: the people of one pay run (found with whole-company Payroll scope); their own earlier pay in the tax year
 // is needed for their income tax whichever company paid it
-export async function listEarlierTaxLines(employeeIds: number[], taxYearFrom: Date, beforePayMonth: Date, exceptRunId: number, db: DbClient = prisma) {
+export async function listEarlierTaxLines(employeeIds: number[], taxYearFrom: Date, beforePayMonth: Date, exceptRunId: number, finalisedOnly: boolean, db: DbClient = prisma) {
   const rows = await db.payrollRunLine.findMany({
-    where: { runEmployee: { employeeId: { in: employeeIds }, run: { id: { not: exceptRunId }, payMonth: { gte: taxYearFrom, lt: beforePayMonth } } } },
+    where: { runEmployee: { employeeId: { in: employeeIds }, run: { id: { not: exceptRunId }, payMonth: { gte: taxYearFrom, lt: beforePayMonth }, ...(finalisedOnly && { status: 'FINALISED' as const }) } } },
     select: {
       amount: true,
       salaryComponent: { select: { kind: true, taxable: true, statutoryRole: true } },

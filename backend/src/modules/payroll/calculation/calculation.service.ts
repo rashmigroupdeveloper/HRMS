@@ -1,5 +1,5 @@
 import { ORPCError } from '@orpc/server'
-import { prisma, type PayClass, type PayHold, type StatutoryRole } from '#core/db/prisma'
+import { prisma, type ActorId, type DbClient, type PayClass, type PayHold, type StatutoryRole } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService } from '#modules/employees'
 import { salaryComponentsService, workLocationsService } from '#modules/organization'
@@ -85,89 +85,99 @@ export async function compute(viewer: CurrentUser, { runId, expectedComputedAt }
       if ((run.computedAt?.getTime() ?? null) !== (expectedComputedAt?.getTime() ?? null)) {
         throw new ORPCError('CONFLICT', { message: 'Someone worked out this run in the meantime - reload it to see the latest pay' })
       }
-      const rows = await daysService.takeDays(run, viewer.employeeId, tx)
-      const { from, to } = peopleService.payPeriodOf(run)
-      const periodDays = peopleService.daysIn(from, to)
-      const daysOf = new Map<number, Day[]>()
-      for (const row of rows) {
-        const list = daysOf.get(row.payrollRunEmployeeId)
-        if (list) list.push(row)
-        else daysOf.set(row.payrollRunEmployeeId, [row])
-      }
-      const people = await calculationRepository.listPaySources(run.id, tx)
-      const ids = people.map((p) => p.employeeId)
-      const taxYearFrom = deductionsService.taxYearOf(run.payMonth)
-      // what the deductions need (stage 4): the statutory settings, the components' flags and roles, the people's facts,
-      // the States of the work locations, the opening tax figures and the earlier months of the tax year
-      const [settings, components, facts, locations, openings, earlierLines] = await Promise.all([
-        statutoryService.loadSettings(tx),
-        salaryComponentsService.listSalaryComponents(true),
-        employeesService.listPayrollFacts(ids, to, tx),
-        workLocationsService.listWorkLocations({ includeInactive: true }),
-        openingsService.openingsFor(ids, taxYearFrom, tx),
-        deductionsRepository.listEarlierTaxLines(ids, taxYearFrom, run.payMonth, run.id, tx),
-      ])
-      const componentInfo = new Map(components.map((c) => [c.id, c]))
-      const roleComponent = new Map<StatutoryRole, number>(components.filter((c) => c.statutoryRole).map((c) => [c.statutoryRole!, c.id]))
-      const factsOf = new Map(facts.map((f) => [f.id, f]))
-      const stateOf = new Map(locations.map((l) => [l.id, l.stateCode]))
-      const openingOf = new Map(openings.map((o) => [o.employeeId, o]))
-      const earlierOf = new Map<number, Map<string, deductionsService.EarlierMonth>>()
-      for (const line of earlierLines) {
-        const months = earlierOf.get(line.employeeId) ?? earlierOf.set(line.employeeId, new Map()).get(line.employeeId)!
-        const key = deductionsService.monthKey(line.payMonth)
-        const month = months.get(key) ?? { taxable: 0, tds: 0, workedOut: false }
-        if (line.kind === 'EARNING') {
-          month.workedOut = true
-          if (line.taxable) month.taxable += line.amount
-        }
-        if (line.statutoryRole === 'INCOME_TAX') month.tds += line.amount
-        months.set(key, month)
-      }
-      const context: deductionsService.Context = { from, to, payMonth: run.payMonth, settings, components: componentInfo, roleComponent }
-
-      const lines: calculationRepository.LineRow[] = []
-      const held: { id: number; heldFor: PayHold[]; heldNote: string | null }[] = []
-      for (const person of people) {
-        const pay = workOutPay(person, daysOf.get(person.id) ?? [], periodDays)
-        if (pay.heldFor.length) {
-          held.push({ id: person.id, heldFor: pay.heldFor, heldNote: pay.heldFor.map((h) => HOLD_NOTES[h]).join('; ') })
-          continue
-        }
-        const last = person.segments.at(-1)!
-        const fact = factsOf.get(person.employeeId)!
-        const deductions = deductionsService.workOutDeductions(
-          {
-            earnings: pay.lines,
-            deductionInputs: person.inputs.filter((i) => i.kind === 'DEDUCTION'),
-            employmentType: last.employmentType,
-            stateCode: last.workLocationId === null ? undefined : (stateOf.get(last.workLocationId) ?? null),
-            monthlyTaxable: last.lines.reduce((sum, l) => (l.kind === 'EARNING' && componentInfo.get(l.salaryComponentId)?.taxable ? sum + l.monthlyAmount : sum), 0),
-            dateOfBirth: fact.dateOfBirth,
-            gender: fact.gender,
-            isPhysicallyDisabled: fact.isPhysicallyDisabled,
-            dateOfJoining: fact.dateOfJoining,
-            dateOfLeaving: fact.dateOfLeaving,
-            statutory: fact.statutory,
-            salaries: fact.salaries,
-            opening: openingOf.get(person.employeeId) ?? null,
-            earlier: earlierOf.get(person.employeeId) ?? new Map(),
-          },
-          context,
-        )
-        if (deductions.heldFor.length) {
-          held.push({ id: person.id, heldFor: deductions.heldFor, heldNote: deductions.notes.join('; ') })
-          continue
-        }
-        for (const line of pay.lines) lines.push({ payrollRunEmployeeId: person.id, ...line, base: null })
-        for (const line of deductions.lines) lines.push({ payrollRunEmployeeId: person.id, ...line })
-      }
-      await calculationRepository.replaceLines(run.id, lines, viewer.employeeId, tx)
-      await calculationRepository.writeHolds(run.id, held, viewer.employeeId, tx)
-      await payrollRepository.markComputed(run.id, viewer.employeeId, tx)
-      const has = (payClass: PayClass) => new Set(rows.filter((r) => r.firstHalf === payClass || r.secondHalf === payClass).map((r) => r.payrollRunEmployeeId)).size
-      return { people: people.length, days: rows.length, peopleWithUnpaidDays: has('UNPAID'), peopleWithUnclearDays: has('UNCLEAR'), peopleHeld: held.length }
+      return workOutRun(run, viewer.employeeId, tx)
     },
     { timeout: 120_000 },
   )
+}
+
+// Works out a draft run's pay inside the caller's transaction - "Work out pay", and "Send for approval" just before it
+// sends (payroll stage 5: what is approved is worked out from the records as they are then). The caller has checked the
+// run is a draft the viewer may change.
+export async function workOutRun(run: { id: number; payMonth: Date; attendanceFrom: Date; attendanceTo: Date }, actorId: ActorId, tx: DbClient) {
+  const rows = await daysService.takeDays(run, actorId, tx)
+  const { from, to } = peopleService.payPeriodOf(run)
+  const periodDays = peopleService.daysIn(from, to)
+  const daysOf = new Map<number, Day[]>()
+  for (const row of rows) {
+    const list = daysOf.get(row.payrollRunEmployeeId)
+    if (list) list.push(row)
+    else daysOf.set(row.payrollRunEmployeeId, [row])
+  }
+  const people = await calculationRepository.listPaySources(run.id, tx)
+  const ids = people.map((p) => p.employeeId)
+  const taxYearFrom = deductionsService.taxYearOf(run.payMonth)
+  // what the deductions need (stage 4): the statutory settings, the components' flags and roles, the people's facts,
+  // the States of the work locations, the opening tax figures and the earlier months of the tax year
+  const options = await statutoryService.runSettings(tx)
+  const [settings, components, facts, locations, openings, earlierLines] = await Promise.all([
+    statutoryService.loadSettings(tx),
+    salaryComponentsService.listSalaryComponents(true),
+    employeesService.listPayrollFacts(ids, to, tx),
+    workLocationsService.listWorkLocations({ includeInactive: true }),
+    openingsService.openingsFor(ids, taxYearFrom, tx),
+    // earlier months of the tax year: finalised runs only, unless the payroll setting counts drafts too (stage 5)
+    deductionsRepository.listEarlierTaxLines(ids, taxYearFrom, run.payMonth, run.id, !options.tdsCountsDraftRuns, tx),
+  ])
+  const componentInfo = new Map(components.map((c) => [c.id, c]))
+  const roleComponent = new Map<StatutoryRole, number>(components.filter((c) => c.statutoryRole).map((c) => [c.statutoryRole!, c.id]))
+  const factsOf = new Map(facts.map((f) => [f.id, f]))
+  const stateOf = new Map(locations.map((l) => [l.id, l.stateCode]))
+  const openingOf = new Map(openings.map((o) => [o.employeeId, o]))
+  const earlierOf = new Map<number, Map<string, deductionsService.EarlierMonth>>()
+  for (const line of earlierLines) {
+    const months = earlierOf.get(line.employeeId) ?? earlierOf.set(line.employeeId, new Map()).get(line.employeeId)!
+    const key = deductionsService.monthKey(line.payMonth)
+    const month = months.get(key) ?? { taxable: 0, tds: 0, workedOut: false }
+    if (line.kind === 'EARNING') {
+      month.workedOut = true
+      if (line.taxable) month.taxable += line.amount
+    }
+    if (line.statutoryRole === 'INCOME_TAX') month.tds += line.amount
+    months.set(key, month)
+  }
+  const context: deductionsService.Context = { from, to, payMonth: run.payMonth, settings, components: componentInfo, roleComponent }
+
+  const lines: calculationRepository.LineRow[] = []
+  const held: { id: number; heldFor: PayHold[]; heldNote: string | null }[] = []
+  for (const person of people) {
+    const pay = workOutPay(person, daysOf.get(person.id) ?? [], periodDays)
+    if (pay.heldFor.length) {
+      held.push({ id: person.id, heldFor: pay.heldFor, heldNote: pay.heldFor.map((h) => HOLD_NOTES[h]).join('; ') })
+      continue
+    }
+    const last = person.segments.at(-1)!
+    const fact = factsOf.get(person.employeeId)!
+    const deductions = deductionsService.workOutDeductions(
+      {
+        earnings: pay.lines,
+        deductionInputs: person.inputs.filter((i) => i.kind === 'DEDUCTION'),
+        employmentType: last.employmentType,
+        stateCode: last.workLocationId === null ? undefined : (stateOf.get(last.workLocationId) ?? null),
+        monthlyTaxable: last.lines.reduce((sum, l) => (l.kind === 'EARNING' && componentInfo.get(l.salaryComponentId)?.taxable ? sum + l.monthlyAmount : sum), 0),
+        dateOfBirth: fact.dateOfBirth,
+        gender: fact.gender,
+        isPhysicallyDisabled: fact.isPhysicallyDisabled,
+        dateOfJoining: fact.dateOfJoining,
+        dateOfLeaving: fact.dateOfLeaving,
+        statutory: fact.statutory,
+        salaries: fact.salaries,
+        opening: openingOf.get(person.employeeId) ?? null,
+        earlier: earlierOf.get(person.employeeId) ?? new Map(),
+      },
+      context,
+    )
+    // the earnings are kept even when the deductions hold the person (the user, 2026-11-27: show what they earned)
+    for (const line of pay.lines) lines.push({ payrollRunEmployeeId: person.id, ...line, base: null })
+    if (deductions.heldFor.length) {
+      held.push({ id: person.id, heldFor: deductions.heldFor, heldNote: deductions.notes.join('; ') })
+      continue
+    }
+    for (const line of deductions.lines) lines.push({ payrollRunEmployeeId: person.id, ...line })
+  }
+  await calculationRepository.replaceLines(run.id, lines, actorId, tx)
+  await calculationRepository.writeHolds(run.id, held, actorId, tx)
+  await payrollRepository.markComputed(run.id, actorId, tx)
+  const has = (payClass: PayClass) => new Set(rows.filter((r) => r.firstHalf === payClass || r.secondHalf === payClass).map((r) => r.payrollRunEmployeeId)).size
+  return { people: people.length, days: rows.length, peopleWithUnpaidDays: has('UNPAID'), peopleWithUnclearDays: has('UNCLEAR'), peopleHeld: held.length }
 }

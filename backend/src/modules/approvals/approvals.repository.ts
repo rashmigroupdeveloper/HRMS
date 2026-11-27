@@ -46,6 +46,7 @@ const requestSelect = {
   feature: true,
   kinds: true,
   employeeId: true,
+  companyId: true,
   requestedById: true,
   status: true,
   summary: true,
@@ -59,6 +60,8 @@ const requestSelect = {
   cancelReason: true,
   createdAt: true,
   employee: { select: { employeeCode: true, firstName: true, middleName: true, lastName: true, status: true, companyId: true, plantId: true, departmentId: true } },
+  // a request about a whole company (a pay run - payroll stage 5)
+  company: { select: { code: true, name: true } },
   steps: { orderBy: { stepNo: 'asc' }, select: stepSelect },
 } satisfies Prisma.ApprovalRequestSelect
 
@@ -84,7 +87,8 @@ export function createRequest(
   data: {
     feature: ApprovalFeature
     kinds: ApprovalKind[]
-    employeeId: number
+    employeeId: number | null
+    companyId: number | null
     requestedById: number
     summary: string
     targetCompanyId: number | null
@@ -217,6 +221,7 @@ export function listDecidedBy(decidedById: number, namedTypes: ApproverType[], n
 // The requests the viewer raised, the latest first - about themselves (SELF) or about others (OTHERS)
 // data access: the viewer's own requests (they raised them)
 export function listRaisedBy(requestedById: number, about: 'SELF' | 'OTHERS', take: number, db: DbClient = prisma) {
-  const employeeId = about === 'SELF' ? requestedById : { not: requestedById }
-  return db.approvalRequest.findMany({ where: { requestedById, employeeId }, orderBy: { createdAt: 'desc' }, take, select: requestSelect })
+  // (OTHERS: about another employee, or about a whole company - a pay run - whose employee is empty)
+  const about_ = about === 'SELF' ? { employeeId: requestedById } : { OR: [{ employeeId: { not: requestedById } }, { employeeId: null }] }
+  return db.approvalRequest.findMany({ where: { AND: [{ requestedById }, about_] }, orderBy: { createdAt: 'desc' }, take, select: requestSelect })
 }

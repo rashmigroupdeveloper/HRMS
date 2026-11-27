@@ -271,8 +271,8 @@ export function workOutDeductions(person: Person, ctx: Context): { heldFor: PayH
 // The month's TDS, new regime, no declarations: the year's tax on the projected taxable salary - what is known of the
 // tax year (opening figures, earlier runs) + this month + the months left at the current monthly salary - less what was
 // deducted so far, spread over this month and the months left. A month of the tax year with no figures (not in the
-// opening figures, no run worked out) while employed is counted at the current monthly salary with no tax deducted -
-// never as nothing. The months left stop at a known leaving date. The taxable income is the base.
+// opening figures, no run worked out - or, by the payroll setting's default, no finalised run) while employed is counted
+// at the current monthly salary with no tax deducted - never as nothing. The months left stop at a known leaving date. The taxable income is the base.
 export function monthlyTds(person: Person, ctx: Context, thisMonthTaxable: number): { amount: number; base: number } | { hold: PayHold; note: string } {
   const taxYearFrom = taxYearOf(ctx.payMonth)
   const v = (parameter: StatutoryParameter) => statutoryService.valueOn(ctx.settings.rates, parameter, taxYearFrom)

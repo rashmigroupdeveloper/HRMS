@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams, useSearchParams } from 'react-router'
-import { ArrowLeft, CalendarCheck, RefreshCw } from 'lucide-react'
+import { ArrowLeft, CalendarCheck, RefreshCw, Send, Undo2 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
@@ -11,15 +11,17 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
-import { formatDate, formatDoneBy, formatMoney } from '@/lib/utils'
+import { formatDate, formatDateTime, formatDoneBy, formatMoney } from '@/lib/utils'
+import { RunChecks } from './components/RunChecks'
 import { RunInputs } from './components/RunInputs'
 import { RunPeople } from './components/RunPeople'
-import { COMPUTE_LABEL, NOT_LOCKED_NOTE, NO_PF_NOTE, OUTDATED_NOTE, PAY_RULE_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, monthLabel } from './components/payroll-labels'
+import { COMPUTE_LABEL, FINAL_NOTE, NOT_LOCKED_NOTE, NO_PF_NOTE, OUTDATED_NOTE, PAY_RULE_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_STATUS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, SEND_LABEL, SEND_NOTE, monthLabel } from './components/payroll-labels'
 
 // One pay run: its people with the salary in force on each day of the pay period (a copy, refreshed from the employee
 // records while it is a draft), the month's inputs (stage 2), and "Work out pay" (stage 3): each person's paid and unpaid
-// days from the locked attendance and what they earned. Payroll: View over the whole company; changes need Payroll:
-// Edit over the whole company. Salary figures (the earned gross too) also need Salary: View over the whole company.
+// days from the locked attendance and what they earned, deductions and net (stage 4); Checks and "Send for approval"
+// (stage 5: the approval service decides; approved = final, never to change). Payroll: View over the whole company;
+// changes need Payroll: Edit over the whole company. Salary figures also need Salary: View over the whole company.
 export function PayrollRunPage() {
   const { id: rawId } = useParams()
   const id = Number(rawId)
@@ -27,6 +29,8 @@ export function PayrollRunPage() {
   const [params, setParams] = useSearchParams()
   const tab = RUN_TABS.some((t) => t.value === params.get('tab')) ? params.get('tab')! : 'people'
   const [refreshing, setRefreshing] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [withdrawing, setWithdrawing] = useState(false)
   const { ready, can } = useAccess()
   const queryClient = useQueryClient()
   const run = useQuery({ ...orpc.payroll.get.queryOptions({ input: { id } }), enabled: valid })
@@ -40,6 +44,9 @@ export function PayrollRunPage() {
   })
   // on a refusal too: "someone worked it out in the meantime" needs the newer run on the screen
   const compute = useMutation({ ...orpc.payroll.calculation.compute.mutationOptions(), onSettled: reload })
+  // stage 5: send (the pay is worked out once more first) and withdraw (through the approval service)
+  const send = useMutation({ ...orpc.payroll.send.mutationOptions(), onSuccess: () => setSending(false), onSettled: reload })
+  const withdraw = useMutation({ ...orpc.approvals.cancel.mutationOptions(), onSuccess: () => setWithdrawing(false), onSettled: () => { reload(); void queryClient.invalidateQueries({ queryKey: orpc.approvals.key() }) } })
   const r = run.data
   const facts = r ? [`${formatDate(r.payFrom)} – ${formatDate(r.payTo)}`, formatDoneBy(r.peopleRefreshedAt, r.peopleRefreshedBy), r.computedAt ? formatDoneBy(r.computedAt, r.computedBy) : 'Not yet'] : []
   const gross = r ? (r.salaryHidden ? 'Hidden' : r.earnedGross === null ? '—' : formatMoney(r.earnedGross, 'INR')) : ''
@@ -62,17 +69,25 @@ export function PayrollRunPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <h1 className="text-2xl font-light tracking-tight">{monthLabel(r.payMonth)} · {r.company.code}</h1>
-              <Pill tone="neutral">Draft</Pill>
+              <Pill tone={r.status === 'FINALISED' ? 'positive' : r.status === 'IN_APPROVAL' ? 'gold' : 'neutral'}>{RUN_STATUS[r.status]}</Pill>
             </div>
             {r.canChange && (
               <div className="flex flex-wrap gap-2">
                 <Button className="min-h-9 gap-1.5 rounded-full" disabled={!r.attendanceLocked || compute.isPending} onClick={() => compute.mutate({ runId: id, expectedComputedAt: r.computedAt })}>
                   <CalendarCheck className="size-4" aria-hidden />{compute.isPending ? 'Working out…' : COMPUTE_LABEL}
                 </Button>
+                <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" disabled={!r.canSend} title={r.blockers.join(' · ') || undefined} onClick={() => setSending(true)}>
+                  <Send className="size-4" aria-hidden />{SEND_LABEL}
+                </Button>
                 <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" onClick={() => setRefreshing(true)}>
                   <RefreshCw className="size-4" aria-hidden />{REFRESH_LABEL}
                 </Button>
               </div>
+            )}
+            {r.status === 'IN_APPROVAL' && r.approval && ready && can('PAYROLL', 'WRITE') && (
+              <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" onClick={() => setWithdrawing(true)}>
+                <Undo2 className="size-4" aria-hidden />Withdraw
+              </Button>
             )}
           </div>
           <p className="text-sm text-muted-foreground">{r.company.name}</p>
@@ -93,6 +108,17 @@ export function PayrollRunPage() {
               </div>
             ))}
           </div>
+          {r.approval && (
+            <p role="status" className={`rounded-xl px-3 py-2 text-xs ${r.status === 'FINALISED' ? 'bg-positive/10 text-positive-ink' : r.approval.held ? 'bg-warning/10 text-warning-ink' : 'bg-surface-2/60'}`}>
+              {r.status === 'FINALISED'
+                ? `${FINAL_NOTE} Approved${r.finalisedBy ? ` - last by ${r.finalisedBy.name}` : ''}${r.finalisedAt ? `, ${formatDateTime(r.finalisedAt)}` : ''}.`
+                : r.status === 'IN_APPROVAL'
+                  ? `Sent for approval by ${r.approval.sentBy?.name ?? '—'}, ${formatDateTime(r.approval.sentAt)}. ${r.approval.held ? `Held: ${r.approval.held}.` : r.approval.step ? `Waiting - step ${r.approval.step.stepNo} of ${r.approval.step.of}: ${r.approval.step.who}${r.approval.step.late ? ' (late)' : ''}.` : ''}`
+                  : `The last approval request was ${r.approval.status === 'REJECTED' ? 'rejected' : r.approval.status === 'CANCELLED' ? 'withdrawn' : r.approval.status.toLowerCase()} - the run is a draft again.`}{' '}
+              <Link to={`/manage/approvals?request=${r.approval.requestId}`} className="underline underline-offset-4">Open the approval</Link>
+            </p>
+          )}
+          {r.status === 'DRAFT' && r.canChange && r.blockers.length > 0 && r.computedAt && <p className="text-xs text-muted-foreground">Before sending: {r.blockers.join(' · ')}.</p>}
           {r.daysOutdated ? <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">{OUTDATED_NOTE}</p> : !r.attendanceLocked && !r.computedAt && <p className="text-xs text-muted-foreground">{NOT_LOCKED_NOTE}</p>}
           {notWorkedOut > 0 && (
             <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">
@@ -112,6 +138,7 @@ export function PayrollRunPage() {
           </PillTabsList>
           <TabsContent value="people" className="mt-3"><RunPeople runId={id} canChange={r ? r.canChange : ready && can('PAYROLL', 'WRITE')} /></TabsContent>
           <TabsContent value="inputs" className="mt-3"><RunInputs runId={id} canChange={r ? r.canChange : ready && can('PAYROLL', 'WRITE')} /></TabsContent>
+          <TabsContent value="checks" className="mt-3"><RunChecks runId={id} mayChange={r ? r.canChange : ready && can('PAYROLL', 'WRITE')} /></TabsContent>
         </Tabs>
       )}
       {refreshing && r && (
@@ -125,6 +152,28 @@ export function PayrollRunPage() {
         />
       )}
       {refresh.error && <FormError error={refresh.error} />}
+      {sending && r && (
+        <ConfirmDialog
+          title={`Send ${monthLabel(r.payMonth)} · ${r.company.code} for approval?`}
+          description={SEND_NOTE}
+          confirm={send.isPending ? 'Sending…' : SEND_LABEL}
+          pending={send.isPending}
+          onConfirm={() => send.mutate({ runId: id }, { onError: () => setSending(false) })}
+          onClose={() => { if (!send.isPending) setSending(false) }}
+        />
+      )}
+      {send.error && <FormError error={send.error} />}
+      {withdrawing && r?.approval && (
+        <ConfirmDialog
+          title="Withdraw it from approval?"
+          description="The request is cancelled and the run is a draft again - send it again when it is ready."
+          confirm={withdraw.isPending ? 'Withdrawing…' : 'Withdraw'}
+          pending={withdraw.isPending}
+          onConfirm={() => withdraw.mutate({ id: r.approval!.requestId }, { onError: () => setWithdrawing(false) })}
+          onClose={() => { if (!withdraw.isPending) setWithdrawing(false) }}
+        />
+      )}
+      {withdraw.error && <FormError error={withdraw.error} />}
     </div>
   )
 }

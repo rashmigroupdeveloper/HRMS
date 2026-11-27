@@ -15,6 +15,9 @@ import { orpc } from '@/lib/orpc'
 import { errorMessage, formatDate } from '@/lib/utils'
 import { refreshAfterDecision } from './request-kinds'
 
+// who a request is about: the employee - or, for a pay run, its company (payroll stage 5)
+const subjectOf = (r: { employee: { employeeCode: string; name: string } | null; company: { code: string; name: string } | null }) => r.employee ?? { employeeCode: r.company?.code ?? '', name: r.company?.name ?? '' }
+
 // One approval request in a side panel (the user, 2026-11-20): what it is about (the feature's own detail - a job change
 // with the salary if this step may see it), its steps, and - for whoever may - Approve / Reject (a reason needed),
 // Cancel (the requester, or HR for the employee), Send through again (a held request, after its routing was repaired).
@@ -25,7 +28,8 @@ export function ApprovalDrawer({ id, onClose }: { id: number; onClose: () => voi
   const { me, can } = useAccess()
   // the employee's profile - only for whoever may open it (the backend's `link` is the requester's own page for leave and
   // attendance, and a profile without Employees View bounced to the home page)
-  const profile = !r ? null : me?.employeeCode === r.employee.employeeCode ? '/ess/me' : can('EMPLOYEES') ? `/manage/employees/${r.employee.employeeCode}` : null
+  // (a pay run: its page, which checks Payroll access itself)
+  const profile = !r ? null : !r.employee ? r.link : me?.employeeCode === subjectOf(r).employeeCode ? '/ess/me' : can('EMPLOYEES') ? `/manage/employees/${subjectOf(r).employeeCode}` : null
   // after a decision the request loads again: no second click on what it showed before (it would be refused)
   const settling = request.isFetching
   const jobChange = useQuery({ ...orpc.jobChanges.get.queryOptions({ input: { approvalRequestId: id } }), enabled: r?.feature === 'JOB_CHANGE' })
@@ -45,16 +49,16 @@ export function ApprovalDrawer({ id, onClose }: { id: number; onClose: () => voi
     <FormDrawer
       onClose={onClose}
       width={600}
-      title={r ? `${r.label} · ${r.employee.name}` : 'Approval'}
+      title={r ? `${r.label} · ${subjectOf(r).name}` : 'Approval'}
       description={
         r && (
           <span className="flex flex-wrap items-center gap-2">
             {profile ? (
               <Link to={profile} className="underline-offset-4 hover:underline">
-                {r.employee.employeeCode}
+                {subjectOf(r).employeeCode}
               </Link>
             ) : (
-              <span>{r.employee.employeeCode}</span>
+              <span>{subjectOf(r).employeeCode}</span>
             )}
             <ApprovalStatusPill status={r.status} />
             <span>

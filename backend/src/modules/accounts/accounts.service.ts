@@ -1,7 +1,7 @@
 import { writeReport } from '#core/excel/report'
 import { ACCESS_AREAS, assertAccess, hasAccess, higherLevel, type AccessMap } from '#core/auth/access'
 import { assertPasswordConfirmed } from '#core/auth/confirm'
-import { ALL_OF_GROUP, beyondGiver, hasLevelAt, levelOver, type Placement, type RoleGrant, scopeAllows, scopeOf, type ScopeRow, sliceCovers } from '#core/auth/scope'
+import { ALL_OF_GROUP, beyondGiver, hasLevelAt, levelOver, type Placement, type RoleGrant, scopeAllows, scopeOf, type ScopeRow, sliceContains, sliceCovers } from '#core/auth/scope'
 import { countAccountTry, countPasswordTry } from '#core/auth/rate-limit'
 import { generatePassword, hashPassword, verifyPassword } from '#core/auth/password'
 import { clearSessionCookie, hashSessionToken, newSessionToken, readSessionToken, writeSessionCookie } from '#core/auth/session'
@@ -687,9 +687,10 @@ async function assertPlantsOfCompanies(rows: ScopeRow[]) {
 }
 
 // Gives an employee a login, or resets the password (and logs them out everywhere), optionally adding a role.
-// The password is temporary: it must be changed at the next sign-in.
+// The password is temporary: it must be changed at the next sign-in - unless `temporary: false` (only for test data,
+// scripts/import-employee-master.ts).
 // Used by scripts/set-password.ts, so it is recorded as done by System. `employeeCode` must be upper-case.
-export async function setPassword(employeeCode: string, password: string, roleName?: string) {
+export async function setPassword(employeeCode: string, password: string, roleName?: string, { temporary = true } = {}) {
   const { minPasswordLength } = await securityService.getRules()
   if (password.length < minPasswordLength) {
     throw new ORPCError('BAD_REQUEST', { message: `A password needs at least ${minPasswordLength} characters` })
@@ -700,7 +701,7 @@ export async function setPassword(employeeCode: string, password: string, roleNa
   const passwordHash = await hashPassword(password)
 
   await prisma.$transaction(async (tx) => {
-    const account = await accountsRepository.upsert(employee.id, passwordHash, SYSTEM_ACTOR, tx)
+    const account = await accountsRepository.upsert(employee.id, passwordHash, SYSTEM_ACTOR, tx, temporary)
     if (role) {
       // a role given by the script (run on the server, e.g. the first super admin) covers every company at Edit - narrow
       // it on the Roles & access page; a role the employee already had keeps its data access
@@ -967,18 +968,23 @@ function signIns() {
 // access area at Edit covering every placement (`area`), or of the fallback-approver role covering every placement
 // (`fallback`) - with an enabled login and still able to sign in. One read of the logins for all the queries; the
 // answer has one list of employee ids per query, in order.
-export type ApproverQuery = { roleId?: number | null; area?: AccessArea | null; fallback?: boolean; placements: Placement[] }
+// `wholeCompanyId`: a request about a whole company (a pay run - payroll stage 5): the holder needs one data-access row
+// covering that whole company (never plant rows stitched together); `placements` is then empty
+export type ApproverQuery = { roleId?: number | null; area?: AccessArea | null; fallback?: boolean; placements: Placement[]; wholeCompanyId?: number }
 export async function listApprovers(queries: ApproverQuery[]): Promise<number[][]> {
   if (!queries.length) return []
   const { accounts, canSignIn } = await signIns()
   const qualifies = (account: (typeof accounts)[number], query: ApproverQuery) => {
+    const whole = query.wholeCompanyId !== undefined ? { companyId: query.wholeCompanyId, plantId: null, departmentId: null } : null
     if (query.area) {
       const user = accessFromRoles(account)
+      if (whole) return levelOver(user, query.area, whole) === 'WRITE'
       return query.placements.every((placement) => hasLevelAt(user, query.area!, placement, 'WRITE'))
     }
     const roles = account.roles.filter((r) => (query.fallback ? r.role.isApprovalFallback : r.role.id === query.roleId))
     return roles.some((r) => {
       const grant = grantOf(r)
+      if (whole) return grant.rows.some((row) => sliceContains(row, whole))
       return query.placements.every((placement) => grant.rows.some((row) => sliceCovers(row, placement)))
     })
   }

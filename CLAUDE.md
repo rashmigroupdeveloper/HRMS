@@ -145,7 +145,7 @@ frontend/src/
 | Write a database query | `modules/<feature>/<feature>.repository.ts` |
 | Validate input | zod schema in `modules/<feature>/<feature>.schema.ts` |
 | Use another module's logic or data | call its service: `import { employeesService } from '#modules/employees'` (never its repository) |
-| Get something approved (a job change, leave, an offer...) | the approval service (decided 2026-11-20): `approvalsService.raiseRequest` + `registerFeature` from `#modules/approvals` - never an approval built into the feature; a new kind in `ApprovalKind` (`approvals.prisma`) + `KIND_INFO` (`modules/approvals/chains/chains.service.ts`) |
+| Get something approved (a job change, leave, an offer...) | the approval service (decided 2026-11-20): `approvalsService.raiseRequest` + `registerFeature` from `#modules/approvals` - never an approval built into the feature; a new kind in `ApprovalKind` (`approvals.prisma`) + `KIND_INFO` (`modules/approvals/chains/chains.service.ts`). A request is about an employee, or about a whole company (`companyId` + the handler's `company` part - a pay run, 2026-11-27) |
 | Validate data with another module's rules | use its exported schemas: `import { employeesSchemas } from '#modules/employees'` - never copy the rules |
 | Infrastructure (JWT, email, PDF writing, Excel files, file storage, logger, job queue, audit log) | `backend/src/core/<area>/` |
 | Decide who may call an API / see a page | `accessProcedure(<area>, 'READ' \| 'WRITE')` in the router; a new area in `AccessArea` (`access.prisma`) + `AREA_INFO` (`modules/accounts/roles/roles.service.ts`); frontend `useAccess().can(...)` |
@@ -305,14 +305,22 @@ frontend/src/
   Statutory settings (Payroll Edit for every company, `assertGroupWide`), entered from the notification, never seeded or
   written in code; a figure not in force, a missing work location / component / birth date, the old tax regime or a
   consultant without a typed TDS, or deductions above half of the wages HOLD the person (stored with the reason,
-  `PayrollRunEmployee.heldFor`) - never a zero. Decided by the user: PF on the components marked "PF wages" up to the
+  `PayrollRunEmployee.heldFor`; their earnings still show, deductions and net do not) - never a zero. Decided by the user: PF on the components marked "PF wages" up to the
   ceiling (per-person "PF on full wages"), for those whose statutory details say "PF applicable"; ESIC decided by the
   salary at the start of each ESIC period; professional tax and LWF by the work location's State; monthly TDS worked out
   (new regime, no declarations - those come in stage 7) or typed; no ESIC / professional tax / LWF for consultants (TDS
   typed), no ESIC for apprentices. Deductions and net are salary figures too (and the hold notes every Payroll viewer
   sees never carry an amount); opening tax figures follow whole-company Payroll scope by the employee's company, their
-  amounts shown only with Salary View covering it as well. Approval and payment wait for their approved stages; no independent approval
-  lifecycle is built into payroll.
+  amounts shown only with Salary View covering it as well.
+  **Stage 5, approval and finalising (built 2026-11-27, `payroll/checks/`, `payroll.send`):** a run's warnings (no bank
+  account, no PAN, a big change from last month...) must each be acknowledged with a comment, and nobody may be held,
+  before "Send for approval" - which works the pay out once more and raises a request about the WHOLE COMPANY through the
+  one approval service (kind PAY_RUN, feature PAYROLL - never an approval built into payroll). Decided by the user: the
+  pay-run chain has role steps only, each role with Payroll View and Salary View (approvers see the run with their own
+  access); no auto-approve, no escalation to a manager, no fallback approver (no chain = sending is refused); the sender
+  never approves; approved = FINALISED, never changes (corrections as arrears, stage 7); rejected / withdrawn = DRAFT.
+  Tolerances are the payroll settings row (`PayrollSetting` - TDS counts finalised runs only by default). Payment waits
+  for stage 6.
   **Decided for stage 2 (the user, 2026-11-26):** monthly inputs are entered and changed only by someone with Payroll
   Edit covering the whole company - a plant-level HR person sends their figures to them; salary amounts inside a run
   (the salary copy and its lines) are shown only to a viewer who also has `SALARY` View covering the whole company

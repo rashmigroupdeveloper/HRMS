@@ -113,6 +113,15 @@ export function PersonDetails({ runId, personId, canChange, close }: { runId: nu
                   {p.pay.status === 'AGAIN' ? AGAIN_NOTE : <><span className="font-medium">Pay held - {p.pay.heldFor.map((reason) => HOLD_REASON[reason]).join(', ')}.</span>{p.pay.heldNote && <> {p.pay.heldNote}.</>}</>}
                 </p>
               )}
+              {/* held by the deductions: what they earned still shows (the user, 2026-11-27) - never deductions or net */}
+              {p.pay?.status === 'HELD' && !!p.pay.lines?.length && (
+                <PayLines
+                  title={`${PAY_TITLE} · ${p.pay.periodDays} days`}
+                  lines={p.pay.lines.filter((l) => l.component.kind === 'EARNING')}
+                  note={(l) => (l.fromInput ? 'input' : !l.component.cutForUnpaidDays ? 'not cut for unpaid days' : null)}
+                  total={['Earned gross', p.pay.earnedGross]}
+                />
+              )}
               {p.pay?.status === 'WORKED_OUT' && p.pay.lines && (
                 <div className="space-y-2">
                   <div className="grid gap-2 sm:grid-cols-2">

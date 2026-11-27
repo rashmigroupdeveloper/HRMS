@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 317**
+**Total APIs: 321**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -404,6 +404,10 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 315 | `payroll.taxOpenings.list` | Payroll: View covering the employee's company | Opening tax figures of a tax year (earned and deducted outside this system) |
 | 316 | `payroll.taxOpenings.save` | Payroll: Edit covering the employee's company | Add or change an employee's opening tax figures |
 | 317 | `payroll.taxOpenings.delete` | Payroll: Edit covering the employee's company | Remove opening tax figures |
+| 318 | `payroll.statutory.saveSettings` | Payroll: Edit for every company | Save the payroll settings (TDS counting, big-change %, EPS warning months) |
+| 319 | `payroll.send` | Payroll: Edit covering whole company | Work out a draft run once more and send it for approval |
+| 320 | `payroll.checks.list` | Payroll: View covering whole company | A run's warnings and their acknowledgements |
+| 321 | `payroll.checks.acknowledge` | Payroll: Edit covering whole company | Acknowledge warnings with a comment before sending |
 
 ---
 
@@ -3657,14 +3661,16 @@ not exist is skipped, not rolled over; a file is read as Excel only when it is o
 ## approvals
 
 One approval service every feature uses (the user, 2026-11-20 - `backend/src/modules/approvals/`): a feature raises a
-request about an employee; it follows the **chain** of its kind(s) one step at a time (a promotion with a hike follows the
+request about an employee - or (payroll stage 5, approved 2026-11-27) about a whole company: a pay run; it follows the **chain** of its kind(s) one step at a time (a promotion with a hike follows the
 job and the salary chain, merged - each approver asked once); the final decision goes back to the feature in the same
 transaction. A step is the reporting manager, the functional manager, the HOD, anyone holding a role, or anyone with an
 access at Edit - the last three only within their data access (and, for a move, covering where it goes too). A manager /
 HOD step with nobody to decide it is **skipped** with the reason; a role / access step nobody holds goes to the **fallback
 approver** (the role marked so - seeded "Admin" - covering the employee). The chains and the held requests are their own access area, **Approval chains** (2026-11-20); a request whose every step was skipped gets a
 fallback step. If even the fallback approver has nobody, the request is **held** - never approved by itself - until its
-routing is repaired and it is sent through again (the daily job `approvals.daily` retries held ones, gives steps to a new
+routing is repaired and it is sent through again (a **company request** - a pay run - has role / access steps only, decided by
+holders with one data-access row covering the whole company, and **no fallback approver**: with nobody to decide a step
+it is held; its approvers are paid in the run they approve - the one exception to "nobody decides about themselves") (the daily job `approvals.daily` retries held ones, gives steps to a new
 manager / HOD, and cancels requests of employees who left; a role / access / fallback step whose approvers are all gone - left, lost the login, the role or the data access - goes to the fallback approver, or the request is held, 2026-11-23; reminders follow each step's SLA). Nobody decides a request about
 themselves or one they raised.
 
@@ -3687,9 +3693,10 @@ already raised go on.
 - **Access:** any logged-in employee. Per portal (2026-11-25): in Employee self-service (no active role) only the steps named to the viewer (manager, HOD, escalation); in the role portal only the role / access / fallback steps of the active role.
 - **Scope:** In Employee self-service (no active role) the steps named to the viewer; in the role portal the active role's role / access / fallback steps (2026-11-25). steps named to the viewer (as reporting / functional manager or HOD, or - a late step escalated - as the late approver's reporting manager: the relationship, CLAUDE.md section 8 rule 7) and role / access / fallback steps whose holders' data access covers the employee (and a move's new place) - never one about the viewer or raised by them.
 - **Input:** none.
-- **Returns:** `[{ id, feature, label (its kinds in words - "Salary revision", "Job / position change + Salary revision"), status, summary, employee {employeeCode, name}, requestedBy, raisedAt, closedAt, held, step
+- **Returns:** `[{ id, feature, label (its kinds in words - "Salary revision", "Job / position change + Salary revision"), status, summary, employee {employeeCode, name} | null, company {code, name} | null (exactly one: a pay run is about its company - stage 5), requestedBy, raisedAt, closedAt, held, step
   {stepNo, of, who, approver, byFallback, note, openedAt, dueAt, late}, link }]`, the oldest-waiting first. `status` also
-  `EXPIRED` (not decided in time, its chain said so).
+  `EXPIRED` (not decided in time, its chain said so). A company request's step is the active role's when one of its
+  data-access rows covers the whole company.
 - **What it does:** the Approvals page's "Waiting for me".
 - **Errors:** `401`.
 
@@ -3705,7 +3712,7 @@ already raised go on.
 ### `approvals.listMine`
 - **HTTP:** `POST /api/rpc/approvals/listMine` · **Code:** `backend/src/modules/approvals/`
 - **Access:** any logged-in employee. Per portal (2026-11-25): in Employee self-service the requests about the viewer; in the role portal the ones they raised about others.
-- **Scope:** In Employee self-service the requests about the viewer, in the role portal the ones they raised about others (2026-11-25). the viewer's own requests (they raised them).
+- **Scope:** In Employee self-service the requests about the viewer, in the role portal the ones they raised about others (2026-11-25) - pay runs they sent included. the viewer's own requests (they raised them).
 - **Input:** none.
 - **Returns:** the latest 100, as in `listToDecide`.
 - **What it does:** the Approvals page's "Raised by me".
@@ -3723,14 +3730,15 @@ already raised go on.
 ### `approvals.get`
 - **HTTP:** `POST /api/rpc/approvals/get` · **Code:** `backend/src/modules/approvals/`
 - **Access:** any logged-in employee who may see it (checked in the service).
-- **Scope:** the requester, someone who decided or is named to a step, someone who may decide the open step, someone who may repair it while held (Approval chains Edit covering the employee), or as the feature allows (job changes: Employees View covering the employee) - else `404`.
+- **Scope:** the requester, someone who decided or is named to a step, someone who may decide the open step, someone who may repair it while held (Approval chains Edit covering the employee - a company request: the whole company), or as the feature allows (job changes: Employees View covering the employee; pay runs: Payroll View covering the whole company) - else `404`.
 - **Input:** `{ id: number }`
-- **Returns:** `{ id, feature, label (as in listToDecide), kinds [{kind, label}], status, summary, employee, requestedBy, raisedAt, closedAt, closedBy,
+- **Returns:** `{ id, feature, label (as in listToDecide), kinds [{kind, label}], status, summary, employee | null, company | null, requestedBy, raisedAt, closedAt, closedBy,
   cancelReason, held {at, reason} | null, steps [{ stepNo, who, approverType, status, byFallback, note, seesConfidential, approver,
   openedAt, decidedAt, decidedBy, comment, slaHours, onBreach, escalateRoleName, dueAt, breachedAt, autoDecided, late }],
   canDecide, canCancel, canRetry, seesConfidential, link }`. A step's `status`: `WAITING` (not reached) | `OPEN` | `APPROVED` |
   `REJECTED` | `SKIPPED` | `CANCELLED` | `ESCALATED` (not decided in time, passed to the step after it); `approverType` also
   `FALLBACK` and `ESCALATION` (the late approver's manager). `autoDecided`: approved / rejected by its time limit, not a person.
+  `link`: a pay run's page while the request is the run's current one (an older one: the runs list).
 - **What it does:** one request with its whole trail.
 - **Errors:** `400` invalid input · `404 NOT_FOUND`.
 
@@ -3750,7 +3758,7 @@ already raised go on.
 
 ### `approvals.cancel`
 - **HTTP:** `POST /api/rpc/approvals/cancel` · **Code:** `backend/src/modules/approvals/`
-- **Access:** the requester, or as the feature allows (job changes: Employees Edit covering the employee). Withdrawing one's own request (raised by the viewer about themselves) only in Employee self-service (`403` while a role is active - 2026-11-25).
+- **Access:** the requester, or as the feature allows (job changes: Employees Edit covering the employee; pay runs: Payroll Edit covering the whole company - the run is a draft again). Withdrawing one's own request (raised by the viewer about themselves) only in Employee self-service (`403` while a role is active - 2026-11-25).
 - **Scope:** as above; not visible to the viewer `404`.
 - **Input:** `{ id: number, reason?: string (1-500) }`
 - **Returns:** the request.
@@ -3763,7 +3771,7 @@ already raised go on.
 ### `approvals.listHeld`
 - **HTTP:** `POST /api/rpc/approvals/listHeld` · **Code:** `backend/src/modules/approvals/`
 - **Access:** Approval chains: Edit.
-- **Scope:** held requests of employees inside the viewer's Approval chains Edit data access.
+- **Scope:** held requests of employees inside the viewer's Approval chains Edit data access (a company request: a row covering the whole company).
 - **Input:** none.
 - **Returns:** as `listToDecide` (with `held.reason`).
 - **What it does:** the requests nobody can decide - the routing to repair (give the role, appoint the HOD, change the chain).
@@ -3803,7 +3811,7 @@ already raised go on.
 
   | Field | Type | Required | Rules |
   |---|---|---|---|
-  | `kind` | `JOB_CHANGE` \| `SALARY_REVISION` \| `SHIFT_CHANGE` | yes | |
+  | `kind` | `JOB_CHANGE` \| `SALARY_REVISION` \| `SHIFT_CHANGE` \| `LEAVE` \| ... \| `PAY_RUN` | yes | `PAY_RUN` (stage 5): ROLE steps only, each role (and a role it escalates to) with Payroll View and Salary View; no `AUTO_APPROVE`; `ESCALATE` needs `escalateRoleId` |
   | `companyId` | number \| null | yes | null = the shared chain; else a company |
   | `isActive` | boolean | no | default true; false = new requests of the kind are refused (those raised go on) |
   | `steps` | array (1-10) | yes | in order: `{ approverType: REPORTING_MANAGER \| FUNCTIONAL_MANAGER \| HOD \| ROLE \| ACCESS, roleId? (ROLE), accessArea? (ACCESS), seesConfidential (default false), slaHours? (1-2160; null only with WAIT = wait with no reminder), onBreach (WAIT \| ESCALATE \| AUTO_APPROVE \| EXPIRE \| AUTO_REJECT, default WAIT - WAIT reminds every SLA hours), escalateRoleId? (ESCALATE only; empty = the late approver's manager / the fallback approver), approverId? (ROLE / ACCESS only: one holder who alone decides it - must hold the role / access, and sign in, for every company on the shared chain or the whole company on its own; empty = anyone holding it) }` - no two steps decided by the same people |
@@ -3813,7 +3821,7 @@ already raised go on.
   A step named to one holder opens only for them; if they cannot decide a request (left, no login, the role or data access changed, or it is
   about them / raised by them) the fallback approver decides it, with a note why.
 - **Errors:** `400` a ROLE step without an existing role, an ACCESS step without an area, a named holder who does not hold
-  the role / access over the chain's whole reach, an action other than WAIT without SLA hours, a role to escalate to that does not exist (or the step's own role), two steps alike · `403` · `404` unknown company.
+  the role / access over the chain's whole reach, an action other than WAIT without SLA hours, a role to escalate to that does not exist (or the step's own role), two steps alike, a pay-run chain breaking its rules (above) · `403` · `404` unknown company.
 
 ### `approvals.chains.remove`
 - **HTTP:** `POST /api/rpc/approvals/chains/remove` · **Code:** `backend/src/modules/approvals/chains/`
@@ -4430,6 +4438,10 @@ and can include two events per employee. No existing API provides that contract.
   all null until the pay is worked out (stage 3 money, 2026-11-27). `computedAt` is when the pay was last worked out.
   Stage 4 (2026-11-27): `deductions`, `netPay` and `employerContributions` (salary figures, null when `salaryHidden`)
   and `peopleWithoutPf` (worked-out people with no PF - their statutory details do not say "PF applicable").
+  Stage 5 (2026-11-27): `status` DRAFT | IN_APPROVAL | FINALISED, `approvalRequestId`, `approval { requestId, status, held,
+  sentAt, sentBy, step { stepNo, of, who, late } | null } | null` (its approval request), `finalisedAt`, `finalisedBy`,
+  `openWarnings` (not acknowledged - a draft only), `blockers` (what stops sending, in words), `canSend`. `canChange` only
+  for a draft; `daysOutdated` only for a draft (a sent or final run keeps what it took).
 - **Does:** read-only run header detail for `/manage/payroll/:id`.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
@@ -4476,7 +4488,8 @@ and can include two events per employee. No existing API provides that contract.
   is held (no days in the period, days without a salary, a salary in another currency, days missing in attendance -
   never guessed) and their earned gross (the sum of their earning lines). Stage 4: the reasons and their detail are stored
   by "Work out pay" (`PayrollRunEmployee.heldFor / heldNote`); deductions and net pay (salary figures); `noPf` - pay
-  worked out with no PF.
+  worked out with no PF. A person held by the deductions keeps `earnedGross` (deductions and net stay null); the run's
+  `earnedGross` counts them, its `netPay` does not.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
 ### `payroll.people.get`
@@ -4542,7 +4555,8 @@ and can include two events per employee. No existing API provides that contract.
 - **Returns:** `{ id, duplicate }` - `duplicate`: the person already had this component with this amount (a warning).
 - **Does:** while the run is DRAFT, saves an amount for this month for a component marked "entered monthly" (its kind
   says earning or deduction). Recorded in the change history. The pay worked out for that person, and why they were
-  held, are removed (stages 3-4): they show as "work out again" until `payroll.calculation.compute` runs once more. Of
+  held, are removed (stages 3-4) with their acknowledged warnings (stage 5): they show as "work out again" until
+  `payroll.calculation.compute` runs once more. Of
   the statutory components only income tax is typed - it replaces the worked-out TDS (stage 4).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST for invalid input, an inactive component, one not
   entered monthly, or a statutory component other than income tax; CONFLICT if the run is not a draft.
@@ -4582,7 +4596,7 @@ and can include two events per employee. No existing API provides that contract.
   only; the amounts are read with `payroll.people.list / get` under the salary rule. Also read for the deductions
   (stage 4): the statutory settings, the people's payroll facts (`employeesService.listPayrollFacts`), their opening tax
   figures and their earlier runs of the tax year in any company of the group (their own income tax - documented
-  `// data access:` reads).
+  `// data access:` reads) - finalised runs only, unless the payroll setting counts drafts too (stage 5).
 - **Does:** "Work out pay" - stage 3 (approved 2026-11-27). In one transaction, while the run is DRAFT and every day of its pay
   period lies in a locked attendance month: replaces the run's day rows (`PayrollRunDay`) - one per person and day inside
   their stretches - with each half classed from attendance: PAID (present, on duty, weekly off, holiday, leave of a paid
@@ -4606,8 +4620,9 @@ and can include two events per employee. No existing API provides that contract.
   apprentices. A person whose pay cannot be worked out (no days in the period, days without a salary, a salary in
   another currency, days missing in attendance; no work location, a rate or slab not in force, no component for a
   statutory amount, the old regime / a consultant / income above the surcharge limit without a typed TDS, deductions
-  above half of the wages) gets no lines - held with the reasons and a note (`PayrollRunEmployee.heldFor / heldNote`),
-  never guessed. Records it on the run (`computedAt` / `ById` - in the
+  above half of the wages) is held with the reasons and a note (`PayrollRunEmployee.heldFor / heldNote`), never guessed:
+  no lines when the earnings cannot be worked out (the stage 3 reasons), only the earning lines when the deductions
+  cannot (the user, 2026-11-27: held people still show what they earned). Records it on the run (`computedAt` / `ById` - in the
   change history); the day and result rows themselves are not recorded (rebuilt each time, `core/audit` SKIP_MODELS).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT if the run is not a draft, the attendance period
   is not locked, or the pay was worked out by someone else in the meantime.
@@ -4626,8 +4641,9 @@ The deductions themselves are worked out by `payroll.calculation.compute` and re
 - **Returns:** `{ rates: [{ id, parameter, effectiveFrom, value, reference, updatedAt, updatedBy }], ptSets: [{ stateCode,
   effectiveFrom, reference, updatedAt, slabs: [{ gender, wagesFrom, wagesTo, amount, specialMonth, specialAmount }] }], lwf:
   [{ id, stateCode, effectiveFrom, employeeAmount, employerAmount, months, reference, updatedAt, updatedBy }], taxSets: [{
-  regime, taxYearFrom, reference, updatedAt, slabs: [{ incomeFrom, incomeTo, ratePercent }] }], canChange }` - `canChange`:
-  Payroll Edit for every company.
+  regime, taxYearFrom, reference, updatedAt, slabs: [{ incomeFrom, incomeTo, ratePercent }] }], settings: { tdsCountsDraftRuns,
+  bigChangePercent, epsAgeSoonMonths, saved, updatedAt, updatedBy } (stage 5 - the defaults until saved), canChange }` -
+  `canChange`: Payroll Edit for every company.
 - **Does:** the statutory settings page (`/manage/payroll/statutory`).
 - **Errors:** UNAUTHORIZED, FORBIDDEN.
 
@@ -4752,6 +4768,66 @@ The deductions themselves are worked out by `payroll.calculation.compute` and re
 - **Returns:** `{ id }`.
 - **Does:** removes opening figures (kept in the change history).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
+
+### `payroll.statutory.saveSettings`
+- **HTTP:** `POST /api/rpc/payroll/statutory/saveSettings` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate` (one row for the group).
+- **Input:** `{ tdsCountsDraftRuns: boolean, bigChangePercent: 1-1000, epsAgeSoonMonths: 0-24 }`; strict.
+- **Returns:** the settings now in force.
+- **Does:** saves the payroll settings (stage 5, approved 2026-11-27 - "nothing should be hardcoded"): whether earlier months'
+  TDS counts draft runs too (default: finalised only), the BIG_CHANGE warning's % (default 20), how many months ahead the
+  EPS age limit is warned of (default 2). They count from the next "Work out pay". Recorded in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
+
+## Payroll — Stage 5, approval and finalising (2026-11-27)
+
+A draft run is sent for approval as a request about its whole company (kind `PAY_RUN`, feature `PAYROLL`) through the one
+approval service; deciding and withdrawing are `approvals.decide` / `approvals.cancel`. Approved = `FINALISED` (never
+changes); rejected, withdrawn or expired = `DRAFT` again.
+
+### `payroll.send`
+- **HTTP:** `POST /api/rpc/payroll/send` · **Code:** `backend/src/modules/payroll/`
+- **Access:** Payroll WRITE on the active role, plus `assertWholeSlice` for the run's company.
+- **Scope:** run found with whole-company Payroll scope (outside = NOT_FOUND); whole-company View only = FORBIDDEN. Its
+  approvers are worked out by the approval service: holders of the pay-run chain's roles with one data-access row covering
+  the whole company - never the sender.
+- **Input:** `{ runId: positive int }`; strict.
+- **Returns:** the run (as `payroll.get`).
+- **Does:** in one transaction, while the run is DRAFT: works its pay out once more (as `payroll.calculation.compute`, from
+  the locked attendance); refuses while anyone is held or to work out again, or any warning is not acknowledged (the
+  user, 2026-11-27); raises the approval request (summary "Pay run <month> · <company> · N people" - no amounts) and marks
+  the run IN_APPROVAL - only if it is still a draft (a double click sends once). With no pay-run chain for the company it
+  is refused (no fallback approver). E-mails go to the first approvers after the transaction.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT not a draft, attendance not locked, people held,
+  warnings open, no pay-run chain, sent a moment ago.
+
+### `payroll.checks.list`
+- **HTTP:** `POST /api/rpc/payroll/checks/list` · **Code:** `backend/src/modules/payroll/checks/`
+- **Access:** Payroll: View.
+- **Scope:** run found with whole-company Payroll scope; the warnings carry no amounts (Payroll alone may read them).
+- **Input:** `{ runId: positive int }`; strict.
+- **Returns:** `{ items: [{ personId, employeeCode, name, warning: NET_ZERO | NO_BANK_ACCOUNT | BANK_INCOMPLETE | BIG_CHANGE |
+  LEAVING | ABSENT_THROUGHOUT | DUPLICATE_INPUT | LARGE_INPUT | NO_PAN | NO_UAN | NO_AADHAAR | NO_ESIC_NUMBER |
+  NO_PF_UNDER_CEILING | NO_TAX_OPENING | EPS_AGE_SOON, own, acknowledgement: { comment, by, at } | null }], total, open,
+  frozen, canAcknowledge }` - `own`: the warning is about the viewer's own pay, which a colleague must acknowledge (the
+  page does not offer it for picking).
+- **Does:** a draft: every warning about its people worked out now from the run and their records (presence of PAN,
+  Aadhaar, a salary account's IFSC / holder - never a number; last month's run of the company for BIG_CHANGE; the payroll
+  settings' tolerances) with its acknowledgement; once sent (`frozen`): the acknowledgements made before it was sent.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+
+### `payroll.checks.acknowledge`
+- **HTTP:** `POST /api/rpc/payroll/checks/acknowledge` · **Code:** `backend/src/modules/payroll/checks/`
+- **Access:** Payroll WRITE on the active role, plus `assertWholeSlice` for the run's company.
+- **Scope:** run found with whole-company Payroll scope; each person must belong to the run; never one's own pay
+  (FORBIDDEN).
+- **Input:** `{ runId, items: 1-5000 of { personId, warning }, comment: string 3-500 }`; strict.
+- **Returns:** `{ acknowledged }`.
+- **Does:** while the run is DRAFT, acknowledges these warnings with one comment (one acknowledged before takes the new
+  comment); each must apply now (otherwise BAD_REQUEST). Recorded in the change history; a person's acknowledgements are
+  removed when their inputs change or a refresh drops them.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT not a draft.
 
 ## Attendance — "attendance not tracked" (2026-11-27)
 

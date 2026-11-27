@@ -6,7 +6,7 @@ import { HomePayrollSkeleton } from '@/components/skeletons/home/HomeWidgetsSkel
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/utils'
 import type { Overview } from '@/pages/attendance/components/labels'
-import { monthLabel } from '@/pages/payroll/components/payroll-labels'
+import { monthLabel, runState } from '@/pages/payroll/components/payroll-labels'
 import { TILE } from './HomeParts'
 import { PAYROLL_TITLE } from './home-labels'
 import { usePayrollRuns } from './usePayrollRuns'
@@ -37,7 +37,7 @@ export function HomePayroll({ overview }: { overview: Overview | undefined }) {
                 <p className="text-xs text-muted-foreground tabular-nums">{r.people} people · {r.computedAt ? `pay worked out ${formatDate(r.computedAt)}` : 'pay not worked out yet'}</p>
               </div>
               <span className="flex shrink-0 items-center gap-2">
-                <Pill tone={r.computedAt ? 'neutral' : 'warning'}>{r.computedAt ? 'Pay worked out' : 'Pay to work out'}</Pill>
+                <Pill tone={runState(r).tone}>{runState(r).label}</Pill>
                 <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
               </span>
             </Link>

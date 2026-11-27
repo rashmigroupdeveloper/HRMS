@@ -152,7 +152,10 @@ describe('Payroll stage 4: deductions and net pay', () => {
     expect(byComponent(one.pay!.lines)[roles.get('INCOME_TAX')!]).toBeUndefined()
     expect(one.pay).toMatchObject({ status: 'WORKED_OUT', earnedGross: 20000, deductions: 1410, netPay: 18590, employerContributions: 1720 })
 
-    expect((await person(noPlace)).pay).toMatchObject({ status: 'HELD', heldFor: ['NO_WORK_LOCATION'], lines: [], netPay: null })
+    // held by the deductions: still shows what they earned (the user, 2026-11-27) - never deductions or net
+    const noLocation = await person(noPlace)
+    expect(noLocation.pay).toMatchObject({ status: 'HELD', heldFor: ['NO_WORK_LOCATION'], earnedGross: 20000, deductions: null, netPay: null, employerContributions: null })
+    expect(byComponent(noLocation.pay!.lines)).toEqual({ [basic]: [15000, null], [hra]: [5000, null] })
     expect((await person(oldRegime)).pay).toMatchObject({ status: 'HELD', heldFor: ['TAX_TO_TYPE'] })
     const overHalf = await person(heavy)
     expect(overHalf.pay).toMatchObject({ status: 'HELD', heldFor: ['OVER_HALF'] })

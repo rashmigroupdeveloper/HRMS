@@ -9,7 +9,14 @@ export const STATUTORY_TABS = [
   { value: 'lwf', label: 'Labour welfare fund' },
   { value: 'tax', label: 'Income tax' },
   { value: 'openings', label: 'Opening tax figures' },
+  { value: 'settings', label: 'Run settings' },
 ] as const
+// The payroll settings (stage 5 - backend PayrollSetting; change both together)
+export const SETTING_LABELS = {
+  tdsCountsDraftRuns: ['Earlier months for TDS', 'Which runs of earlier months the monthly TDS counts'],
+  bigChangePercent: ['Big change from last month', 'Net pay more than this % above or below last month is a warning'],
+  epsAgeSoonMonths: ['EPS age limit soon', 'Warn this many months before a member reaches the EPS age limit'],
+} as const
 export type StatutoryTab = (typeof STATUTORY_TABS)[number]['value']
 export const CHANGE_NOTE = 'Changing them needs Payroll Edit for every company.'
 

@@ -1,9 +1,9 @@
 import * as reportsService from './reports/reports.service.js'
 import { assertAccess, assertSelfService, inSelfService } from '#core/auth/access'
 import { reportFile, reportSheet } from '#core/excel/report'
-import { hasLevelAt, type Placement } from '#core/auth/scope'
+import { hasLevelAt, levelOver, type Placement } from '#core/auth/scope'
 import { env } from '#core/config/env'
-import { prisma, SYSTEM_ACTOR, type ActorId, type ApprovalFeature, type ApprovalKind, type ApproverType, type DbClient } from '#core/db/prisma'
+import { prisma, SYSTEM_ACTOR, type AccessArea, type ActorId, type ApprovalFeature, type ApprovalKind, type ApproverType, type DbClient } from '#core/db/prisma'
 import { sendMail } from '#core/mail/mailer'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { accountsService } from '#modules/accounts'
@@ -25,6 +25,9 @@ import * as chainsService from './chains/chains.service.js'
 // - If even the fallback approver has nobody, the request is HELD - not approved - until the routing is repaired and it
 //   is sent through again ("vacancy is not consent", as the old HRMS). The daily job retries held requests itself.
 // - Nobody decides a request about themselves or one they raised.
+// - A request about a whole COMPANY (a pay run - payroll stage 5, approved by the user 2026-11-27) has role / access steps
+//   only, decided by holders covering the whole company; it has no fallback approver: with nobody to decide a step it is
+//   held. Its approvers are paid in the run they approve - the one exception to "nobody decides about themselves".
 
 // --- What a feature gives the service (registerFeature) ---
 
@@ -43,6 +46,12 @@ export type FeatureHandler = {
   canCancel: (viewer: CurrentUser, placement: Placement) => boolean
   // where it is seen in the app, e.g. /employees/RML035384?tab=job
   link: (employeeCode: string) => string
+  // a feature whose requests are about a whole company (payroll stage 5): the same, by the company / the request
+  company?: {
+    canView: (viewer: CurrentUser, companyId: number) => boolean
+    canCancel: (viewer: CurrentUser, companyId: number) => boolean
+    link: (requestId: number) => Promise<string>
+  }
 }
 const handlers = new Map<ApprovalFeature, FeatureHandler>()
 
@@ -92,15 +101,45 @@ export function stepLabel(step: Pick<StepRow, 'approverType' | 'roleName' | 'acc
 
 const fullName = employeesService.fullName
 
-// Where the request's employee is - and the second place a move touches: ROLE / ACCESS / FALLBACK approvers cover both
+// Where the request's employee is - and the second place a move touches: ROLE / ACCESS / FALLBACK approvers cover both.
+// None for a request about a whole company (coverOf checks it as the whole company).
 function placementsOf(request: RequestRow): Placement[] {
+  if (!request.employee) return []
   const here = { companyId: request.employee.companyId, plantId: request.employee.plantId, departmentId: request.employee.departmentId }
   if (request.targetCompanyId === null || request.targetPlantId === null) return [here]
   return [here, { companyId: request.targetCompanyId, plantId: request.targetPlantId, departmentId: request.targetDepartmentId }]
 }
+const companySlice = (companyId: number) => ({ companyId, plantId: null, departmentId: null })
+// The viewer holds the area at this level over what the request is about: the employee's place(s), or one data-access
+// row covering the whole company (never stitched together from plant rows)
+function covers(viewer: CurrentUser, area: AccessArea, level: 'READ' | 'WRITE', request: RequestRow) {
+  if (request.companyId !== null) {
+    const found = levelOver(viewer, area, companySlice(request.companyId))
+    return found === 'WRITE' || (level === 'READ' && found === 'READ')
+  }
+  return placementsOf(request).every((where) => hasLevelAt(viewer, area, where, level))
+}
+// Who the request is about, in words: "Neha Das (RML035384)", or the company "RML · Rashmi Metaliks Limited"
+const whoOf = (request: RequestRow) => (request.employee ? `${fullName(request.employee)} (${request.employee.employeeCode})` : `${request.company?.code ?? ''} · ${request.company?.name ?? ''}`)
+// The feature lets the viewer see / cancel the request
+function featureAllows(viewer: CurrentUser, request: RequestRow, what: 'canView' | 'canCancel') {
+  const handler = handlerOf(request.feature)
+  if (request.companyId !== null) return !!handler.company?.[what](viewer, request.companyId)
+  return handler[what](viewer, placementsOf(request)[0]!)
+}
+// Where the request is seen in the app
+async function linkOf(request: RequestRow) {
+  const handler = handlerOf(request.feature)
+  if (request.companyId !== null) return handler.company ? handler.company.link(request.id) : ''
+  return handler.link(request.employee!.employeeCode)
+}
+// A company request has no fallback approver (the user, 2026-11-27: a payroll is never approved by whoever happens to be
+// the fallback) - with nobody to decide a step it is held
+const hasFallback = (request: RequestRow) => request.companyId === null
 
 // The person a manager / functional manager / HOD step is named to now - or why there is nobody
 async function namedApprover(step: StepRow, request: RequestRow): Promise<{ id: number } | { vacant: string }> {
+  if (request.employeeId === null) return { vacant: 'A request about a whole company has no manager or HOD' }
   const subject = await employeesService.findApprovalSubject(request.employeeId)
   const label = NAMED[step.approverType]!
   const id =
@@ -125,9 +164,10 @@ async function poolsOf(items: { step: Pick<StepRow, 'approverType' | 'roleId' | 
   const lists = await accountsService.listApprovers(
     items.map(({ step, request }) => {
       const placements = placementsOf(request)
-      if (step.approverType === 'FALLBACK' || step.byFallback) return { fallback: true, placements }
-      if (step.approverType === 'ROLE') return { roleId: step.roleId, placements }
-      return { area: step.accessArea, placements }
+      const wholeCompanyId = request.companyId ?? undefined
+      if (step.approverType === 'FALLBACK' || step.byFallback) return { fallback: true, placements, wholeCompanyId }
+      if (step.approverType === 'ROLE') return { roleId: step.roleId, placements, wholeCompanyId }
+      return { area: step.accessArea, placements, wholeCompanyId }
     }),
   )
   return lists.map((ids, n) => {
@@ -150,7 +190,7 @@ function activeRoleCoversStep(viewer: CurrentUser, request: RequestRow, step: St
   if (isNamed(step)) return true
   if (step.approverType === 'FALLBACK' || step.byFallback) return !!viewer.activeRoleIsFallback
   if (step.approverType === 'ROLE') return step.roleId === viewer.activeRoleId
-  return !!step.accessArea && placementsOf(request).every((where) => hasLevelAt(viewer, step.accessArea!, where, 'WRITE'))
+  return !!step.accessArea && covers(viewer, step.accessArea, 'WRITE', request)
 }
 
 // --- Moving a request along ---
@@ -163,6 +203,11 @@ async function openPoolStep(request: RequestRow, step: StepRow, actorId: ActorId
   let byFallback = step.byFallback || step.approverType === 'FALLBACK'
   let note = why ?? step.note
   let [pool] = await poolsOf([{ step: { ...step, byFallback }, request }])
+  if (!pool!.length && !byFallback && !hasFallback(request)) {
+    const reason = `Nobody holds "${stepLabel(step)}" over the whole company - give the role to someone who does (a pay run has no fallback approver)`
+    await approvalsRepository.updateRequest(request.id, { heldAt: now, heldById: actorId, heldReason: reason }, actorId, tx)
+    return { held: reason }
+  }
   if (!pool!.length && !byFallback) {
     byFallback = true
     const named = step.approverId ? (await employeesService.lookupPeople([step.approverId], tx))(step.approverId) : null
@@ -220,7 +265,13 @@ async function advance(requestId: number, actorId: ActorId, tx: DbClient): Promi
     await handlerOf(request.feature).onApproved(request.id, actorId, tx)
     return { closed: 'APPROVED' }
   }
-  // every step was skipped - nobody has approved it: the fallback approver decides (and sees what any step would have)
+  // every step was skipped - nobody has approved it: the fallback approver decides (and sees what any step would have);
+  // a company request is held instead (it has no fallback approver)
+  if (!hasFallback(request)) {
+    const reason = request.steps.length ? 'Every step was skipped - nobody has approved it' : 'The chain has no step'
+    await approvalsRepository.updateRequest(request.id, { heldAt: now, heldById: actorId, heldReason: reason }, actorId, tx)
+    return { held: reason }
+  }
   const stepNo = (request.steps.at(-1)?.stepNo ?? 0) + 1
   const seesConfidential = request.steps.length === 0 || request.steps.some((s) => s.seesConfidential)
   await approvalsRepository.addStep(
@@ -238,17 +289,26 @@ async function advance(requestId: number, actorId: ActorId, tx: DbClient): Promi
 // Raises a request inside the feature's transaction (the feature saves its own record with the id). Steps: per kind the
 // company's own chain or the shared one, merged. Send the notices after the transaction (sendNotices).
 export async function raiseRequest(
-  input: { feature: ApprovalFeature; kinds: ApprovalKind[]; employeeId: number; requestedById: number; summary: string; target?: Placement | null },
+  input: { feature: ApprovalFeature; kinds: ApprovalKind[]; requestedById: number; summary: string; target?: Placement | null } & ({ employeeId: number; companyId?: never } | { companyId: number; employeeId?: never }),
   tx: DbClient,
 ) {
-  const subject = await employeesService.findApprovalSubject(input.employeeId, tx)
-  if (!subject) throw new ORPCError('NOT_FOUND', { message: `No employee found with id ${input.employeeId}` })
-  const steps = await chainsService.stepsFor(input.kinds, subject.companyId)
+  let companyId: number
+  if (input.employeeId !== undefined) {
+    const subject = await employeesService.findApprovalSubject(input.employeeId, tx)
+    if (!subject) throw new ORPCError('NOT_FOUND', { message: `No employee found with id ${input.employeeId}` })
+    companyId = subject.companyId
+  } else companyId = input.companyId
+  const steps = await chainsService.stepsFor(input.kinds, companyId)
+  // a request about a whole company needs its chain: it has no fallback approver (the user, 2026-11-27)
+  if (input.employeeId === undefined && !steps.length) {
+    throw new ORPCError('CONFLICT', { message: `Set up the ${input.kinds.map((kind) => chainsService.KIND_INFO[kind].label.toLowerCase()).join(' + ')} approval chain first (Approvals › Approval rules)` })
+  }
   const { id } = await approvalsRepository.createRequest(
     {
       feature: input.feature,
       kinds: input.kinds,
-      employeeId: input.employeeId,
+      employeeId: input.employeeId ?? null,
+      companyId: input.employeeId === undefined ? input.companyId : null,
       requestedById: input.requestedById,
       summary: input.summary,
       targetCompanyId: input.target?.companyId ?? null,
@@ -315,7 +375,7 @@ export async function statusOf(requestIds: number[]) {
   return new Map(
     rows.flatMap((r) => {
       const open = r.steps.find((s) => s.status === 'OPEN')
-      return [[r.id, { status: r.status, held: r.heldReason, closedAt: r.closedAt, closedById: r.closedById, step: open ? { stepNo: open.stepNo, of: r.steps.length, who: stepLabel(open), approver: named(open.approverId), byFallback: open.byFallback, late: isLate(open) } : null }] as const]
+      return [[r.id, { status: r.status, held: r.heldReason, raisedAt: r.createdAt, requestedById: r.requestedById, closedAt: r.closedAt, closedById: r.closedById, step: open ? { stepNo: open.stepNo, of: r.steps.length, who: stepLabel(open), approver: named(open.approverId), byFallback: open.byFallback, late: isLate(open) } : null }] as const]
     }),
   )
 }
@@ -361,7 +421,7 @@ async function afterClose(requestId: number, outcome: Outcome) {
 async function mailNotices(requestId: number, outcome: Outcome) {
   const request = await approvalsRepository.findRequest(requestId)
   if (!request) return
-  const who = `${fullName(request.employee)} (${request.employee.employeeCode})`
+  const who = whoOf(request)
   const about = `${labelOf(request)} of ${who}: ${request.summary}`
   // the requester follows their own request in self-service, one raised for someone else in the role portal
   const requesterPortal = request.employeeId === request.requestedById ? 'ess' : 'manage'
@@ -376,6 +436,7 @@ async function mailNotices(requestId: number, outcome: Outcome) {
     }
     if (outcome.held) {
       const requester = await employeesService.findMailContact(request.requestedById)
+      // (a company request: everyone who edits approval chains - it is not about a person)
       const repairers = await accountsService.mailRecipients('APPROVAL_CHAINS', 'WRITE', placementsOf(request)[0])
       for (const person of [requester, ...repairers]) {
         await mail(person, `Held: ${labelOf(request).toLowerCase()} of ${who}`, [about, `It is held - not approved: ${outcome.held}.`, 'Repair the approval routing (give the role, appoint the HOD, change the chain), then send it through again from the held list.'], person === requester ? requesterPortal : 'manage')
@@ -405,9 +466,8 @@ async function mailNotices(requestId: number, outcome: Outcome) {
 async function canSee(viewer: CurrentUser, request: RequestRow) {
   if (request.requestedById === viewer.employeeId) return true
   if (request.steps.some((s) => s.decidedById === viewer.employeeId || s.approverId === viewer.employeeId)) return true
-  const placement = placementsOf(request)[0]!
-  if (request.heldAt && hasLevelAt(viewer, 'APPROVAL_CHAINS', placement, 'WRITE')) return true
-  if (handlerOf(request.feature).canView(viewer, placement)) return true
+  if (request.heldAt && covers(viewer, 'APPROVAL_CHAINS', 'WRITE', request)) return true
+  if (featureAllows(viewer, request, 'canView')) return true
   const open = request.steps.find((s) => s.status === 'OPEN')
   return open ? mayDecide(viewer, request, open) : false
 }
@@ -427,10 +487,8 @@ async function getVisible(viewer: CurrentUser, id: number, db?: DbClient) {
 // One request with its whole trail: who was to decide each step, what they decided, when and why
 export async function getRequest(viewer: CurrentUser, id: number) {
   const request = await getVisible(viewer, id)
-  const handler = handlerOf(request.feature)
   const person = await employeesService.lookupPeople([request.requestedById, request.closedById, ...request.steps.flatMap((s) => [s.approverId, s.decidedById])])
   const open = request.steps.find((s) => s.status === 'OPEN')
-  const placement = placementsOf(request)[0]!
   return {
     id: request.id,
     feature: request.feature,
@@ -438,7 +496,9 @@ export async function getRequest(viewer: CurrentUser, id: number) {
     kinds: request.kinds.map((kind) => ({ kind, label: chainsService.KIND_INFO[kind].label })),
     status: request.status,
     summary: request.summary,
-    employee: { employeeCode: request.employee.employeeCode, name: fullName(request.employee) },
+    employee: request.employee ? { employeeCode: request.employee.employeeCode, name: fullName(request.employee) } : null,
+    // a request about a whole company (a pay run - payroll stage 5)
+    company: request.company ? { code: request.company.code, name: request.company.name } : null,
     requestedBy: person(request.requestedById),
     raisedAt: request.createdAt,
     closedAt: request.closedAt,
@@ -468,17 +528,18 @@ export async function getRequest(viewer: CurrentUser, id: number) {
       late: isLate(s),
     })),
     canDecide: request.status === 'PENDING' && !!open && (await mayDecide(viewer, request, open)),
-    canCancel: request.status === 'PENDING' && (request.requestedById === viewer.employeeId || handler.canCancel(viewer, placement)),
-    canRetry: request.status === 'PENDING' && !!request.heldAt && hasLevelAt(viewer, 'APPROVAL_CHAINS', placement, 'WRITE'),
+    canCancel: request.status === 'PENDING' && (request.requestedById === viewer.employeeId || featureAllows(viewer, request, 'canCancel')),
+    canRetry: request.status === 'PENDING' && !!request.heldAt && covers(viewer, 'APPROVAL_CHAINS', 'WRITE', request),
     seesConfidential: await confidentialFor(viewer, request),
-    link: handler.link(request.employee.employeeCode),
+    link: await linkOf(request),
   }
 }
 
 // A list row: the request and the step it is at
 async function toRows(requests: RequestRow[]) {
   const person = await employeesService.lookupPeople(requests.flatMap((r) => [r.requestedById, ...r.steps.map((s) => s.approverId)]))
-  return requests.map((r) => {
+  const links = await Promise.all(requests.map(linkOf))
+  return requests.map((r, n) => {
     const open = r.steps.find((s) => s.status === 'OPEN')
     return {
       id: r.id,
@@ -486,7 +547,8 @@ async function toRows(requests: RequestRow[]) {
       label: labelOf(r),
       status: r.status,
       summary: r.summary,
-      employee: { employeeCode: r.employee.employeeCode, name: fullName(r.employee) },
+      employee: r.employee ? { employeeCode: r.employee.employeeCode, name: fullName(r.employee) } : null,
+      company: r.company ? { code: r.company.code, name: r.company.name } : null,
       requestedBy: person(r.requestedById),
       raisedAt: r.createdAt,
       closedAt: r.closedAt,
@@ -494,7 +556,7 @@ async function toRows(requests: RequestRow[]) {
       step: open
         ? { stepNo: open.stepNo, of: r.steps.length, who: stepLabel(open), approver: person(open.approverId), byFallback: open.byFallback, note: open.note, openedAt: open.openedAt, dueAt: open.dueAt, late: isLate(open) }
         : null,
-      link: handlerOf(r.feature).link(r.employee.employeeCode),
+      link: links[n]!,
     }
   })
 }
@@ -549,7 +611,7 @@ export async function listDecided(viewer: CurrentUser) {
 
 // The held requests the viewer may repair (Approval chains Edit covering the employee)
 export async function listHeld(viewer: CurrentUser) {
-  const held = (await approvalsRepository.listPending()).filter((r) => r.heldAt && hasLevelAt(viewer, 'APPROVAL_CHAINS', placementsOf(r)[0]!, 'WRITE'))
+  const held = (await approvalsRepository.listPending()).filter((r) => r.heldAt && covers(viewer, 'APPROVAL_CHAINS', 'WRITE', r))
   return toRows(held)
 }
 
@@ -586,7 +648,7 @@ export async function cancel(viewer: CurrentUser, { id, reason }: z.infer<typeof
     // withdrawing one's own request (raised by them about themselves) is self-service (2026-11-25)
     if (request.employeeId === viewer.employeeId && request.requestedById === viewer.employeeId) assertSelfService(viewer)
     if (request.status !== 'PENDING') throw new ORPCError('CONFLICT', { message: 'This request is already decided' })
-    if (request.requestedById !== viewer.employeeId && !handlerOf(request.feature).canCancel(viewer, placementsOf(request)[0]!)) {
+    if (request.requestedById !== viewer.employeeId && !featureAllows(viewer, request, 'canCancel')) {
       throw new ORPCError('FORBIDDEN', { message: 'Only the person who raised it (or HR for the employee) can cancel it' })
     }
     if (!(await closeAsCancelled(request, reason ?? null, viewer.employeeId, tx))) {
@@ -613,7 +675,7 @@ export async function retryRouting(viewer: CurrentUser, id: number) {
   const outcome = await prisma.$transaction(async (tx) => {
     const request = await getVisible(viewer, id, tx)
     if (request.status !== 'PENDING' || !request.heldAt) throw new ORPCError('CONFLICT', { message: 'This request is not held' })
-    if (!hasLevelAt(viewer, 'APPROVAL_CHAINS', placementsOf(request)[0]!, 'WRITE')) throw new ORPCError('FORBIDDEN', { message: 'Repairing approval routing needs Approval chains: Edit' })
+    if (!covers(viewer, 'APPROVAL_CHAINS', 'WRITE', request)) throw new ORPCError('FORBIDDEN', { message: 'Repairing approval routing needs Approval chains: Edit' })
     const outcome = await retry(request, viewer.employeeId, tx)
     if (!outcome) throw new ORPCError('CONFLICT', { message: 'This request is not held' })
     return outcome
@@ -642,7 +704,7 @@ async function daily(only?: JobFilter) {
   const failures: string[] = []
   for (const request of await approvalsRepository.listPending(only?.requestIds)) {
     try {
-      if (request.employee.status === 'EXITED') {
+      if (request.employee?.status === 'EXITED') {
         const cancelled = await prisma.$transaction((tx) => closeAsCancelled(request, 'The employee has left', SYSTEM_ACTOR, tx))
         if (cancelled) {
           await sendNotices(request.id, { closed: 'CANCELLED' })
@@ -760,6 +822,9 @@ async function escalationOf(request: RequestRow, step: StepRow): Promise<approva
   if (step.escalateRoleId && (await accountsService.roleNames()).has(step.escalateRoleId)) {
     return { ...base, approverType: 'ROLE', roleId: step.escalateRoleId, roleName: step.escalateRoleName, slaHours: step.slaHours, onBreach: 'WAIT' }
   }
+  // a company request: escalates only to the role its chain names (checked when the chain is saved) - never to a manager
+  // or the fallback approver; with that role deleted since, it goes on waiting for its own role
+  if (!hasFallback(request)) return { ...base, approverType: 'ROLE', roleId: step.roleId, roleName: step.roleName, slaHours: null, onBreach: 'WAIT' }
   if (isNamed(step) && step.approverId) {
     const managerId = (await employeesService.findApprovalSubject(step.approverId))?.reportingManagerId ?? null
     const usable =
@@ -823,7 +888,7 @@ async function remind(request: RequestRow, step: StepRow) {
     SYSTEM_ACTOR,
   )
   if (!marked) return false
-  const who = `${fullName(request.employee)} (${request.employee.employeeCode})`
+  const who = whoOf(request)
   await mailApprovers(request, step, `Reminder - to approve: ${labelOf(request).toLowerCase()} of ${who}`, [
     `${labelOf(request)} of ${who}: ${request.summary}`,
     `It has waited for your decision since ${step.openedAt?.toISOString().slice(0, 10)} - it was to be decided within ${step.slaHours} hours.`,
@@ -867,8 +932,8 @@ export async function exportApprovals(viewer: CurrentUser, input: z.infer<typeof
   const base = input.mode === 'waiting' ? await listToDecide(viewer) : input.mode === 'decided' ? await listDecided(viewer) : input.mode === 'mine' ? await listMine(viewer) : await listHeld(viewer)
   const rows = (input.feature ? base.filter((r) => r.feature === input.feature) : base).map(r=>({...r,decision:'decision' in r ? r.decision as {status:string;decidedAt:Date|null;comment:string|null} : null}))
   const sheet = reportSheet(title, rows, [
-    { header: 'Request number', value: r => String(r.id), text: true }, { header: 'Employee code', value: r => r.employee.employeeCode, text: true },
-    { header: 'Employee', value: r => r.employee.name, width: 30 }, { header: 'Request', value: r => r.label, width: 25 },
+    { header: 'Request number', value: r => String(r.id), text: true }, { header: 'Employee code', value: r => r.employee?.employeeCode ?? r.company?.code, text: true },
+    { header: 'Employee', value: r => r.employee?.name ?? r.company?.name, width: 30 }, { header: 'Request', value: r => r.label, width: 25 },
     { header: 'Summary', value: r => r.summary, width: 48 }, { header: 'Status', value: r => r.status },
     { header: 'Raised by', value: r => r.requestedBy?.name, width: 28 }, { header: 'Raised at', value: r => r.raisedAt, dateTime: true, width: 22 },
     { header: 'Current step', value: r => r.step ? `${r.step.stepNo} of ${r.step.of} · ${r.step.who}` : '', width: 32 },

@@ -25,6 +25,8 @@ export const KIND_INFO: Record<ApprovalKind, { label: string; confidential: stri
   REGULARIZATION: { label: 'Regularization (missed punch)', confidential: null },
   ON_DUTY: { label: 'On duty', confidential: null },
   COMP_OFF: { label: 'Comp-off claim', confidential: null },
+  // about a whole company (payroll stage 5): its approvers open the run itself, with their own Payroll and Salary access
+  PAY_RUN: { label: 'Pay run', confidential: null },
 }
 
 export type ChainStep = {
@@ -143,6 +145,22 @@ export async function saveChain(viewer: CurrentUser, { kind, companyId, isActive
   if (companyId !== null) await companiesService.getCompany(companyId)
   const roles = await accountsService.roleNames()
   const holders = steps.some((s) => s.approverId) ? await accountsService.listChainApproverChoices() : null
+  // a pay-run chain (the user, 2026-11-27): role steps only, each role (and a role it escalates to) with Payroll View and
+  // Salary View - its approvers open the run with their own access, none is widened; never approved by a timer, never
+  // escalated to a manager (who may have no payroll access)
+  const payRunRoles = kind === 'PAY_RUN' ? await payRunRoleIds() : null
+  if (payRunRoles) {
+    steps.forEach((step, index) => {
+      const at = `Step ${index + 1}`
+      if (step.approverType !== 'ROLE') throw new ORPCError('BAD_REQUEST', { message: `${at}: a pay run is approved by roles only (e.g. Payroll head, then Finance head)` })
+      if (step.roleId && !payRunRoles.has(step.roleId)) throw new ORPCError('BAD_REQUEST', { message: `${at}: the role needs Payroll View and Salary View to see the run it approves` })
+      if (step.onBreach === 'AUTO_APPROVE') throw new ORPCError('BAD_REQUEST', { message: `${at}: a pay run is never approved by a time limit` })
+      if (step.onBreach === 'ESCALATE' && !step.escalateRoleId) throw new ORPCError('BAD_REQUEST', { message: `${at}: name the role it escalates to (a pay run never goes to a manager)` })
+      if (step.onBreach === 'ESCALATE' && step.escalateRoleId && !payRunRoles.has(step.escalateRoleId)) {
+        throw new ORPCError('BAD_REQUEST', { message: `${at}: the role it escalates to needs Payroll View and Salary View` })
+      }
+    })
+  }
   const clean = steps.map((step, index) => {
     const at = `Step ${index + 1}`
     const pool = step.approverType === 'ROLE' || step.approverType === 'ACCESS'
@@ -185,6 +203,14 @@ export async function saveChain(viewer: CurrentUser, { kind, companyId, isActive
   })
   await chainsRepository.save(kind, companyId, isActive, clean, viewer.employeeId)
   return { kind, companyId, isActive, saved: true }
+}
+
+// The roles that may approve a pay run: Payroll View and Salary View (or Edit) - whose data access must still cover the
+// whole company when a step opens (approvals service)
+async function payRunRoleIds() {
+  const [payroll, salary] = await Promise.all([accountsService.listRoleChoicesForAccess('PAYROLL', 'READ'), accountsService.listRoleChoicesForAccess('SALARY', 'READ')])
+  const withSalary = new Set(salary.map((r) => r.id))
+  return new Set(payroll.filter((r) => withSalary.has(r.id)).map((r) => r.id))
 }
 
 export async function removeChain(viewer: CurrentUser, { kind, companyId }: z.infer<typeof removeChainInput>) {

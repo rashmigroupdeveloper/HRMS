@@ -20,8 +20,8 @@ one at a time, each planned with the user before it is built (the old HRMS is in
 3. **Regularization / OD** - fixing a missed punch, on-duty outside the office - **done (2026-11-22, with leave)**; what
    is left is item 29
 4. **Payroll** - the month-end salary from attendance and leave - **in progress: stages 1 (draft runs) and 2 (people,
-   salary copy, inputs) built 2026-11-26; stages 3 (the days and the earnings) and 4 (deductions and net pay) built
-   2026-11-27; next stage 5 (review, approval, finalising)**
+   salary copy, inputs) built 2026-11-26; stages 3 (the days and the earnings), 4 (deductions and net pay) and 5
+   (approval and finalising) built 2026-11-27; next stage 6 (register, payslips, payment)**
 5. **Probation / confirmation** - intern -> probation, probation -> confirmed, with or without a salary hike
 6. **Promotion and increments** - a promotion with a hike, or a hike alone (salary revisions) - **done through job
    changes and the approval service (2026-11-20)**; what is left is item 24
@@ -277,7 +277,7 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   employees who had already joined were filled in from their offers); the profile's Salary tab shows the salary in
   effect (the employee themselves or the `SALARY` access, 2026-11-15). **Revisions / increments are done** through
   approved job changes (2026-11-20; status corrected 2026-11-24), with a salary row from its effective date.
-  Draft pay runs, inputs (2026-11-26), the earnings, deductions and net pay (2026-11-27) are built; approval, payslips and payment remain in item 31.
+  Draft pay runs, inputs (2026-11-26), the earnings, deductions, net pay and approval (2026-11-27) are built; payslips and payment remain in item 31.
 - **Residential status** (resident / non-resident for income tax): decides how tax is deducted from salary, so it
   belongs to the **payroll** module - HR / payroll sets it, not the candidate. **Needs:** the payroll module, and the
   status values as payroll uses them.
@@ -759,7 +759,7 @@ to cherry-pick or proof that the old implementation works. Recheck both branches
    layouts. Run all section 6 checks; update the API tracker and every affected rule/doc. Delete completed backlog
    tasks and their duplicate references together; preserve intentional exclusions until the decision changes.
 
-#### Payroll, statutory and income tax — Stages 1 to 4 built; later stages planned
+#### Payroll, statutory and income tax — Stages 1 to 5 built; later stages planned
 
 **Reference:** `backend/src/modules/payroll-core/`, `payroll-outputs/`, `tds/`; related screens in
 `frontend/src/pages/payroll/` and `tax/`. **Needs:** agreed pay groups/cycles, attendance and leave inputs, statutory
@@ -866,7 +866,7 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
       tracked" filter still works.
   - [ ] **The late rule and the wage law** (told to the user 2026-11-27): the law lets only the time actually missed be
     cut without the fine procedure (plan, "Payable days"). The user decided the half is cut; worth confirming with the CA.
-  - [ ] Held pay blocks nothing yet; whether a run with held people may be approved is settled with stage 5.
+  - Held pay now blocks sending a run for approval (stage 5, the user 2026-11-27).
   - [ ] The run's days are taken 100 employees at a time, because the leave reader stops at 2,000 applications - fine
     for one month; to revisit if a period can ever be longer.
 - **Stage 4, deductions and net pay - built 2026-11-27** (the user approved, one by one: `StatutoryRate`,
@@ -879,7 +879,8 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
   "PF wages", capped at the ceiling with a per-person "PF on full wages", for those whose statutory details say "PF
   applicable"; ESIC decided by the salary at the start of each ESIC period; TDS worked out now (new regime, no
   declarations) or typed; all deductions above half of the wages hold the person; consultants: no ESIC / professional
-  tax / LWF and their TDS typed; apprentices: no ESIC; hold reasons stored on the person. Rules in
+  tax / LWF and their TDS typed; apprentices: no ESIC; hold reasons stored on the person; a person held by the
+  deductions still shows what they earned (asked the same day). Rules in
   `payroll/deductions/deductions.service.ts`.
   **Still open:**
   - [ ] **The figures themselves**: nobody has entered the real rates and slabs yet - HR / the CA fill Statutory
@@ -913,9 +914,28 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
   - [ ] **The half-of-wages rule** holds the person; recovery plans that carry the rest to next month (loans, advances,
     court orders) come with their own stage.
   - [ ] Changing a component's ticks, a statutory setting or an employee's payroll facts is not flagged on a draft run;
-    it counts on the next "Work out pay" (stage 5's approval works the run out once more first).
-- [ ] Remaining pay-run lifecycle: lock inputs, compute, issues, review,
-  independent approval through the shared approval service, finalize, mark paid, return to draft/reopen and reconciliation.
+    it counts on the next "Work out pay" ("Send for approval" works the run out once more first).
+- **Stage 5, approval and finalising - built 2026-11-27** (the user approved: `ApprovalRequest.employeeId` optional +
+  `companyId` - a request about a whole company; kind `PAY_RUN`, feature `PAYROLL`; `PayrollRun.status` IN_APPROVAL /
+  FINALISED, `approvalRequestId`, `finalisedAt / ById`; `PayrollRunAcknowledgement` and the `PayWarning` list;
+  `PayrollSetting`). Checks tab with 15 warnings, each acknowledged with a comment; "Send for approval" (`payroll.send`)
+  works the pay out once more, refuses while anyone is held or a warning is open, and raises the request; withdraw and
+  decide through the approval service; approved = final. **Decided by the user 2026-11-27:** fix everyone before sending;
+  every warning acknowledged; the pay-run chain has role steps only, each role with Payroll View and Salary View; no
+  auto-approve or escalation to a manager; no chain = refused (no fallback approver); TDS counts finalised runs only by
+  default and the tolerances are settings ("nothing should be hardcoded").
+  **Still open:**
+  - [ ] Approvers are paid in the run they approve (a company run) - the one exception to "nobody decides about
+    themselves"; a separate approval for the approvers' own pay lines, if the auditors ask.
+  - [ ] Acknowledgements stay when the pay is worked out again (only an input change or a refresh removes a person's);
+    a BIG_CHANGE acknowledged before a recalculation is not asked again.
+  - [ ] An old approval request of a run sent again links to the runs list, not to the run.
+  - [ ] Reopening a finalised run is not possible by design (corrections as arrears, stage 7); a payment-time reversal
+    waits for stage 6.
+  - [ ] Other checks from the plan: same bank account on two employees (needs a hash column next to the encrypted
+    account number - propose), paid after leaving, headcount = last month + joiners - leavers, a bank account changed
+    shortly before the run; minimum wages per State (needs their dated rates).
+- [ ] Remaining pay-run lifecycle: lock inputs before the month's cut-off, mark paid, reconciliation (stage 6).
 - [ ] Employee run inputs: uploads, calculated items and backdated salary arrears (typed one-off earnings / deductions
   and component codes: stage 2; payable and unpaid days, component proration and the earned gross: stage 3, built
   2026-11-27 - to be checked against a register).
@@ -932,8 +952,8 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
 **Payroll build order approved 2026-11-26:** (1) draft foundation above; (2) employee population, effective salary
 snapshots and monthly inputs; (3) locked attendance, payable days/LOP and gross earnings; (4) statutory/other deductions,
 net and rounding; (5) review/approval/reconciliation/finalization; (6) registers/payslips/bank/payment; (7) arrears, loans,
-F&F, annual/tax outputs and parallel-run cutover. Propose each later model/field before adding it. Stages 1-4 are built
-(2026-11-27); stage 5 (review, approval through the approval service, finalising) is next.
+F&F, annual/tax outputs and parallel-run cutover. Propose each later model/field before adding it. Stages 1-5 are built
+(2026-11-27); stage 6 (register, payslips, bank file, payment, statutory returns) is next.
 
 **Important differences from main:** new has group-wide attendance locks and two-half attendance facts. Main's
 company locks, SQL triggers, separate approval lifecycle, rupee rounding and post-cutoff assumed-presence policy are

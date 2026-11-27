@@ -96,6 +96,13 @@ model PayrollRun {
   // saw. The day and result rows are not in the change history; this column is, so every time is recorded on the run.
   computedAt          DateTime? @map("computed_at") @db.Timestamptz(3)
   computedById        Int?      @map("computed_by_id")
+  // Stage 5 (approved by the user 2026-11-27): the approval request it was last sent with (the approval service keeps
+  // who sent it, when, and every decision); emptied never - a rejected or withdrawn run keeps it until it is sent again
+  approvalRequestId   Int?      @unique @map("approval_request_id")
+  // when and by whom it was finalised - the last approval; from then on nothing in the run changes (corrections come as
+  // arrears in a later run, stage 7)
+  finalisedAt         DateTime? @map("finalised_at") @db.Timestamptz(3)
+  finalisedById       Int?      @map("finalised_by_id")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById Int @map("created_by_id")
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -104,15 +111,20 @@ model PayrollRun {
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
   // the people it pays (stage 2)
   employees PayrollRunEmployee[]
+  approvalRequest ApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: Restrict)
 
   @@unique([companyId, payMonth])
   @@index([payMonth, id])
   @@map("payroll_runs")
 }
 
-// Only drafts exist in Stage 1. Later lifecycle states/actors are proposed with their actual workflows.
+// Where a run stands (stage 5, approved 2026-11-27): a DRAFT is worked on; "Send for approval" works its pay out once more
+// and sends it (IN_APPROVAL - nothing changes); rejected or withdrawn it is a DRAFT again; on the last approval it is
+// FINALISED and never changes. Payment states come with stage 6.
 enum PayrollRunStatus {
   DRAFT
+  IN_APPROVAL
+  FINALISED
 
   @@map("payroll_run_status")
 }
@@ -151,6 +163,8 @@ model PayrollRunEmployee {
   days     PayrollRunDay[]
   // what the run worked out for them, per component (stage 3)
   lines    PayrollRunLine[]
+  // the warnings about them acknowledged before sending (stage 5)
+  acknowledgements PayrollRunAcknowledgement[]
 
   @@unique([payrollRunId, employeeId])
   @@index([employeeId])
@@ -303,8 +317,10 @@ model PayrollRunDay {
 
 // What a pay run worked out for one person and one component (approved by the user 2026-11-27): stage 3 writes the
 // earnings - each earning of the salary copy for the days paid, and the earning inputs typed for the month - and stage 4
-// adds the deductions and the employer contributions to the same table (never below zero: a migration CHECK). A person whose pay cannot be worked
-// out (no salary on some days, days missing in attendance...) has no rows: they are listed, never guessed. Rebuilt by the
+// adds the deductions and the employer contributions to the same table (never below zero: a migration CHECK). A person
+// whose pay cannot be worked out is listed with why (PayrollRunEmployee.heldFor), never guessed: no rows when the earnings
+// cannot be worked out (no salary on some days, days missing in attendance...), only the earning rows when the
+// deductions cannot (the user, 2026-11-27: held people still show what they earned). Rebuilt by the
 // system each time the pay is worked out, so kept out of the change history like the run's days (core/audit SKIP_MODELS -
 // approved 2026-11-27); PayrollRun.computedAt / ById record each time. A change to the person's inputs removes their
 // rows, so the run shows that their pay must be worked out again.
@@ -502,4 +518,83 @@ model TaxOpeningBalance {
 
   @@unique([employeeId, taxYearFrom])
   @@map("tax_opening_balances")
+}
+
+// --- Stage 5 (approved by the user 2026-11-27): review, approval and finalising ---
+
+// Something about a person in a run that is not an error but must be looked at before the run is sent - worked out from
+// the run and the employee's records each time (payroll/checks); the texts never carry an amount
+enum PayWarning {
+  // this month's payment
+  NET_ZERO
+  NO_BANK_ACCOUNT
+  // a salary account without its IFSC or account holder
+  BANK_INCOMPLETE
+  // net pay more than PayrollSetting.bigChangePercent above / below last month's run
+  BIG_CHANGE
+  // leaves in or before the pay period: full and final (wages within 2 working days)
+  LEAVING
+  ABSENT_THROUGHOUT
+  // the same item and amount typed twice
+  DUPLICATE_INPUT
+  // an input above the person's monthly gross
+  LARGE_INPUT
+  // statutory, later months
+  NO_PAN
+  // a PF member: the PF return cannot be filed for them
+  NO_UAN
+  // a PF member: UAN KYC
+  NO_AADHAAR
+  // ESIC covered with no IP number
+  NO_ESIC_NUMBER
+  // not "PF applicable" though the PF wages are within the ceiling
+  NO_PF_UNDER_CEILING
+  // joined in this tax year with no opening tax figures (a previous employer's income is unknown)
+  NO_TAX_OPENING
+  // reaches the EPS age limit within PayrollSetting.epsAgeSoonMonths
+  EPS_AGE_SOON
+
+  @@map("pay_warning")
+}
+
+// One warning about one person of a run, acknowledged with a comment by someone with Payroll Edit covering the whole
+// company (never their own) - every warning of a run must be acknowledged before it can be sent. The row's createdAt /
+// createdById are when and by whom it was acknowledged (updatedAt / ById when the comment was changed). A person's
+// acknowledgements are removed when their inputs change, and before a refresh drops the person (never silently by a
+// cascade: the deletion stays in the change history). Recorded in the change history (a person's decision).
+model PayrollRunAcknowledgement {
+  id                   Int        @id @default(autoincrement())
+  payrollRunEmployeeId Int        @map("payroll_run_employee_id")
+  warning              PayWarning
+  // why it is fine, or what was done - required
+  comment              String
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          Int        @map("created_by_id")
+  updatedAt            DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById          Int        @map("updated_by_id")
+
+  runEmployee PayrollRunEmployee @relation(fields: [payrollRunEmployeeId], references: [id], onDelete: Restrict)
+
+  @@unique([payrollRunEmployeeId, warning])
+  @@map("payroll_run_acknowledgements")
+}
+
+// Payroll settings for the whole group (one row, id 1 - approved by the user 2026-11-27: "nothing should be hardcoded").
+// Until it is saved the defaults below apply (payroll/statutory). Edited on Payroll › Statutory settings with Payroll
+// Edit for every company; changes count from the next "Work out pay".
+model PayrollSetting {
+  id                 Int      @id
+  // monthly TDS counts earlier months of the tax year from their runs: false = finalised runs only (a month whose run is
+  // not finalised is estimated at the current salary with nothing deducted); true = draft runs too
+  tdsCountsDraftRuns Boolean  @default(false) @map("tds_counts_draft_runs")
+  // the BIG_CHANGE warning: net pay more than this % above or below last month's run of the same company
+  bigChangePercent   Int      @default(20) @map("big_change_percent") @db.SmallInt
+  // the EPS_AGE_SOON warning: reaches the EPS age limit within this many months
+  epsAgeSoonMonths   Int      @default(2) @map("eps_age_soon_months") @db.SmallInt
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById        Int      @map("created_by_id")
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById        Int      @map("updated_by_id")
+
+  @@map("payroll_settings")
 }

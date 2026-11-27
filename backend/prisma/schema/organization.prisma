@@ -62,6 +62,8 @@ model Company {
   formerCodes    EmployeeFormerCode[]
   // its own holiday lists (2026-11-24)
   holidayLists   HolidayList[]
+  // approval requests about the whole company - its pay runs (payroll stage 5)
+  approvalRequests ApprovalRequest[]
 
   @@map("companies")
 }

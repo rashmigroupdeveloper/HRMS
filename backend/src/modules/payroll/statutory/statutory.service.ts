@@ -8,7 +8,7 @@ import { formatDate } from '#shared/utils/dates'
 import type { z } from 'zod'
 import * as statutoryRepository from './statutory.repository.js'
 import type { PtSlabRow, TaxSlabRow } from './statutory.repository.js'
-import type { SavePtSlabsInput, SaveTaxSlabsInput, saveLwfInput, saveRateInput } from './statutory.schema.js'
+import type { SavePtSlabsInput, SaveTaxSlabsInput, saveLwfInput, saveRateInput, saveSettingsInput } from './statutory.schema.js'
 
 // Payroll stage 4 (approved by the user 2026-11-27): the statutory settings - every rate, ceiling and slab payroll works
 // with is a dated row entered here from the official notification (the CA checks them); nothing is seeded or written in
@@ -20,12 +20,29 @@ const WHAT = 'The statutory rates and slabs'
 // Rates in percent (at most 100); the others are rupees (a month or a year) or years
 const PERCENT = new Set<StatutoryParameter>(['PF_EMPLOYEE_RATE', 'PF_EMPLOYER_RATE', 'EPS_RATE', 'EDLI_RATE', 'ESIC_EMPLOYEE_RATE', 'ESIC_EMPLOYER_RATE', 'TAX_CESS_RATE'])
 
+// --- The payroll settings (stage 5, approved by the user 2026-11-27: "nothing should be hardcoded") ---
+
+// Until the row is saved these apply: TDS counts finalised runs only, a 20% change of net pay is a warning, the EPS age
+// limit is warned of 2 months ahead
+export const DEFAULT_SETTINGS = { tdsCountsDraftRuns: false, bigChangePercent: 20, epsAgeSoonMonths: 2 }
+
+export async function runSettings(db?: DbClient) {
+  const row = await statutoryRepository.findPayrollSetting(db)
+  return row ? { tdsCountsDraftRuns: row.tdsCountsDraftRuns, bigChangePercent: row.bigChangePercent, epsAgeSoonMonths: row.epsAgeSoonMonths } : DEFAULT_SETTINGS
+}
+
+export async function saveSettings(viewer: CurrentUser, input: z.infer<typeof saveSettingsInput>) {
+  assertCanChange(viewer)
+  await prisma.$transaction((tx) => statutoryRepository.savePayrollSetting(input, viewer.employeeId, tx))
+  return runSettings()
+}
+
 // --- Reading ---
 
 export async function listSettings(viewer: CurrentUser) {
   assertAccess(viewer.access, 'PAYROLL', 'READ')
-  const [rates, ptSlabs, lwf, taxSlabs] = await Promise.all([statutoryRepository.listRates(), statutoryRepository.listPtSlabs(), statutoryRepository.listLwf(), statutoryRepository.listTaxSlabs()])
-  const person = await employeesService.lookupPeople([...rates, ...ptSlabs, ...lwf, ...taxSlabs].map((r) => r.updatedById))
+  const [rates, ptSlabs, lwf, taxSlabs, setting] = await Promise.all([statutoryRepository.listRates(), statutoryRepository.listPtSlabs(), statutoryRepository.listLwf(), statutoryRepository.listTaxSlabs(), statutoryRepository.findPayrollSetting()])
+  const person = await employeesService.lookupPeople([...rates, ...ptSlabs, ...lwf, ...taxSlabs, ...(setting ? [setting] : [])].map((r) => r.updatedById))
   const by = <T extends { createdById: number; updatedById: number }>({ createdById: _c, updatedById, ...row }: T) => ({ ...row, updatedBy: person(updatedById) })
   // the slabs as sets: one State from one day, one regime for one tax year
   const ptSets = new Map<string, { stateCode: string; effectiveFrom: Date; reference: string; updatedAt: Date; slabs: PtSlabRow[] }>()
@@ -49,6 +66,10 @@ export async function listSettings(viewer: CurrentUser) {
     ptSets: [...ptSets.values()],
     lwf: lwf.map(by),
     taxSets: [...taxSets.values()],
+    // the payroll settings (stage 5): saved, or the defaults
+    settings: setting
+      ? { tdsCountsDraftRuns: setting.tdsCountsDraftRuns, bigChangePercent: setting.bigChangePercent, epsAgeSoonMonths: setting.epsAgeSoonMonths, saved: true, updatedAt: setting.updatedAt, updatedBy: person(setting.updatedById) }
+      : { ...DEFAULT_SETTINGS, saved: false, updatedAt: null, updatedBy: null },
     canChange: levelOver(viewer, 'PAYROLL', ALL_OF_GROUP) === 'WRITE',
   }
 }

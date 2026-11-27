@@ -49,5 +49,10 @@ export const saveTaxSlabsInput = z
   .strict()
 export const deleteTaxSlabsInput = z.object({ regime: z.enum(TaxRegime), taxYearFrom }).strict()
 
+// The payroll settings (stage 5, approved 2026-11-27 - "nothing should be hardcoded")
+export const saveSettingsInput = z
+  .object({ tdsCountsDraftRuns: z.boolean(), bigChangePercent: z.number().int().min(1).max(1000), epsAgeSoonMonths: z.number().int().min(0).max(24) })
+  .strict()
+
 export type SavePtSlabsInput = z.infer<typeof savePtSlabsInput>
 export type SaveTaxSlabsInput = z.infer<typeof saveTaxSlabsInput>

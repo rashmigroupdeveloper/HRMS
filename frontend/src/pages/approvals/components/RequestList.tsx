@@ -9,6 +9,9 @@ import { orpc } from '@/lib/orpc'
 import { cn, errorMessage, formatDate, initialsOf } from '@/lib/utils'
 import { type ApprovalRow, kindOf, type ListMode, refreshAfterDecision, ROW_GRID } from './request-kinds'
 
+// who a request is about: the employee - or, for a pay run, its company (payroll stage 5)
+const subjectOf = (r: { employee: { employeeCode: string; name: string } | null; company: { code: string; name: string } | null }) => r.employee ?? { employeeCode: r.company?.code ?? '', name: r.company?.name ?? '' }
+
 // The requests of one Approvals tab (redesigned with the user 2026-11-22 - was a plain table): one row per request with
 // its kind, what is asked, where its steps stand and how long it waits; "Waiting for me" rows have Approve / Reject
 // right on the row (the user: "so that I don't have to open it when I already know what it is for"). A click elsewhere
@@ -48,10 +51,10 @@ function RequestRow({ r, mode, onOpen, onDecided }: { r: ApprovalRow; mode: List
     >
       {/* who + kind */}
       <div className="col-span-2 flex min-w-0 items-center gap-3 lg:col-span-1">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-hero text-xs font-semibold text-hero-foreground">{initialsOf(r.employee.name)}</span>
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-hero text-xs font-semibold text-hero-foreground">{initialsOf(subjectOf(r).name)}</span>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">
-            {r.employee.name} <span className="text-xs font-normal text-muted-foreground">{r.employee.employeeCode}</span>
+            {subjectOf(r).name} <span className="text-xs font-normal text-muted-foreground">{subjectOf(r).employeeCode}</span>
           </p>
           <span className={cn('mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', kind.tint)}>
             <Icon aria-hidden className="size-3 shrink-0" />
@@ -155,7 +158,7 @@ function DecideButtons({ r, onDecided }: { r: ApprovalRow; onDecided?: (d: Decid
     orpc.approvals.decide.mutationOptions({
       onSuccess: (_, input) => {
         setRejecting(false)
-        onDecided?.({ name: r.employee.name, label: r.label, approved: input.approve })
+        onDecided?.({ name: subjectOf(r).name, label: r.label, approved: input.approve })
         refreshAfterDecision(queryClient)
       },
     }),
@@ -164,7 +167,7 @@ function DecideButtons({ r, onDecided }: { r: ApprovalRow; onDecided?: (d: Decid
   return (
     <>
       {decide.error && !rejecting && <span className="mr-1 max-w-48 text-xs text-negative-ink">{errorMessage(decide.error)}</span>}
-      <Button variant="destructive" size="sm" onClick={() => setRejecting(true)} disabled={busy} aria-label={`Reject - ${r.employee.name}`}>
+      <Button variant="destructive" size="sm" onClick={() => setRejecting(true)} disabled={busy} aria-label={`Reject - ${subjectOf(r).name}`}>
         <X /> Reject
       </Button>
       <Button
@@ -173,13 +176,13 @@ function DecideButtons({ r, onDecided }: { r: ApprovalRow; onDecided?: (d: Decid
         className="bg-positive/15 text-positive-ink hover:bg-positive/25"
         onClick={() => decide.mutate({ id: r.id, approve: true })}
         disabled={busy}
-        aria-label={`Approve - ${r.employee.name}`}
+        aria-label={`Approve - ${subjectOf(r).name}`}
       >
         <Check /> {decide.isPending && decide.variables?.approve ? 'Saving…' : 'Approve'}
       </Button>
       {rejecting && (
         <ReasonDialog
-          title={`Reject ${r.employee.name}'s request?`}
+          title={`Reject ${subjectOf(r).name}'s request?`}
           description={`${r.label}: ${r.summary}. The person who asked is told, with your reason.`}
           label="Reason"
           confirm="Reject"

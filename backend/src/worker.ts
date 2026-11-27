@@ -8,6 +8,8 @@ import { candidatesJobs } from '#modules/candidates'
 import { jobChangesJobs } from '#modules/job-changes'
 import { joiningTasksJobs } from '#modules/joining-tasks'
 import { leaveJobs } from '#modules/leave'
+// (no jobs of its own: loaded so its approval handler is registered - a pay run's approval time limits run here)
+import '#modules/payroll'
 
 // The background worker (phase 5, 2026-11-16): runs every module's scheduled jobs (<module>.jobs.ts). A process of its
 // own next to the API (npm run worker); a second worker is harmless - each job runs once at a time.

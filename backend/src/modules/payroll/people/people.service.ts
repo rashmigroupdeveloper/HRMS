@@ -7,6 +7,7 @@ import { employeesService } from '#modules/employees'
 import { fromPaise, toPaise } from '#shared/utils/money'
 import * as payrollRepository from '../payroll.repository.js'
 import * as calculationRepository from '../calculation/calculation.repository.js'
+import * as checksRepository from '../checks/checks.repository.js'
 import * as daysRepository from '../days/days.repository.js'
 import * as peopleRepository from './people.repository.js'
 import type { PersonRow, SegmentRow } from './people.repository.js'
@@ -119,6 +120,8 @@ export async function rebuildCopy(run: { id: number; companyId: number; attendan
   const people = buildPeople(run.companyId, from, to, await employeesService.listForPayrollRun(run.companyId, from, to, tx))
   const belong = new Set(people.map((p) => p.employeeId))
   const dropIds = (await peopleRepository.listMembers(run.id, tx)).filter((m) => !belong.has(m.employeeId) && m._count.inputs === 0).map((m) => m.id)
+  // (a dropped person's acknowledgements go first, through Prisma - so the change history keeps them; stage 5)
+  await checksRepository.deleteAcksOf(dropIds, tx)
   await peopleRepository.replaceCopy(run.id, people, dropIds, actorId, tx)
   await daysRepository.clearDays(run.id, tx)
   await calculationRepository.clearLines(run.id, actorId, tx)
@@ -214,14 +217,16 @@ export function holdReasonsOf(segments: { annualCtc: number | null; currency: st
   return reasons
 }
 
-// WORKED_OUT: pay worked out; HELD: it could not be (the stored reasons); AGAIN: their inputs changed after the pay was
-// worked out (the change removed their lines and reasons) - press "Work out pay" again
+// WORKED_OUT: pay worked out; HELD: it could not be (the stored reasons) - their earnings are still shown when they
+// could be worked out (a stage 4 hold: the user, 2026-11-27), never deductions or net; AGAIN: their inputs changed after
+// the pay was worked out (the change removed their lines and reasons) - press "Work out pay" again
 export type PayStatus = 'WORKED_OUT' | 'HELD' | 'AGAIN'
 type PayState = { status: PayStatus; heldFor: PayHold[]; heldNote: string | null; earned: number | null; deducted: number | null; net: number | null; employer: number | null }
 
 const stateOf = (heldFor: PayHold[], heldNote: string | null, totals: { lines: number; earned: number; deducted: number; employer: number } | undefined): PayState => {
   const status: PayStatus = heldFor.length ? 'HELD' : totals?.lines ? 'WORKED_OUT' : 'AGAIN'
-  if (status !== 'WORKED_OUT') return { status, heldFor, heldNote, earned: null, deducted: null, net: null, employer: null }
+  if (status === 'HELD') return { status, heldFor, heldNote, earned: totals?.lines ? totals.earned : null, deducted: null, net: null, employer: null }
+  if (status === 'AGAIN') return { status, heldFor, heldNote, earned: null, deducted: null, net: null, employer: null }
   return { status, heldFor, heldNote, earned: totals!.earned, deducted: totals!.deducted, net: fromPaise(toPaise(totals!.earned) - toPaise(totals!.deducted)), employer: totals!.employer }
 }
 
@@ -229,6 +234,13 @@ const stateOf = (heldFor: PayHold[], heldNote: string | null, totals: { lines: n
 async function payStatesOf(runId: number, people: { id: number; heldFor: PayHold[]; heldNote: string | null }[], db?: DbClient) {
   const totals = await calculationRepository.totalsByPerson(runId, db)
   return new Map<number, PayState>(people.map((p) => [p.id, stateOf(p.heldFor, p.heldNote, totals.get(p.id))]))
+}
+
+// Each person's pay status and "absent throughout" in a worked-out run (the run's checks, stage 5)
+export async function payPeopleOf(runId: number, db?: DbClient) {
+  const [dayTotals, people] = await Promise.all([dayTotalsOf(runId, db), peopleRepository.listPeople(runId, db)])
+  const pay = await payStatesOf(runId, people, db)
+  return new Map(people.map((p) => [p.id, { status: pay.get(p.id)!.status as PayStatus | null, allAbsent: dayTotals.get(p.id)?.allAbsent ?? false }]))
 }
 
 // For the run's header: how many people have unpaid days, how many need a look (unclear days, absent throughout, or

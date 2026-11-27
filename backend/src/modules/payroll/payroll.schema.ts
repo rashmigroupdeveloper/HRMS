@@ -6,5 +6,8 @@ export const setupInput = z.object({ payMonth: month }).strict()
 export const listInput = z.object({ year: z.number().int().min(2000).max(2100), companyId: id.optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(25) }).strict()
 export const getInput = z.object({ id }).strict()
 export const createInput = z.object({ companyId: id, payMonth: month, expectedAttendanceFrom: z.date(), expectedAttendanceTo: z.date() }).strict()
+// "Send for approval" (stage 5)
+export const sendInput = z.object({ runId: id }).strict()
 export type ListInput = z.infer<typeof listInput>
+export type SendInput = z.infer<typeof sendInput>
 export type CreateInput = z.infer<typeof createInput>

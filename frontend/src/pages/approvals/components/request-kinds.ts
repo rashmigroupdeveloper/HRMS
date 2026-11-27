@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { BriefcaseBusiness, CalendarDays, CalendarPlus, Clock3, Fingerprint, type LucideIcon } from 'lucide-react'
+import { BriefcaseBusiness, CalendarDays, CalendarPlus, Clock3, Fingerprint, Landmark, type LucideIcon } from 'lucide-react'
 import { type client, orpc } from '@/lib/orpc'
 
 // The Approvals page's kind tabs and the look of each kind of request (the user, 2026-11-22: "add tabs for different
@@ -22,13 +22,15 @@ export const REQUEST_KINDS: { feature: ApprovalFeature; tab: string; icon: Lucid
   { feature: 'COMP_OFF', tab: 'Comp off', icon: CalendarPlus, tint: 'bg-gold-soft text-foreground' },
   { feature: 'SHIFT_CHANGE', tab: 'Shift change', icon: Clock3, tint: 'bg-warning/15 text-warning-ink' },
   { feature: 'JOB_CHANGE', tab: 'Job & salary', icon: BriefcaseBusiness, tint: 'bg-surface-2 text-foreground' },
+  // a company's pay run (payroll stage 5) - about the company, not an employee
+  { feature: 'PAYROLL', tab: 'Pay runs', icon: Landmark, tint: 'bg-hero text-hero-foreground' },
 ]
 
 export const kindOf = (feature: ApprovalFeature) => REQUEST_KINDS.find((k) => k.feature === feature) ?? REQUEST_KINDS[0]
 
 // A decision changes the feature's own records too - every list that shows them loads again
 export function refreshAfterDecision(queryClient: QueryClient) {
-  for (const key of [orpc.approvals.key(), orpc.jobChanges.key(), orpc.leave.key(), orpc.attendance.key(), orpc.employees.key()]) {
+  for (const key of [orpc.approvals.key(), orpc.jobChanges.key(), orpc.leave.key(), orpc.attendance.key(), orpc.employees.key(), orpc.payroll.key()]) {
     void queryClient.invalidateQueries({ queryKey: key })
   }
 }

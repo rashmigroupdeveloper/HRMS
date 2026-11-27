@@ -7,6 +7,7 @@ import { FormError } from '@/components/FormError'
 import { DrawerCancel, FormDrawer } from '@/components/FormDrawer'
 import { StatutoryTableSkeleton } from '@/components/skeletons/payroll/StatutoryTableSkeleton'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
@@ -15,6 +16,7 @@ import { client, orpc } from '@/lib/orpc'
 import { formatDate, fromDateInput, toDateInput } from '@/lib/utils'
 import {
   GENDER, LWF_COLUMNS, LWF_WIDTHS, MONTHS, PARAMETERS, PT_COLUMNS, PT_WIDTHS, RATE_COLUMNS, RATE_WIDTHS, REGIME, TAX_COLUMNS, TAX_WIDTHS, amountText, taxYearLabel, type Parameter,
+  SETTING_LABELS,
 } from './statutory-labels'
 
 // The statutory settings (payroll stage 4): dated rates, professional-tax slabs per State, the labour welfare fund per
@@ -26,6 +28,7 @@ type Rate = Settings['rates'][number]
 type PtSet = Settings['ptSets'][number]
 type Lwf = Settings['lwf'][number]
 type TaxSet = Settings['taxSets'][number]
+type RunSettings = Settings['settings']
 
 const cell = 'px-2 py-2 align-top'
 const head = 'h-8 px-2 text-xs'
@@ -476,6 +479,72 @@ function TaxDrawer({ existing, close }: { existing?: TaxSet; close: () => void }
             ))}
             <Button type="button" variant="secondary" size="sm" className="gap-1.5" onClick={() => setRows([...rows, { from: rows.at(-1)?.to ?? '', to: '', rate: '' }])}><Plus className="size-3.5" aria-hidden />Add a slab</Button>
           </div>
+        </fieldset>
+        <FormError error={save.error} />
+      </form>
+    </FormDrawer>
+  )
+}
+
+// --- Run settings (stage 5, the user 2026-11-27: "nothing should be hardcoded") ---
+
+const settingValue = (key: keyof typeof SETTING_LABELS, s: RunSettings) =>
+  key === 'tdsCountsDraftRuns' ? (s.tdsCountsDraftRuns ? 'Finalised and draft runs' : 'Finalised runs only') : key === 'bigChangePercent' ? `More than ${s.bigChangePercent}%` : `${s.epsAgeSoonMonths} ${s.epsAgeSoonMonths === 1 ? 'month' : 'months'} ahead`
+
+export function RunSettingsTab({ data, pending, canChange }: { data: Settings | undefined; pending: boolean; canChange: boolean }) {
+  const [editing, setEditing] = useState(false)
+  const s = data?.settings
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{s ? (s.saved ? `Saved${s.updatedBy ? ` by ${s.updatedBy.name}` : ''}.` : 'Not saved yet - these defaults apply.') : ''} Changes count from the next “Work out pay”.</p>
+        {canChange && <Button className="min-h-9 gap-1.5 rounded-full" disabled={pending} onClick={() => setEditing(true)}><Pencil className="size-4" aria-hidden />Change</Button>}
+      </div>
+      <dl className="grid gap-2 sm:grid-cols-3">
+        {(Object.keys(SETTING_LABELS) as (keyof typeof SETTING_LABELS)[]).map((key) => (
+          <div key={key} className="rounded-xl bg-surface-2/40 px-3 py-2">
+            <dt className="text-xs text-muted-foreground">{SETTING_LABELS[key][0]}</dt>
+            <dd className="text-sm font-medium">{s ? settingValue(key, s) : <Skeleton className="my-0.5 h-4 w-32" />}</dd>
+            <dd className="text-xs text-muted-foreground">{SETTING_LABELS[key][1]}</dd>
+          </div>
+        ))}
+      </dl>
+      {editing && s && <RunSettingsDialog current={s} close={() => setEditing(false)} />}
+    </>
+  )
+}
+
+function RunSettingsDialog({ current, close }: { current: RunSettings; close: () => void }) {
+  const [drafts, setDrafts] = useState(current.tdsCountsDraftRuns ? 'yes' : 'no')
+  const [percent, setPercent] = useState(String(current.bigChangePercent))
+  const [months, setMonths] = useState(String(current.epsAgeSoonMonths))
+  const reload = useReload()
+  const save = useMutation({ ...orpc.payroll.statutory.saveSettings.mutationOptions(), onSuccess: () => { reload(); close() } })
+  const valid = /^\d{1,4}$/.test(percent) && Number(percent) >= 1 && Number(percent) <= 1000 && /^\d{1,2}$/.test(months) && Number(months) <= 24
+  const dirty = drafts !== (current.tdsCountsDraftRuns ? 'yes' : 'no') || percent !== String(current.bigChangePercent) || months !== String(current.epsAgeSoonMonths)
+  return (
+    <FormDrawer
+      onClose={close}
+      closed={save.isSuccess}
+      dirty={dirty && !save.isSuccess}
+      title="Run settings"
+      description="For every company. Draft runs follow them the next time their pay is worked out."
+      footer={<><DrawerCancel /><Button disabled={!valid || save.isPending} onClick={() => valid && save.mutate({ tdsCountsDraftRuns: drafts === 'yes', bigChangePercent: Number(percent), epsAgeSoonMonths: Number(months) })}>{save.isPending ? 'Saving…' : 'Save'}</Button></>}
+    >
+      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <fieldset disabled={save.isPending} className="space-y-4">
+          <Field id="rs-tds" label={SETTING_LABELS.tdsCountsDraftRuns[0]} hint="Finalised only: a month whose run is not final counts at the current salary with nothing deducted - the safe side.">
+            <NativeSelect id="rs-tds" className="w-full [&_select]:h-9" value={drafts} onChange={(e) => setDrafts(e.target.value)}>
+              <NativeSelectOption value="no">Finalised runs only</NativeSelectOption>
+              <NativeSelectOption value="yes">Finalised and draft runs</NativeSelectOption>
+            </NativeSelect>
+          </Field>
+          <Field id="rs-percent" label={`${SETTING_LABELS.bigChangePercent[0]} (%)`} hint={SETTING_LABELS.bigChangePercent[1]}>
+            <Input id="rs-percent" className="h-9 tabular-nums" inputMode="numeric" value={percent} onChange={(e) => setPercent(e.target.value)} />
+          </Field>
+          <Field id="rs-months" label={`${SETTING_LABELS.epsAgeSoonMonths[0]} (months)`} hint={SETTING_LABELS.epsAgeSoonMonths[1]}>
+            <Input id="rs-months" className="h-9 tabular-nums" inputMode="numeric" value={months} onChange={(e) => setMonths(e.target.value)} />
+          </Field>
         </fieldset>
         <FormError error={save.error} />
       </form>

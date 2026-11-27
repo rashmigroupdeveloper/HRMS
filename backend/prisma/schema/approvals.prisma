@@ -1,7 +1,8 @@
 // Approvals (the user, 2026-11-20): ONE service every feature uses to get a request approved - job changes and salary
 // revisions now; offers, leave, regularization, exit later. It knows nothing about leave or transfers: only requests,
 // the chain of steps they go through, and the decisions. Each feature keeps its own data in its own table, with a link
-// to its request, and acts on the final decision (modules/approvals - registerFeature).
+// to its request, and acts on the final decision (modules/approvals - registerFeature). A request is about one employee
+// - or, since payroll stage 5 (approved by the user 2026-11-27), about a whole company (a pay run).
 // Inspired by the old HRMS's workflow engine (its chains, "vacancy is not consent", held requests), built to our rules.
 
 // What a chain is for - one chain per kind (and, if HR wants, one per company that wins over the shared one)
@@ -22,6 +23,9 @@ enum ApprovalKind {
   ON_DUTY
   // a claim for comp-off: work on a weekly off / holiday (2026-11-22)
   COMP_OFF
+  // a company's monthly pay run (payroll stage 5, 2026-11-27) - about the company, not an employee; its chain has role
+  // steps only, each role with Payroll View and Salary View (approvals chains service)
+  PAY_RUN
 
   @@map("approval_kind")
 }
@@ -38,6 +42,8 @@ enum ApprovalFeature {
   REGULARIZATION
   // modules/leave/comp-off: a comp-off claim (2026-11-22)
   COMP_OFF
+  // modules/payroll: a company's pay run sent for approval (stage 5, 2026-11-27)
+  PAYROLL
 
   @@map("approval_feature")
 }
@@ -169,14 +175,17 @@ model ApprovalChainStep {
   @@map("approval_chain_steps")
 }
 
-// One request for approval: what it is about (an employee), who raised it, the chains it follows (a promotion with a
-// hike follows both the job and the salary chain, merged) and where it stands. Its steps are a copy of the chains made
-// when it was raised, so editing a chain later never changes a request in flight.
+// One request for approval: what it is about (an employee, or a whole company), who raised it, the chains it follows (a
+// promotion with a hike follows both the job and the salary chain, merged) and where it stands. Its steps are a copy of
+// the chains made when it was raised, so editing a chain later never changes a request in flight.
 model ApprovalRequest {
   id                 Int              @id @default(autoincrement())
   feature            ApprovalFeature
   kinds              ApprovalKind[]
-  employeeId         Int              @map("employee_id")
+  // what it is about: one employee - or a whole company (a pay run - payroll stage 5, approved 2026-11-27); exactly one
+  // of the two (a migration CHECK). A company request has no manager or HOD steps and no fallback approver.
+  employeeId         Int?             @map("employee_id")
+  companyId          Int?             @map("company_id")
   // who raised it (never one of its approvers)
   requestedById      Int              @map("requested_by_id")
   status             ApprovalStatus   @default(PENDING)
@@ -202,8 +211,11 @@ model ApprovalRequest {
   updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
   updatedById        Int              @map("updated_by_id")
 
-  employee Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee Employee?             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company  Company?              @relation(fields: [companyId], references: [id], onDelete: Restrict)
   steps    ApprovalRequestStep[]
+  // the pay run it was sent for, while it is the run's current request (payroll stage 5)
+  payrollRun     PayrollRun?
   // the feature's record (one of these, by `feature`)
   jobChange   JobChangeRequest?
   shiftChange ShiftChangeRequest?
@@ -213,6 +225,7 @@ model ApprovalRequest {
   compOffClaim   CompOffClaim?
 
   @@index([employeeId])
+  @@index([companyId])
   @@index([status])
   @@index([requestedById])
   @@map("approval_requests")

@@ -59,11 +59,13 @@ export function list(db: DbClient = prisma) {
 const temporary = (passwordHash: string) => ({ passwordHash, mustChangePassword: true, failedLoginCount: 0, lockedUntil: null })
 
 // Creates the login with a temporary password, or gives an existing login a new temporary password (script).
-export function upsert(employeeId: number, passwordHash: string, actorId: ActorId, db: DbClient = prisma) {
+// `isTemporary: false` (test-data scripts only): the password does not have to be changed at the next sign-in.
+export function upsert(employeeId: number, passwordHash: string, actorId: ActorId, db: DbClient = prisma, isTemporary = true) {
+  const password = { ...temporary(passwordHash), mustChangePassword: isTemporary }
   return db.userAccount.upsert({
     where: { employeeId },
-    create: { employeeId, ...temporary(passwordHash), ...createdBy(actorId) },
-    update: { ...temporary(passwordHash), ...updatedBy(actorId) },
+    create: { employeeId, ...password, ...createdBy(actorId) },
+    update: { ...password, ...updatedBy(actorId) },
     select: { id: true },
   })
 }

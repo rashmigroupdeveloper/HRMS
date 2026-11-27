@@ -111,7 +111,8 @@ HRMS_NEW/
 │     │  ├─ payroll/            regular monthly company drafts; people/ (who is in a run + salary copy), inputs/ (the
 │     │  │                      month's amounts), days/ (paid and unpaid days from the locked attendance),
 │     │  │                      calculation/ ("Work out pay"), deductions/ (PF, ESIC, PT, LWF, TDS rules),
-│     │  │                      statutory/ (dated rates and slabs), tax-openings/ (opening tax figures)
+│     │  │                      statutory/ (dated rates and slabs, run settings), tax-openings/ (opening tax
+│     │  │                      figures), checks/ (warnings to acknowledge before sending for approval)
 │     │  ├─ daily-movement-reports/ group-wide email schedule and HR Head role settings; delivery follows later
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
@@ -271,6 +272,7 @@ In development the frontend calls `/api/...` and Vite forwards it to the backend
 | `npm run rename-stored-files` | Gives files stored before the readable names (2026-11-13) their readable name (`<area>/<owner>/<what>/<date>_<random>.<ext>`) and updates their keys (safe to run again) |
 | `npm run backfill-job-records -w backend` | Gives employees added before the job timeline (2026-11-19) their first entry - their details now, from the date of joining (safe to run again; once per database that has employees) |
 | `npm run import:vbms -- <path to vbms backend/.env> [--dry-run]` | Imports companies, plants and departments from the VBMS database (safe to run again) |
+| `npm run import:employee-master -w backend -- "../private/Employee Master Report.xlsx" [--top <code>] [--dry-run]` | **Test data only - never on the live database.** Imports every employee of HR's Employee Master Excel and makes up what it lacks (gender, birth date, plant from the cost centre, employment type, reporting manager = someone more senior in the same company); adds missing departments, designations and grades; every login gets the password `test@12345`, not to be changed at sign-in. `--top <code>`: each company's most senior people report to that employee, so the org chart is one tree. Safe to run again |
 
 ## API
 
@@ -399,11 +401,22 @@ ceiling - or on full wages where the employee's PF details say so - for employee
 applicable"), ESIC (when the salary at the start of the ESIC period was within the ceiling), professional tax and LWF
 (by the State of the work location), the month's TDS (new regime; HR types it for the old regime or a consultant) and
 the typed deductions, and shows the net. Anyone whose pay cannot be worked out - no work location, a rate not in
-force, a statutory component not set, deductions over half of the wages - is held with the reason. Mark the components
+force, a statutory component not set, deductions over half of the wages - is held with the reason (what they earned
+still shows; deductions and net wait). Mark the components
 on Organization › Salary components (PF wages, ESI wages, taxable; the statutory amount a deduction carries) and the PF
 facts and tax regime on the employee's "PF, ESIC and payroll" details.
 
-The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). Input locking,
-approval, payslips and payment follow the staged plan in BACKLOG.md, with each new model/field agreed before migration.
-Apply the migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3: `payroll_stage3_days`,
-`payroll_stage3_amounts`; stage 4: `payroll_stage4_deductions`).
+**Stage 5, approval and finalising (2026-11-27):** the run's **Checks** tab lists warnings about its people (no salary
+account, no PAN, a big change from last month, a PF member without UAN, leaving, a duplicate input...); each must be
+acknowledged with a comment (several at once). **Send for approval** works the pay out once more and sends the run along
+the **Pay run** approval chain - set it up first on Approvals › Approval rules with roles only, each having Payroll View
+and Salary View over the whole company (e.g. Payroll head, then Finance head). Sending is refused while anyone's pay is
+held or a warning is open. While it waits nothing in the run changes; the sender never approves it; it can be withdrawn.
+On the last approval the run is **Final** and never changes (a correction comes later as arrears); rejected or withdrawn,
+it is a draft again. **Run settings** on Statutory settings hold the tolerances: whether earlier months' TDS counts draft
+runs (default: finalised only), the big-change % (20) and the EPS warning months (2).
+
+The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). Payslips, the bank
+file and payment follow the staged plan in BACKLOG.md, with each new model/field agreed before migration. Apply the
+migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3: `payroll_stage3_days`,
+`payroll_stage3_amounts`; stage 4: `payroll_stage4_deductions`; stage 5: `payroll_stage5_approval`).

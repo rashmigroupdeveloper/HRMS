@@ -2,7 +2,7 @@ import { prisma, createdBy, updatedBy, type ActorId, type DbClient } from '#core
 import { scopeWhere, type DataScope } from '#core/auth/scope'
 import type { ListInput } from './payroll.schema.js'
 
-const select = { id: true, company: { select: { id: true, code: true, name: true } }, payMonth: true, attendanceFrom: true, attendanceTo: true, status: true, peopleRefreshedAt: true, peopleRefreshedById: true, computedAt: true, computedById: true, createdAt: true, createdById: true, updatedAt: true, updatedById: true } as const
+const select = { id: true, company: { select: { id: true, code: true, name: true } }, payMonth: true, attendanceFrom: true, attendanceTo: true, status: true, peopleRefreshedAt: true, peopleRefreshedById: true, computedAt: true, computedById: true, approvalRequestId: true, finalisedAt: true, finalisedById: true, createdAt: true, createdById: true, updatedAt: true, updatedById: true } as const
 
 // The service supplies wholeCompanyScopeOf: narrower plant/department rows never authorize a whole-company run.
 export async function list(scope: DataScope, input: ListInput, db: DbClient = prisma) {
@@ -29,6 +29,28 @@ export function findMonth(companyId: number, payMonth: Date, db: DbClient = pris
 // are no longer worked out: computedAt / ById are emptied with it
 export function markRefreshed(id: number, actorId: ActorId, db: DbClient = prisma) {
   return db.payrollRun.update({ where: { id }, data: { peopleRefreshedAt: new Date(), peopleRefreshedById: actorId, computedAt: null, computedById: null, ...updatedBy(actorId) }, select: { peopleRefreshedAt: true } })
+}
+
+// Sends a draft run with its approval request (stage 5) - only while it is still a draft: false when someone sent it a
+// moment before (a double click)
+export async function markSent(id: number, approvalRequestId: number, actorId: ActorId, db: DbClient) {
+  const { count } = await db.payrollRun.updateMany({ where: { id, status: 'DRAFT' }, data: { status: 'IN_APPROVAL', approvalRequestId, ...updatedBy(actorId) } })
+  return count > 0
+}
+
+// The last approval: the run of this request - while it waits for it - is finalised (stage 5)
+export function finalise(approvalRequestId: number, actorId: ActorId, db: DbClient) {
+  return db.payrollRun.updateMany({ where: { approvalRequestId, status: 'IN_APPROVAL' }, data: { status: 'FINALISED', finalisedAt: new Date(), finalisedById: actorId, ...updatedBy(actorId) } })
+}
+
+// Rejected, withdrawn or expired: the run of this request - while it waits for it - is a draft again (stage 5)
+export function backToDraft(approvalRequestId: number, actorId: ActorId, db: DbClient) {
+  return db.payrollRun.updateMany({ where: { approvalRequestId, status: 'IN_APPROVAL' }, data: { status: 'DRAFT', ...updatedBy(actorId) } })
+}
+
+// The run an approval request was sent for, while it is the run's current request (the approval's link)
+export function findByRequest(approvalRequestId: number, db: DbClient = prisma) {
+  return db.payrollRun.findUnique({ where: { approvalRequestId }, select: { id: true } })
 }
 
 // Records that the run's days were taken from attendance now, by this actor (stage 3) - what the change history keeps

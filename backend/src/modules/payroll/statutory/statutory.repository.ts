@@ -5,6 +5,16 @@ import { prisma, createdBy, updatedBy, type ActorId, type DbClient, type Gender,
 const audit = { createdAt: true, createdById: true, updatedAt: true, updatedById: true } as const
 const num = (d: { toNumber(): number }) => d.toNumber()
 
+// --- The payroll settings row (stage 5): one row, id 1 ---
+
+export function findPayrollSetting(db: DbClient = prisma) {
+  return db.payrollSetting.findUnique({ where: { id: 1 }, select: { tdsCountsDraftRuns: true, bigChangePercent: true, epsAgeSoonMonths: true, updatedAt: true, updatedById: true } })
+}
+
+export function savePayrollSetting(data: { tdsCountsDraftRuns: boolean; bigChangePercent: number; epsAgeSoonMonths: number }, actorId: ActorId, db: DbClient = prisma) {
+  return db.payrollSetting.upsert({ where: { id: 1 }, create: { id: 1, ...data, ...createdBy(actorId) }, update: { ...data, ...updatedBy(actorId) }, select: { id: true } })
+}
+
 // --- Rates ---
 
 export async function listRates(db: DbClient = prisma) {

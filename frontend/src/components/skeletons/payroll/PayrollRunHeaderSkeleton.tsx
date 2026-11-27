@@ -1,10 +1,10 @@
-import { CalendarCheck, RefreshCw } from 'lucide-react'
+import { CalendarCheck, RefreshCw, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { COMPUTE_LABEL, REFRESH_LABEL, RUN_FACT_LABELS, RUN_TILE_LABELS } from '@/pages/payroll/components/payroll-labels'
+import { COMPUTE_LABEL, REFRESH_LABEL, RUN_FACT_LABELS, RUN_TILE_LABELS, SEND_LABEL } from '@/pages/payroll/components/payroll-labels'
 
 // The run page's header while payroll.get loads - same blocks as PayrollRunPage's header (change both together).
-// `actions`: the viewer has Payroll Edit, so the page will most likely show its two buttons - keep their place.
+// `actions`: the viewer has Payroll Edit, so the page will most likely show its three buttons - keep their place.
 export function PayrollRunHeaderSkeleton({ label = 'Loading payroll run', actions = false }: { label?: string; actions?: boolean }) {
   return (
     <div role="status" aria-label={label} className="space-y-3">
@@ -16,6 +16,7 @@ export function PayrollRunHeaderSkeleton({ label = 'Loading payroll run', action
         {actions && (
           <div className="flex flex-wrap gap-2">
             <Button className="min-h-9 gap-1.5 rounded-full" disabled><CalendarCheck className="size-4" aria-hidden />{COMPUTE_LABEL}</Button>
+            <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" disabled><Send className="size-4" aria-hidden />{SEND_LABEL}</Button>
             <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" disabled><RefreshCw className="size-4" aria-hidden />{REFRESH_LABEL}</Button>
           </div>
         )}

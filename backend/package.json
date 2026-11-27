@@ -36,6 +36,7 @@
     "postinstall": "prisma generate",
     "import:old-hrms": "node --conditions=development --import tsx scripts/import-old-hrms.ts",
     "import:vbms": "node --conditions=development --import tsx scripts/import-vbms-masters.ts",
+    "import:employee-master": "node --conditions=development --import tsx scripts/import-employee-master.ts",
     "set-password": "node --conditions=development --import tsx scripts/set-password.ts",
     "create-admin": "node --conditions=development --import tsx scripts/create-admin.ts",
     "create-role-employees": "node --conditions=development --import tsx scripts/create-role-employees.ts",

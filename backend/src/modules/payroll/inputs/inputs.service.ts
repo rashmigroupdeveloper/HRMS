@@ -4,6 +4,7 @@ import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService } from '#modules/employees'
 import { salaryComponentsService } from '#modules/organization'
 import * as calculationRepository from '../calculation/calculation.repository.js'
+import * as checksRepository from '../checks/checks.repository.js'
 import { draftRunFor, runFor } from '../people/people.service.js'
 import * as inputsRepository from './inputs.repository.js'
 import type { InputsListInput } from './inputs.schema.js'
@@ -12,7 +13,8 @@ import type { InputsListInput } from './inputs.schema.js'
 // while the run is a draft, only by someone with Payroll Edit covering the whole company (a plant-level HR person sends
 // their figures to them - the user, 2026-11-26), never for one's own record, and only with a component marked "entered
 // monthly". Every input is kept in the change history. A change to a person's inputs removes the pay worked out for them
-// (stage 3): the run then lists them as "work out again" until the pay is worked out once more.
+// (stage 3) and their acknowledged warnings (stage 5): the run then lists them as "work out again" until the pay is
+// worked out once more.
 
 // The component, active and marked "entered monthly"
 async function monthlyComponent(id: number) {
@@ -53,6 +55,7 @@ export async function createInput(viewer: CurrentUser, input: { runId: number; p
     const duplicate = await inputsRepository.hasSame(member.id, input.salaryComponentId, input.amount, null, tx)
     const { id } = await inputsRepository.create({ personId: member.id, salaryComponentId: input.salaryComponentId, amount: input.amount, note: input.note }, viewer.employeeId, tx)
     await calculationRepository.clearPersonLines(member.id, viewer.employeeId, tx)
+    await checksRepository.deleteAcksOf([member.id], tx)
     return { id, duplicate }
   })
 }
@@ -69,7 +72,10 @@ export async function updateInput(viewer: CurrentUser, { runId, id, ...changes }
     const duplicate = await inputsRepository.hasSame(current.runEmployee.id, componentId, amount, id, tx)
     await inputsRepository.update(id, changes, viewer.employeeId, tx)
     // (a new note alone changes no amount)
-    if (changes.salaryComponentId !== undefined || changes.amount !== undefined) await calculationRepository.clearPersonLines(current.runEmployee.id, viewer.employeeId, tx)
+    if (changes.salaryComponentId !== undefined || changes.amount !== undefined) {
+      await calculationRepository.clearPersonLines(current.runEmployee.id, viewer.employeeId, tx)
+      await checksRepository.deleteAcksOf([current.runEmployee.id], tx)
+    }
     return { id, duplicate }
   })
 }
@@ -82,6 +88,7 @@ export async function deleteInput(viewer: CurrentUser, { runId, id }: { runId: n
     assertNotOwn(viewer, current.runEmployee.employeeId)
     await inputsRepository.deleteInput(id, tx)
     await calculationRepository.clearPersonLines(current.runEmployee.id, viewer.employeeId, tx)
+    await checksRepository.deleteAcksOf([current.runEmployee.id], tx)
     return { id }
   })
 }
