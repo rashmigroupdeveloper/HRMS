@@ -1,5 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { PEOPLE_LEGEND } from '@/pages/home/components/home-labels'
+import { CYCLE_COUNTS, PEOPLE_LEGEND } from '@/pages/home/components/home-labels'
 
 // Mirrors the home panels' real rows and value slots. Section headings and actions remain in the loaded containers.
 export function HomeRequestRowsSkeleton({ dark = false }: { dark?: boolean }) {
@@ -18,6 +18,34 @@ export function HomeAttendanceSkeleton({ dark = false }: { dark?: boolean }) {
     <h3 className="mt-5 text-sm font-medium">Worth a look</h3>
     <div className="mt-1 space-y-1">{Array.from({ length: 2 }, (_, i) => <div key={i} className="flex min-h-14 items-center gap-3 py-1.5"><Skeleton className={`size-10 shrink-0 rounded-full ${bar}`} /><div className="flex-1 space-y-1.5"><Skeleton className={`h-3.5 w-28 rounded ${bar}`} /><Skeleton className={`h-3 w-36 rounded ${bar}`} /></div></div>)}</div>
   </div>
+}
+
+export function CycleDeskSkeleton() {
+  return (
+    <section role="status" aria-label="Loading the attendance cycle" className="home-panel home-panel-dark u-grain min-w-0 p-4 text-hero-foreground sm:p-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div>
+          <Skeleton className="h-9 w-48 rounded bg-hero-foreground/10" />
+          <Skeleton className="mt-2 h-4 w-56 rounded bg-hero-foreground/10" />
+        </div>
+        <CycleDeskFiguresSkeleton />
+      </div>
+      <Skeleton className="mt-5 h-1.5 w-full rounded-full bg-hero-foreground/10" />
+    </section>
+  )
+}
+
+export function CycleDeskFiguresSkeleton() {
+  return (
+    <div role="status" aria-label="Loading who is in today" className="grid grid-cols-3 gap-x-5 sm:gap-x-8">
+      {CYCLE_COUNTS.map((label) => (
+        <div key={label}>
+          <p className="text-xs text-hero-foreground/80">{label}</p>
+          <Skeleton className="mt-2 h-9 w-12 rounded bg-hero-foreground/10" />
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export function HomeRoleSkeleton({ dark = false }: { dark?: boolean }) {

@@ -23,6 +23,8 @@ export const MONTH_CLOSE_TITLE = 'Attendance month'
 export const MONTH_CLOSE_COUNTS = ['Missed punches', 'Shift changes', 'Unmatched codes'] as const
 
 export const PAYROLL_TITLE = 'Payroll runs'
+// The cycle desk on the role home, and its loading bars - change both together
+export const CYCLE_COUNTS = ['Punched in', 'On leave', 'Not in yet'] as const
 export const MOVEMENTS_TITLE = 'Joiners & leavers'
 export const MOVEMENT_TILES = ['Joined this month', 'Left this month'] as const
 export const MOVEMENTS_NOTE = 'Leaving dates as recorded on the employee record - not a confirmed exit.'

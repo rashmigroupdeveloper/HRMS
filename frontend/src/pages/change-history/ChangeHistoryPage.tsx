@@ -1,6 +1,6 @@
 import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, ShieldCheck, ShieldX, SlidersHorizontal } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { ChangeHistoryList } from '@/components/ChangeHistoryList'
@@ -84,34 +84,41 @@ export function ChangeHistoryPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Audit</p>
-          <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">Change history</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">
-            Who changed what and when - every record of the app, with the old and new values, and every sign-in. Nothing here can be changed.
+          <h1 className="text-3xl font-light tracking-tight sm:text-4xl">Change history</h1>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+            Who changed what, and whether the record still holds.
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <ExportButton load={() => client.changeHistory.export(filters)} disabled={!total} title="All matching audit entries; narrow the filters if the report is too large" />
-          <Button variant="secondary" size="lg" disabled={verify.isPending} onClick={() => verify.mutate({})}>
-            <ShieldCheck /> {verify.isPending ? 'Checking…' : 'Check integrity'}
-          </Button>
-          {verify.data && (
-            <p
-              className={cn(
-                'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
-                verify.data.ok ? 'bg-positive/10 text-positive-ink' : 'bg-destructive/10 text-negative-ink',
-              )}
-            >
-              {verify.data.ok ? <ShieldCheck className="size-3.5" /> : <ShieldX className="size-3.5" />}
-              {verify.data.ok
-                ? `All ${verify.data.checked.toLocaleString('en-IN')} entries intact`
-                : `Altered at entry #${verify.data.brokenAt?.id} (${formatDateTime(verify.data.brokenAt?.at)}) - ${verify.data.checked} entries before it are intact`}
-            </p>
-          )}
-          {verify.error && <p className="w-full text-right text-xs text-negative-ink">{errorMessage(verify.error)}</p>}
-
-        </div>
+        <ExportButton load={() => client.changeHistory.export(filters)} disabled={!total} title="All matching audit entries; narrow the filters if the report is too large" />
       </header>
+
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-hero px-5 py-4 text-hero-foreground shadow-card sm:px-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <Seal ok={verify.data?.ok} pending={verify.isPending} broken={Boolean(verify.data && !verify.data.ok)} />
+          <div className="min-w-0">
+            <p className="text-lg font-light tracking-tight">
+              {verify.isPending ? 'Checking the chain…' : verify.data?.ok ? 'The record is intact' : verify.data ? 'The record was altered' : 'A sealed register'}
+            </p>
+            <p className="mt-0.5 text-sm text-hero-foreground/75">
+              {verify.data?.ok
+                ? `All ${verify.data.checked.toLocaleString('en-IN')} entries match the chain.`
+                : verify.data
+                  ? `Altered at entry #${verify.data.brokenAt?.id} (${formatDateTime(verify.data.brokenAt?.at)}). ${verify.data.checked.toLocaleString('en-IN')} entries before it are intact.`
+                  : 'Every change and every sign-in is kept. Nothing on this page can be edited.'}
+            </p>
+            {verify.error && <p className="mt-1 text-xs text-hero-foreground">{errorMessage(verify.error)}</p>}
+          </div>
+        </div>
+        <Button
+          variant="gold"
+          size="lg"
+          className="transition-transform duration-100 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
+          disabled={verify.isPending}
+          onClick={() => verify.mutate({})}
+        >
+          <ShieldCheck /> {verify.isPending ? 'Checking…' : 'Check integrity'}
+        </Button>
+      </section>
 
       <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
         <div className="grid grid-cols-2 gap-x-3 gap-y-2 lg:grid-cols-[9.5rem_9.5rem_minmax(0,3fr)_minmax(0,3fr)_minmax(0,2fr)_minmax(0,2fr)]">
@@ -210,17 +217,41 @@ export function ChangeHistoryPage() {
         </div>
 
         {history.isPending ? (
-          <ChangeHistorySkeleton label="Loading the change history" />
+          <ChangeHistorySkeleton variant="ledger" label="Loading the change history" />
         ) : history.error ? (
           <p className="py-10 text-center text-sm text-negative-ink">{errorMessage(history.error)}</p>
         ) : (
-          <div className={cn('transition-opacity', history.isFetching && 'opacity-60')}>
-            <ChangeHistoryList items={history.data.items} linkEmployees={can('EMPLOYEES')} />
+          <div className={cn('transition-opacity duration-200', history.isFetching && 'opacity-60')}>
+            <ChangeHistoryList variant="ledger" items={history.data.items} linkEmployees={can('EMPLOYEES')} />
           </div>
         )}
 
-        {pager && <div className="flex justify-end border-t border-border/70 pt-3">{pager}</div>}
+        {pager && <div className="flex justify-end pt-3">{pager}</div>}
       </section>
     </div>
+  )
+}
+
+// The chain's seal. It draws once when a check comes back intact; a broken chain stays open.
+function Seal({ ok, pending, broken }: { ok?: boolean; pending: boolean; broken: boolean }) {
+  return (
+    <svg viewBox="0 0 44 44" className="size-11 shrink-0" aria-hidden>
+      <circle cx="22" cy="22" r="20" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1.5" />
+      {(ok || broken) && (
+        <circle
+          key={ok ? 'ok' : 'broken'}
+          className="history-seal-ring"
+          cx="22"
+          cy="22"
+          r="20"
+          fill="none"
+          stroke={broken ? 'var(--destructive)' : 'var(--gold)'}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          transform="rotate(-90 22 22)"
+        />
+      )}
+      {pending && <circle cx="22" cy="22" r="3" className="fill-gold motion-reduce:animate-none animate-pulse" />}
+    </svg>
   )
 }

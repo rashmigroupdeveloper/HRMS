@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { EmployeePicker, type PickedEmployee } from '@/components/EmployeePicker'
 import { DrawerCancel, FormDrawer } from '@/components/FormDrawer'
 import { Pill } from '@/components/Pill'
+import { SegmentedControl } from '@/components/SegmentedControl'
 import { type RecordsCell, RecordsTableSkeleton } from '@/components/skeletons/employees/RecordsTableSkeleton'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -28,11 +29,11 @@ type Facets = Awaited<ReturnType<typeof client.employees.list>>['facets']
 type SortKey = NonNullable<ListInput['sort']>
 
 // The status segments of the directory (the status filter); "ALL" = any status
-const SEGMENTS: { key: EmployeeStatus | 'ALL'; label: string }[] = [
-  { key: 'ACTIVE', label: 'Active' },
-  { key: 'ON_NOTICE', label: 'On notice' },
-  { key: 'EXITED', label: 'Left' },
-  { key: 'ALL', label: 'All' },
+const STATUS_SEGMENTS = [
+  { value: 'ACTIVE' as const, label: 'Active' },
+  { value: 'ON_NOTICE' as const, label: 'On notice' },
+  { value: 'EXITED' as const, label: 'Left' },
+  { value: 'ALL' as const, label: 'All' },
 ]
 
 // The filters with several values (2026-11-16): each one an address parameter holding a comma list, the facet the
@@ -253,21 +254,13 @@ export function EmployeeRecordsView() {
             Directory {list.data && <span className="text-sm text-muted-foreground tabular-nums">· {total.toLocaleString('en-IN')}</span>}
             {list.isPending && <Skeleton className="ml-1 inline-block h-3 w-6 rounded-full align-middle" />}
           </h2>
-          <div className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {SEGMENTS.map((s) => (
-              <button
-                key={s.key}
-                type="button"
-                onClick={() => update({ status: s.key === 'ACTIVE' ? null : s.key, page: null })}
-                className={cn(
-                  'shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors',
-                  status === s.key ? 'bg-hero text-hero-foreground' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            label="Employment status"
+            tone="hero"
+            value={status}
+            options={STATUS_SEGMENTS}
+            onChange={(key) => update({ status: key === 'ACTIVE' ? null : key, page: null })}
+          />
         </div>
 
         {/* a phone: the search on a line of its own, then the four buttons as an even 2 x 2 */}

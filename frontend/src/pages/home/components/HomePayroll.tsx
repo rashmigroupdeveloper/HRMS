@@ -16,13 +16,14 @@ import { usePayrollRuns } from './usePayrollRuns'
 // Runs are by whole company: access to part of a company shows none (payroll.list).
 export function HomePayroll({ overview }: { overview: Overview | undefined }) {
   const { pending, latest, ofLatest, due, dueMissing, error } = usePayrollRuns(overview)
+  const waiting = ofLatest.filter((r) => !r.computedAt).length
   return (
     <section className="home-panel min-w-0 p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-light tracking-tight">{PAYROLL_TITLE}</h2>
         <Link to="/manage/payroll" aria-label="Open payroll" className="grid size-9 place-items-center rounded-full bg-surface-2 outline-none hover:bg-surface-2/70 focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight aria-hidden className="size-4" /></Link>
       </div>
-      <div className="mt-1 text-xs text-muted-foreground">{pending ? <Skeleton className="inline-block h-3 w-44 rounded" /> : latest ? `${monthLabel(latest)} · draft runs by company` : 'Monthly draft runs by company'}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{pending ? <Skeleton className="inline-block h-3 w-44 rounded" /> : latest ? `${monthLabel(latest)} · ${waiting ? `${waiting} ${waiting === 1 ? 'company' : 'companies'} still to take days` : 'days taken from attendance'}` : 'Monthly draft runs by company'}</div>
       <FormError error={error} />
       {pending && <HomePayrollSkeleton />}
       {!pending && ofLatest.length === 0 && <p className="py-3 text-sm text-muted-foreground">No company payroll runs within your access yet. Runs cover a whole company.</p>}

@@ -61,6 +61,16 @@ export function HomeAwayWeek({ directReports }: { directReports?: number }) {
       </div>
       <FormError error={overview.error ?? leave.error} />
       {pending && <HomeAwayWeekSkeleton />}
+      {!pending && rows.length === 0 && (
+        <div className="mt-4 grid grid-cols-7 gap-1" role="img" aria-label="No leave this week">
+          {WEEKDAY_SHORT.map((d, i) => (
+            <div key={d} className="text-center">
+              <p className={cn('text-xs', i === todayIndex ? 'font-semibold text-foreground underline decoration-gold decoration-2 underline-offset-4' : 'text-muted-foreground')}>{d}</p>
+              <span className="mt-2 block h-8 rounded-md bg-surface-2/70" />
+            </div>
+          ))}
+        </div>
+      )}
       {rows.length > 0 && (
         <table className="mt-3 w-full table-fixed border-separate border-spacing-y-1 text-sm">
           <thead>

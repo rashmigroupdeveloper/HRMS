@@ -128,14 +128,14 @@ export function HomeAwayWeekSkeleton() {
 export function HomeMonthCloseSkeleton() {
   return (
     <div role="status" aria-label="Loading the attendance month">
-      <div className="mt-2 flex items-center gap-2"><Skeleton className="h-6 w-36 rounded" /><Skeleton className="h-6 w-20 rounded-full" /></div>
+      <Skeleton className="mt-3 h-6 w-28 rounded-full" />
       <Skeleton className="mt-2 h-3 w-56 max-w-full rounded" />
       <Skeleton className="mt-2 h-1.5 w-full rounded-full" />
-      <dl className="mt-3 grid grid-cols-3 gap-2">
+      <dl className="mt-4 grid grid-cols-3 gap-x-3">
         {MONTH_CLOSE_COUNTS.map((label) => (
-          <div key={label} className="rounded-2xl bg-surface-2/60 px-3 py-2.5">
+          <div key={label} className="px-1">
             <dt className="text-xs leading-tight text-muted-foreground">{label}</dt>
-            <dd className="mt-1.5"><Skeleton className="h-6 w-8 rounded" /></dd>
+            <dd className="mt-2"><Skeleton className="h-8 w-8 rounded" /></dd>
           </div>
         ))}
       </dl>
@@ -161,11 +161,11 @@ export function HomePayrollSkeleton() {
 export function HomeMovementsSkeleton() {
   return (
     <div role="status" aria-label="Loading joiners and leavers">
-      <dl className="mt-3 grid grid-cols-2 gap-2">
+      <dl className="mt-4 grid grid-cols-2 gap-x-6">
         {MOVEMENT_TILES.map((label) => (
-          <div key={label} className="rounded-2xl bg-surface-2/60 px-3 py-2.5">
+          <div key={label}>
             <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="mt-1.5"><Skeleton className="h-6 w-8 rounded" /></dd>
+            <dd className="mt-2"><Skeleton className="h-10 w-10 rounded" /></dd>
           </div>
         ))}
       </dl>

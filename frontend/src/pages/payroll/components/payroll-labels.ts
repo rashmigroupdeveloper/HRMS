@@ -1,5 +1,6 @@
 // Texts shared by the payroll pages and their skeletons - change both together.
 export const PAYROLL_NOTE = 'Monthly runs per company. A run lists its people with the salary in force on each day, takes the month\'s inputs, and takes each person\'s paid and unpaid days from the locked attendance. The amounts, deductions, approval and payment follow in later stages.'
+export const PAYROLL_DESK_TITLE = 'This pay period'
 
 // The run page's header facts and tiles
 // 'Pay period': the attendance cycle of the pay month, captured on the run (26th to 25th with a start day of 26)

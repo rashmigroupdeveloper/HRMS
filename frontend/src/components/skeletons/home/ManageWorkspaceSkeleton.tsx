@@ -6,11 +6,11 @@ export function ManageWorkspaceSkeleton({ label }: { label: string }) {
   return (
     <section role="status" aria-label={label} className="home-panel min-w-0 space-y-3 p-4 sm:p-5">
       <h2 className="text-lg font-medium tracking-tight">Your role&apos;s pages</h2>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1 md:grid-cols-3 xl:grid-cols-5">
         {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="flex min-h-14 min-w-0 items-center gap-2 py-2">
-            <Skeleton className="size-8 shrink-0 rounded-full" />
+          <div key={i} className="flex min-h-14 min-w-0 items-center justify-between gap-3 border-b border-border/60 py-2">
             <div className="min-w-0 space-y-2"><Skeleton className="h-3.5 w-24 max-w-full rounded" /><Skeleton className="h-3 w-28 max-w-full rounded" /></div>
+            <Skeleton className="size-4 shrink-0 rounded" />
           </div>
         ))}
       </div>

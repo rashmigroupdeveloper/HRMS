@@ -76,10 +76,13 @@ export function ChangeHistoryList({
   hideEmployee = false,
   // links to profiles (people with Employees: View)
   linkEmployees = false,
+  // the Change history page hangs each day on a spine; a profile keeps the compact rows
+  variant = 'compact',
 }: {
   items: HistoryEntry[]
   hideEmployee?: boolean
   linkEmployees?: boolean
+  variant?: 'compact' | 'ledger'
 }) {
   // the rows opened to show everything
   const [open, setOpen] = useState<ReadonlySet<HistoryEntry['id']>>(new Set())
@@ -99,6 +102,10 @@ export function ChangeHistoryList({
     const last = days.at(-1)
     if (last && last.label === label) last.entries.push(entry)
     else days.push({ label, entries: [entry] })
+  }
+
+  if (variant === 'ledger') {
+    return <Ledger days={days} open={open} toggle={toggle} hideEmployee={hideEmployee} linkEmployees={linkEmployees} />
   }
 
   return (
@@ -227,5 +234,166 @@ export function ChangeHistoryList({
         </section>
       ))}
     </div>
+  )
+}
+
+// The Change history page: one day is a sheet on a dashed spine. Time sits on the spine, the sentence
+// to its right. Opening a line unfolds the rest of the fields; the marker fills gold while it is open.
+function Ledger({
+  days,
+  open,
+  toggle,
+  hideEmployee,
+  linkEmployees,
+}: {
+  days: { label: string; entries: HistoryEntry[] }[]
+  open: ReadonlySet<HistoryEntry['id']>
+  toggle: (id: HistoryEntry['id']) => void
+  hideEmployee: boolean
+  linkEmployees: boolean
+}) {
+  return (
+    <div>
+      {days.map((day) => (
+        <section key={day.label} className="mt-5 first:mt-0">
+          <h3 className="sticky top-16 z-10 bg-card/95 py-1.5 text-sm font-medium backdrop-blur-sm lg:top-20">{day.label}</h3>
+          <ol className="relative">
+            <span aria-hidden className="absolute top-2 bottom-2 left-[calc(5.25rem+0.75rem+0.625rem)] w-px -translate-x-1/2 border-l border-dashed border-foreground/25" />
+            {day.entries.map((entry) => {
+              const employee = entry.employee
+              const isOpen = open.has(entry.id)
+              const more = entry.changes.length - SHOWN
+              const origin = [entry.source, entry.ip].filter(Boolean).join(' · ')
+              const canOpen = more > 0 || origin !== ''
+              const preview = entry.changes.slice(0, SHOWN)
+              const rest = entry.changes.slice(SHOWN)
+              const marked = entry.action === 'SIGN_IN_FAILED' || entry.action === 'DELETE'
+              return (
+                <li key={entry.id} className="group grid grid-cols-[5.25rem_1.25rem_minmax(0,1fr)] gap-x-3 py-2" title={entry.source ?? undefined}>
+                  {canOpen ? (
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-label={isOpen ? 'Show less' : 'Show everything about this entry'}
+                      onClick={() => toggle(entry.id)}
+                      className="inline-flex items-start justify-end gap-0.5 pt-0.5 text-right text-xs whitespace-nowrap text-muted-foreground tabular-nums hover:text-foreground max-sm:min-h-9"
+                    >
+                      {formatTime(entry.at)}
+                      <ChevronDown aria-hidden className={cn('mt-0.5 size-3.5 shrink-0 transition-transform duration-200', isOpen && 'rotate-180')} />
+                    </button>
+                  ) : (
+                    <time dateTime={new Date(entry.at).toISOString()} className="pt-0.5 text-right text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                      {formatTime(entry.at)}
+                    </time>
+                  )}
+                  <span className="relative z-10 flex justify-center pt-1.5">
+                    <span
+                      className={cn(
+                        'size-2 rounded-full ring-2 ring-card transition-colors duration-200',
+                        isOpen ? 'bg-gold' : marked ? 'bg-destructive' : 'bg-foreground',
+                      )}
+                    />
+                  </span>
+                  <div className="min-w-0 rounded-2xl px-2 py-0.5 transition-colors duration-150 group-hover:bg-surface-2/80">
+                    <EntrySentence entry={entry} employee={employee} hideEmployee={hideEmployee} linkEmployees={linkEmployees} />
+                    {preview.length > 0 && <FieldList entry={entry} changes={preview} />}
+                    {entry.details && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {[entry.details.reason, (entry.details.login ?? entry.details.employeeCode) && `typed: ${String(entry.details.login ?? entry.details.employeeCode)}`]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    )}
+                    {canOpen && (
+                      <div className="history-unfold" data-open={isOpen ? 'true' : 'false'}>
+                        <div aria-hidden={isOpen ? undefined : true}>
+                          {rest.length > 0 && <FieldList entry={entry} changes={rest} stacked />}
+                          {origin && <p className="pt-1 text-xs break-all text-muted-foreground">{origin}</p>}
+                        </div>
+                      </div>
+                    )}
+                    {more > 0 && !isOpen && (
+                      <button type="button" onClick={() => toggle(entry.id)} className="mt-0.5 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline max-sm:min-h-9">
+                        {more} more field{more === 1 ? '' : 's'}
+                      </button>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        </section>
+      ))}
+    </div>
+  )
+}
+
+function EntrySentence({
+  entry,
+  employee,
+  hideEmployee,
+  linkEmployees,
+}: {
+  entry: HistoryEntry
+  employee: HistoryEntry['employee']
+  hideEmployee: boolean
+  linkEmployees: boolean
+}) {
+  if (entry.action === 'SIGN_IN_FAILED') {
+    return (
+      <p className="text-sm">
+        <span className="text-muted-foreground">Sign-in failed for </span>
+        <span className="font-medium">{employee ? `${employee.name} (${employee.employeeCode})` : String(entry.details?.login ?? entry.details?.employeeCode ?? 'an unknown code')}</span>
+      </p>
+    )
+  }
+  return (
+    <p className="text-sm">
+      <span className="font-medium">{entry.by?.name ?? 'Unknown'}</span>
+      {entry.by?.employeeCode && <span className="text-muted-foreground"> · {entry.by.employeeCode}</span>}
+      {entry.model === 'UserAccountRole' && (entry.action === 'CREATE' || entry.action === 'DELETE') ? (
+        <span className="text-muted-foreground">{entry.action === 'CREATE' ? ' gave a role' : ' took away a role'}</span>
+      ) : (
+        <>
+          <span className="text-muted-foreground"> {ACTION_LABEL[entry.action].toLowerCase()}</span>
+          {entry.modelLabel && <span className="font-medium"> {entry.modelLabel.toLowerCase()}</span>}
+        </>
+      )}
+      {!hideEmployee && entry.model && employee && (
+        <>
+          <span className="text-muted-foreground">{entry.model === 'UserAccountRole' ? (entry.action === 'DELETE' ? ' from ' : ' to ') : ' of '}</span>
+          {linkEmployees && employee.employeeCode ? (
+            <Link to={`/manage/employees/${employee.employeeCode}`} className="font-medium underline-offset-4 hover:underline">
+              {employee.name} ({employee.employeeCode})
+            </Link>
+          ) : (
+            <span className="font-medium">{employee.name}</span>
+          )}
+        </>
+      )}
+      {!hideEmployee && !employee && entry.candidateId && (
+        <>
+          <span className="text-muted-foreground"> of </span>
+          <Link to={`/manage/onboarding/${entry.candidateId}`} className="font-medium underline-offset-4 hover:underline">
+            candidate #{entry.candidateId}
+          </Link>
+        </>
+      )}
+    </p>
+  )
+}
+
+function FieldList({ entry, changes, stacked = false }: { entry: HistoryEntry; changes: HistoryEntry['changes']; stacked?: boolean }) {
+  return (
+    <ul className={cn('mt-0.5 text-xs', stacked ? 'space-y-0.5' : 'flex flex-wrap gap-x-4 gap-y-0.5')}>
+      {changes.map((change) => (
+        <li key={change.field} className="flex flex-wrap items-baseline gap-x-1.5">
+          <span className="text-muted-foreground">{change.label}:</span>
+          {entry.action !== 'CREATE' && <span className="break-all line-through decoration-foreground/30">{showValue(change.before)}</span>}
+          {entry.action === 'UPDATE' && <ArrowRight className="size-3 shrink-0 self-center text-muted-foreground" />}
+          {entry.action !== 'DELETE' && <span className="font-medium break-all">{showValue(change.after)}</span>}
+        </li>
+      ))}
+    </ul>
   )
 }

@@ -4,29 +4,30 @@ import { Search } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { FormError } from '@/components/FormError'
+import { SegmentedControl } from '@/components/SegmentedControl'
 import { LeaveRowsSkeleton } from '@/components/skeletons/leave/LeaveRowsSkeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { client, orpc } from '@/lib/orpc'
 import { cn, fromDateInput, toDateInput } from '@/lib/utils'
-import { segment, SEGMENTS } from '@/pages/attendance/components/labels'
 import { LeaveList } from './LeaveList'
 
 // Who is on leave (or has asked) over a span - a team, an HOD's department or everyone (Leave View): the next 30 days by
 // default, waiting and approved; deciding is on the Approvals page.
 type Scope = 'TEAM' | 'DEPARTMENT' | 'ALL'
 const STATUSES = [
-  ['open', 'Waiting & approved'],
-  ['waiting', 'Waiting'],
-  ['all', 'Every status'],
+  { value: 'open', label: 'Waiting & approved' },
+  { value: 'waiting', label: 'Waiting' },
+  { value: 'all', label: 'Every status' },
 ] as const
+type StatusKey = (typeof STATUSES)[number]['value']
 const STATUS_FILTER = { open: ['PENDING', 'APPROVED'], waiting: ['PENDING'], all: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] } as const
 
 export function TeamLeaveList({ scope }: { scope: Scope }) {
   const [today] = useState(() => new Date())
   const [from, setFrom] = useState(toDateInput(today))
   const [to, setTo] = useState(toDateInput(new Date(today.getTime() + 30 * 86_400_000)))
-  const [status, setStatus] = useState<(typeof STATUSES)[number][0]>('open')
+  const [status, setStatus] = useState<StatusKey>('open')
   const [search, setSearch] = useState('')
   const valid = !!from && !!to && to >= from
   const list = useQuery({
@@ -54,13 +55,7 @@ export function TeamLeaveList({ scope }: { scope: Scope }) {
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input aria-label="Search by name or code" placeholder="Name or code" className="h-9 rounded-xl pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <div className={SEGMENTS}>
-          {STATUSES.map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={status === value} onClick={() => setStatus(value)} className={segment(status === value)}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl label="Leave status" value={status} onChange={setStatus} options={STATUSES} />
       </div>
       <FormError error={list.error} />
       {list.isPending && valid && <LeaveRowsSkeleton showEmployee rows={4} label="Loading the leave" />}

@@ -171,8 +171,9 @@ reporting tree and the HOD department stay on Team attendance / Team leave and i
 role's numbers, each only with the access its reader needs (2026-11-27): the attendance month to close (Attendance setup
 Edit for every company), payroll runs (Payroll View, no amounts), joiners & leavers (Employees View) and who is away
 (Leave View); then People today in its access, the requests raised for others and the role's pages. Since 2026-11-27 it
-has the same header as `/ess` (headline numbers from the role's access, the people today in the role's access as a strip)
-and the same attention-first order: decisions waiting, a month over and not locked, a pay month without a run first. Motion on the homes
+has the same header as `/ess` (headline numbers from the role's access, the people today in the role's access as a strip).
+Under that header, the attendance cycle (Attendance setup's start day, with who is in today) sits above the work,
+and the same attention-first order follows: decisions waiting, a month over and not locked, a pay month without a run first. Motion on the homes
 only tells something (a changed number glows once, bars grow to their value, the "now" marker slides) and stops under
 reduced motion. The cream/charcoal/gold layout follows Crextio's composition: a wide light work column beside a narrower
 charcoal focus. Business priorities come from main. Both reuse existing typed APIs, without schema changes, role-name

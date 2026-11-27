@@ -1,4 +1,5 @@
-// One employee and a temporary login for every role, so each role can be tried on a new database.
+// One employee and a temporary login for every role, so each role can be tried on a new database,
+// plus one employee with no role for Employee self-service.
 // Also makes a small company, plant and department for them to sit in, if those are not there yet.
 //
 //   npm run create-role-employees
@@ -15,6 +16,8 @@ const PASSWORD = 'Welcome@123'
 const COMPANY_CODE = 'DEMO'
 const PLANT_CODE = 'HO'
 const DEPARTMENT_CODE = 'HR'
+// No role: signs in to Employee self-service only.
+const EMPLOYEE_EMAIL = 'employee@demo.example'
 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
 const loginOf = (roleName: string) => `${roleName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}@demo.example`
@@ -98,6 +101,29 @@ try {
     created += 1
     console.log(`${roleName}: ${login.employeeCode}  ${email}`)
   }
+
+  const existingEmployee = await employeesService.findSummaryByLogin(EMPLOYEE_EMAIL)
+  if (existingEmployee) {
+    console.log(`Employee: already there as ${existingEmployee.employeeCode} (${EMPLOYEE_EMAIL})`)
+  } else {
+    const employee = await employeesService.createEmployee(
+      {
+        joiningType: 'REGULAR',
+        employmentType: 'PERMANENT',
+        workforceCategory: 'WHITE_COLLAR',
+        dateOfJoining: today(),
+        status: 'ACTIVE',
+        firstName: 'Employee',
+        workEmail: EMPLOYEE_EMAIL,
+        ...where,
+      },
+      SYSTEM_ACTOR,
+    )
+    const login = await accountsService.setPassword(employee.employeeCode, PASSWORD)
+    created += 1
+    console.log(`Employee: ${login.employeeCode}  ${EMPLOYEE_EMAIL}`)
+  }
+
   if (created > 0) console.log(`Temporary password for the new logins: ${PASSWORD}  (must be changed at the first sign-in)`)
   else console.log('Nothing new to create.')
   process.exit(0)

@@ -2,13 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Building2, CalendarCog, CircleAlert, FileText, Fingerprint, History, Inbox, ListChecks, ShieldCheck, UserPlus, Users, Workflow } from 'lucide-react'
 import { Fragment, type ReactNode, useEffect, useState } from 'react'
 import { FormError } from '@/components/FormError'
-import { HomeAttendanceSkeleton, HomeRoleSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
+import { CycleDeskSkeleton, HomeAttendanceSkeleton, HomeRoleSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
 import { HomeStripSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { ManageWorkspaceSkeleton } from '@/components/skeletons/home/ManageWorkspaceSkeleton'
 import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
 import { todayDay } from '@/lib/utils'
 import { HomeAttendance } from './components/HomeAttendance'
+import { CycleDesk } from './components/CycleDesk'
 import { HomeAwayWeek } from './components/HomeAwayWeek'
 import { HomeMonthClose } from './components/HomeMonthClose'
 import { HomeMovements } from './components/HomeMovements'
@@ -30,6 +31,7 @@ import { usePayrollRuns } from './components/usePayrollRuns'
 // Redesigned 2026-11-27 like /ess (the user): big headline numbers from the role's access, the people today in the role's
 // access as a strip under the greeting, and what needs the person first - decisions waiting, a month over and not locked,
 // a pay month without a run - while calm cards follow and "nothing waiting" becomes a slim row at the bottom.
+// The attendance cycle (the start day from Attendance setup, with who is in today) sits under that header.
 export function ManageHomePage() {
   const { me, can, coversGroup, ready } = useAccess()
   const [now] = useState(() => new Date())
@@ -128,6 +130,8 @@ export function ManageHomePage() {
         </div>
         <div className="min-w-0 lg:col-span-5 lg:justify-self-end">{ready && <HeadlineStats stats={headlines.map((h) => ({ ...h, value: h.value ?? '—' }))} loading={headlines.some((h) => h.value === null)} />}</div>
       </header>
+      {can('ATTENDANCE') && overview.isPending && <CycleDeskSkeleton />}
+      {can('ATTENDANCE') && hasPeople && o && <CycleDesk overview={o} date={date} />}
       <FormError error={overview.error} />
       <div className="grid min-w-0 items-start gap-3 lg:grid-cols-12">
         <div className="min-w-0 space-y-3 lg:col-span-8">{ready ? cards.map((c) => <Fragment key={c.key}>{c.node}</Fragment>) : <ManageWorkspaceSkeleton label="Loading your role's pages" />}</div>
