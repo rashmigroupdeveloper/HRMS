@@ -11,7 +11,7 @@ import * as reportsRepository from './reports.repository.js'
 import type { reportFilter, reportInput } from './reports.schema.js'
 
 const MAX_EXPORT = 20_000
-const scopes = { TEAM: 'Current reporting team', DEPARTMENT: 'Current HOD department', ALL: 'Attendance View data access' }
+const scopes = { DIRECT: 'Current direct reports', TEAM: 'Current reporting team', DEPARTMENT: 'Current HOD department', ALL: 'Attendance View data access' }
 
 async function queryFor(viewer: CurrentUser, filter: z.infer<typeof reportFilter>) {
   // Relationship reads use explicit authorized ids; ALL additionally keeps its row scope inside every repository query.

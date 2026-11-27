@@ -336,7 +336,10 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   amounts), joiners & leavers, away this week - each gated by the access of its reader. One API change:
   `attendance.overview` `today.shiftHours`. Punches still arrive by upload, so nothing claims live presence.
   **Redesigned 2026-11-27 (the user: "boring, not professional" - follow crextio-ref):** headline numbers, month strip,
-  Today ring, My week bars, light titles with round links, slim empty states. The role home's header keeps its old form.
+  Today ring, My week bars, light titles with round links, slim empty states. The role home (/manage) got the same header
+  and attention-first order the same day (the user chose it).
+  **Same day (the user):** attention first (decisions / days to fix rise to the top, calm ones sink as slim rows) and the
+  self-service home shows only direct reports - a `DIRECT` scope on the attendance and leave people filters.
 - **Still deferred:** broader HR workload trends, executive trends and device-health panels (they need the Kent
   machines' automatic feed, item 19); a team attendance dot grid over several days (needs a bounded multi-day board read, not the whole
   muster for an Attendance View scope).

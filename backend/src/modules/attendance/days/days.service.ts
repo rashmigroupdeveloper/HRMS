@@ -294,9 +294,11 @@ export async function peopleInScope(viewer: CurrentUser, filter: PeopleFilter, f
   const ids =
     filter.scope === 'ALL'
       ? undefined
-      : filter.scope === 'TEAM'
-        ? await employeesService.listReportingTreeIds(viewer.employeeId)
-        : await hodsService.listDepartmentIds(viewer.employeeId)
+      : filter.scope === 'DIRECT'
+        ? await employeesService.listDirectReportIds(viewer.employeeId)
+        : filter.scope === 'TEAM'
+          ? await employeesService.listReportingTreeIds(viewer.employeeId)
+          : await hodsService.listDepartmentIds(viewer.employeeId)
   if (ids && !ids.length) return []
   return employeesService.listAttendancePeople({
     // everyone: inside the viewer's Attendance View data access; the team / department: the reporting tree / the HOD

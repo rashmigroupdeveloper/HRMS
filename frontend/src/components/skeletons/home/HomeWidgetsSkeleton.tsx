@@ -51,13 +51,13 @@ export function HomeWeekSkeleton() {
 }
 
 // The attendance month's strip under the greeting: its part names real, the parts as grey pills
-export function HomeStripSkeleton() {
+export function HomeStripSkeleton({ parts = MONTH_STRIP }: { parts?: readonly string[] }) {
   return (
-    <div role="status" aria-label="Loading your attendance month" className="min-w-0">
+    <div role="status" aria-label="Loading the strip" className="min-w-0">
       <Skeleton className="mb-2 h-3 w-56 rounded" />
       <div className="flex w-full gap-1.5">
-        {MONTH_STRIP.map((label, i) => (
-          <div key={label} className="min-w-[52px]" style={{ flex: `${[6, 1, 1, 2, 10][i]} 1 0%` }}>
+        {parts.map((label, i) => (
+          <div key={label} className="min-w-[52px]" style={{ flex: `${[6, 1, 1, 2, 10][i] ?? 2} 1 0%` }}>
             <p className="mb-1.5 truncate text-xs text-muted-foreground">{label}</p>
             <Skeleton className="h-11 rounded-full" />
           </div>

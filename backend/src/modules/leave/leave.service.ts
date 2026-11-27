@@ -44,7 +44,7 @@ export async function getChangeablePerson(viewer: CurrentUser, employeeCode: str
   return person
 }
 
-export type PeopleFilter = { scope: 'TEAM' | 'DEPARTMENT' | 'ALL'; companyIds?: number[]; departmentIds?: number[]; search?: string }
+export type PeopleFilter = { scope: 'DIRECT' | 'TEAM' | 'DEPARTMENT' | 'ALL'; companyIds?: number[]; departmentIds?: number[]; search?: string }
 
 // The employees a list shows, employed at some point from..to: the viewer's reporting tree (TEAM), the employees whose HOD
 // they are (DEPARTMENT), or everyone in their Leave View data access (ALL)
@@ -53,9 +53,11 @@ export async function peopleInScope(viewer: CurrentUser, filter: PeopleFilter, f
   const ids =
     filter.scope === 'ALL'
       ? undefined
-      : filter.scope === 'TEAM'
-        ? await employeesService.listReportingTreeIds(viewer.employeeId)
-        : await hodsService.listDepartmentIds(viewer.employeeId)
+      : filter.scope === 'DIRECT'
+        ? await employeesService.listDirectReportIds(viewer.employeeId)
+        : filter.scope === 'TEAM'
+          ? await employeesService.listReportingTreeIds(viewer.employeeId)
+          : await hodsService.listDepartmentIds(viewer.employeeId)
   if (ids && !ids.length) return []
   return employeesService.listLeavePeople({
     // everyone: the viewer's Leave View data access; the team / department: the relationship, with the ids

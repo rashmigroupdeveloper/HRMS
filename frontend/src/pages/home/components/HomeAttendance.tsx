@@ -17,17 +17,19 @@ import { PEOPLE_LEGEND } from './home-labels'
 // People today (2026-11-27 redesign, Crextio's "Onboarding task 2/8"): how many of the people in the scope have punched
 // in, out of all of them, large; one bar split into punched in / on leave / not in yet; then the people worth a look (late,
 // missed punch, absent) as a task list. Today's board refreshes itself every 2 minutes - punches arrive with each upload.
-type Scope = 'TEAM' | 'DEPARTMENT' | 'ALL'
-export function HomeAttendance({ overview, date, dark = false }: { overview: Overview; date: Date; dark?: boolean }) {
+type Scope = 'DIRECT' | 'TEAM' | 'DEPARTMENT' | 'ALL'
+// `direct`: the self-service home - only those who report to the viewer directly (the user, 2026-11-27); the role portal
+// keeps its views (the team, the HOD department, the role's access)
+export function HomeAttendance({ overview, date, dark = false, direct = false }: { overview: Overview; date: Date; dark?: boolean; direct?: boolean }) {
   const [selected, setSelected] = useState<Scope>('TEAM')
   const { to } = usePortal()
-  const scopes = [...(overview.teamSize ? [['TEAM', 'My team'] as const] : []), ...(overview.departmentSize ? [['DEPARTMENT', 'My department'] as const] : []), ...(overview.canSeeAll ? [['ALL', 'Within my access'] as const] : [])]
+  const scopes: (readonly [Scope, string])[] = direct ? (overview.directReports ? [['DIRECT', 'My direct reports']] : []) : [...(overview.teamSize ? [['TEAM', 'My team'] as const] : []), ...(overview.departmentSize ? [['DEPARTMENT', 'My department'] as const] : []), ...(overview.canSeeAll ? [['ALL', 'Within my access'] as const] : [])]
   const scope = scopes.find(([value]) => value === selected)?.[0] ?? scopes[0]?.[0] ?? 'TEAM'
   const isToday = date.getTime() === todayDay().getTime()
   const board = useQuery({ ...orpc.attendance.days.board.queryOptions({ input: { scope, date } }), enabled: scopes.length > 0, refetchInterval: isToday ? 120_000 : false })
   const data = board.data
   const review = data?.items.filter((r) => r.state === 'MISSED_PUNCH' || r.state === 'ABSENT' || r.lateMinutes > 0).slice(0, 4)
-  const view = scope === 'TEAM' ? 'team' : scope === 'DEPARTMENT' ? 'department' : 'all'
+  const view = scope === 'DEPARTMENT' ? 'department' : scope === 'ALL' ? 'all' : 'team'
   if (!scopes.length) return null
   const s = data?.summary
   const parts = s ? [s.in, s.leave + s.onDuty, s.notIn] : []
@@ -39,7 +41,7 @@ export function HomeAttendance({ overview, date, dark = false }: { overview: Ove
         <div className="min-w-0">
           <h2 className="text-xl font-light tracking-tight">People today</h2>
           <p className={cn('mt-0.5 flex items-center gap-1.5 text-xs', muted)}>
-            {isToday && board.dataUpdatedAt > 0 ? <><span aria-hidden className={cn('size-1.5 rounded-full bg-positive', board.isFetching && 'home-live')} />Updated {new Date(board.dataUpdatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</> : 'Attendance in this scope'}
+            {isToday && board.dataUpdatedAt > 0 ? <><span aria-hidden className={cn('size-1.5 rounded-full bg-positive', board.isFetching && 'home-live')} />Updated {new Date(board.dataUpdatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</> : direct ? 'Your direct reports' : 'Attendance in this scope'}
           </p>
         </div>
         <CornerLink to={to(`/team-attendance?view=${view}`)} label="Open team attendance" dark={dark} />

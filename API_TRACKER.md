@@ -3107,7 +3107,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Access:** any logged-in employee.
 - **Scope:** not limited by data access - the caller's own (and the sizes of their reporting tree and of their HOD department).
 - **Input:** none
-- **Returns:** `{ today, teamSize, departmentSize, currentMonth {year, month} (the attendance month today is in - 26th to 25th, 2026-11-22), cycleStartDay (the day an attendance month starts, 1-28 - the month placeholder draws its real days), canSeeAll, canEdit }` - `today` the viewer's day (`{ date, employed, status, autoStatus, planned (WORK | WEEKLY_OFF | HOLIDAY), holiday, holidayHalf, rostered, shift {id, code, name}, inAt, outAt ("09:04", the work location's clock), punchCount, workedMinutes, lateMinutes, earlyMinutes, note, correction }` without the correction, plus `corrected` and `shiftHours` (2026-11-27, the home page's day card: `{ start, end ("09:00", the work location's clock), startsAt, endsAt (instants) }` - when the day's working part runs, a night shift ending the next day, a day of one half only to / from its split, as the punches are judged; null on a weekly off or holiday) and `notTracked` (2026-11-27: the person's attendance is not tracked on the day - from the marker itself, before the day is worked out)); `teamSize` the size of their reporting tree; `departmentSize` (2026-11-18) how many employees they are the HOD of; the "Team attendance" menu item and page show when either is above 0 or `canSeeAll` (2026-11-22); (Shift changes to decide are on the Approvals page since 2026-11-22.)
+- **Returns:** `{ today, teamSize, directReports, departmentSize, currentMonth {year, month} (the attendance month today is in - 26th to 25th, 2026-11-22), cycleStartDay (the day an attendance month starts, 1-28 - the month placeholder draws its real days), canSeeAll, canEdit }` - `today` the viewer's day (`{ date, employed, status, autoStatus, planned (WORK | WEEKLY_OFF | HOLIDAY), holiday, holidayHalf, rostered, shift {id, code, name}, inAt, outAt ("09:04", the work location's clock), punchCount, workedMinutes, lateMinutes, earlyMinutes, note, correction }` without the correction, plus `corrected` and `shiftHours` (2026-11-27, the home page's day card: `{ start, end ("09:00", the work location's clock), startsAt, endsAt (instants) }` - when the day's working part runs, a night shift ending the next day, a day of one half only to / from its split, as the punches are judged; null on a weekly off or holiday) and `notTracked` (2026-11-27: the person's attendance is not tracked on the day - from the marker itself, before the day is worked out)); `teamSize` the size of their reporting tree; `directReports` (2026-11-27) how many report to them directly - the self-service home shows only those; `departmentSize` (2026-11-18) how many employees they are the HOD of; the "Team attendance" menu item and page show when either is above 0 or `canSeeAll` (2026-11-22); (Shift changes to decide are on the Approvals page since 2026-11-22.)
 - **What it does:** what the attendance pages, the menu (whether "Team attendance" shows) and the home page's "Today" card need first.
 - **Errors:** `401`.
 
@@ -3132,8 +3132,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 ### `attendance.days.board`
 - **HTTP:** `POST /api/rpc/attendance/days/board` · **Code:** `backend/src/modules/attendance/days/`
 - **Access:** TEAM: any logged-in employee (their reporting tree - empty without one); DEPARTMENT (2026-11-18): any logged-in employee (the employees whose HOD they are - empty when they are no HOD); ALL: Attendance: View.
-- **Scope:** TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships, not data-access rows); ALL: only employees inside the caller's Attendance View data access.
-- **Input:** `scope` `TEAM` (default - the viewer's reporting tree, every level), `DEPARTMENT` (the employees whose HOD the viewer is) or `ALL` (Attendance: View), `companyIds?`, `workLocationIds?`, `departmentIds?`, `search?` (code or name), `date`
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships, not data-access rows); ALL: only employees inside the caller's Attendance View data access.
+- **Input:** `scope` `DIRECT` (only direct reports), `TEAM` (default - the viewer's reporting tree, every level), `DEPARTMENT` (the employees whose HOD the viewer is) or `ALL` (Attendance: View), `companyIds?`, `workLocationIds?`, `departmentIds?`, `search?` (code or name), `date`
 - **Returns:** `{ date, isToday, items: [{ employeeCode, name, company, department, designation, state, ...day (as `myMonth`, with its halves and covers) }], summary { total, in, late, notIn, absent, off, leave, onDuty } }` - `state` the day's status, or `NOT_IN` today before the first punch (`LEAVE` / `ON_DUTY` when approved leave / on duty covers a day not worked out yet - 2026-11-22).
 - **What it does:** who is in / late / not in yet / absent / off on a day. A working day with no punch is "not in yet" today and on a day to come, absent only once it has passed (2026-11-23: a day to come showed everyone absent).
 - **Errors:** `400` · `403`.
@@ -3141,8 +3141,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 ### `attendance.days.muster`
 - **HTTP:** `POST /api/rpc/attendance/days/muster` · **Code:** `backend/src/modules/attendance/days/`
 - **Access:** as `board`.
-- **Scope:** TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships, not data-access rows); ALL: only employees inside the caller's Attendance View data access.
-- **Input:** `scope` `TEAM` (default - the viewer's reporting tree, every level), `DEPARTMENT` (the employees whose HOD the viewer is) or `ALL` (Attendance: View), `companyIds?`, `workLocationIds?`, `departmentIds?`, `search?` (code or name), `year`, `month`
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships, not data-access rows); ALL: only employees inside the caller's Attendance View data access.
+- **Input:** `scope` `DIRECT` (only direct reports), `TEAM` (default - the viewer's reporting tree, every level), `DEPARTMENT` (the employees whose HOD the viewer is) or `ALL` (Attendance: View), `companyIds?`, `workLocationIds?`, `departmentIds?`, `search?` (code or name), `year`, `month`
 - **Returns:** `{ year, month, from, to, locked, days: Date[], rows: [{ employeeCode, name, company, department, cells: [{ code, first, second, late, corrected }], totals }] }` - the attendance month (as `myMonth`) - `code` P / A / MP / WO / H / OD / a leave type's code (CL, SL... - 2026-11-22), or the two halves when they differ (2026-11-22): `P/WO` a Saturday half day, `P/A` a half day worked, `CL/P`; a day to come shows its approved leave / on duty; `first` / `second` each half's code; '' = not worked out yet / not employed; totals in halves (as `myMonth`).
 - **What it does:** the monthly muster: everyone in the scope x every day.
 - **Errors:** `400` · `403`.
@@ -3150,7 +3150,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 ### `attendance.days.exportMuster`
 - **HTTP:** `POST /api/rpc/attendance/days/exportMuster` · **Code:** `backend/src/modules/attendance/days/`
 - **Access:** as `board`.
-- **Scope:** TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships, not data-access rows); ALL: only employees inside the caller's Attendance View data access.
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships, not data-access rows); ALL: only employees inside the caller's Attendance View data access.
 - **Input:** as `muster`.
 - **Returns:** a file `muster-YYYY-MM.xlsx` (codes per day - two halves as `P/WO` -, `*` = late, totals in halves, and a sheet explaining the codes).
 - **What it does:** the muster as Excel.
@@ -3952,8 +3952,8 @@ leave year is the calendar year.
 ### `leave.balances.register`
 - **HTTP:** `POST /api/rpc/leave/balances/register` · **Code:** `backend/src/modules/leave/balances/`
 - **Access:** TEAM / DEPARTMENT: Logged in; ALL: Leave: View.
-- **Scope:** TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships); ALL: only employees inside the caller's Leave View data access.
-- **Input:** `{ scope: TEAM (default) | DEPARTMENT | ALL, companyIds?, departmentIds?, search?, year? }`
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships); ALL: only employees inside the caller's Leave View data access.
+- **Input:** `{ scope: DIRECT | TEAM (default) | DEPARTMENT | ALL, companyIds?, departmentIds?, search?, year? }`
 - **Returns:** `{ year, types: [{id, code, name, isPaid}], rows: [{ employeeCode, name, company, department, balances: { [typeId]: { balance, pending, taken } }, canAdjust }] }`
 - **What it does:** the leave register: everyone in the scope with their balance of each active type (employed in the year).
 - **Errors:** `400` · `403`.
@@ -3961,7 +3961,7 @@ leave year is the calendar year.
 ### `leave.balances.export`
 - **HTTP:** `POST /api/rpc/leave/balances/export` · **Code:** `backend/src/modules/leave/balances/`
 - **Access:** as `register`.
-- **Scope:** as `register`.
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); as `register`.
 - **Input:** as `register`.
 - **Returns:** a file `leave-balances-YYYY.xlsx` (per type: the balance and the days taken in the year).
 - **What it does:** the register as Excel.
@@ -4057,8 +4057,8 @@ leave year is the calendar year.
 ### `leave.applications.list`
 - **HTTP:** `POST /api/rpc/leave/applications/list` · **Code:** `backend/src/modules/leave/applications/`
 - **Access:** TEAM / DEPARTMENT: Logged in; ALL: Leave: View.
-- **Scope:** TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships); ALL: only employees inside the caller's Leave View data access.
-- **Input:** `{ scope: TEAM (default) | DEPARTMENT | ALL, companyIds?, departmentIds?, search?, from, to, statuses? (default PENDING + APPROVED) }`
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships); ALL: only employees inside the caller's Leave View data access.
+- **Input:** `{ scope: DIRECT | TEAM (default) | DEPARTMENT | ALL, companyIds?, departmentIds?, search?, from, to, statuses? (default PENDING + APPROVED) }`
 - **Returns:** the applications overlapping from..to (up to 2000), as `apply`.
 - **What it does:** who is on leave (or has asked) over a span.
 - **Errors:** `400` · `403`.
@@ -4161,8 +4161,8 @@ leave year is the calendar year.
 ### `attendance.days.exportBoard`
 - **HTTP:** `POST /api/rpc/attendance/days/exportBoard` · **Code:** `backend/src/modules/attendance/days/`
 - **Access:** Logged in; as board.
-- **Scope:** Identical to `attendance.days.board`: TEAM reporting relationship, DEPARTMENT HOD relationship, or ALL Attendance View data access.
-- **Input:** Same as `attendance.days.board`: date, scope TEAM/DEPARTMENT/ALL (default TEAM), optional search, companyIds, workLocationIds, departmentIds.
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); Identical to `attendance.days.board`: TEAM reporting relationship, DEPARTMENT HOD relationship, or ALL Attendance View data access.
+- **Input:** Same as `attendance.days.board`: date, scope DIRECT/TEAM/DEPARTMENT/ALL (default TEAM), optional search, companyIds, workLocationIds, departmentIds.
 - **Returns:** Excel File with report data and Review notes. One row per authorized employee on the selected date, with code/name/company/department, state, shift, in/out, worked/late minutes and correction reason.
 - **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
 - **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
@@ -4224,7 +4224,7 @@ leave year is the calendar year.
 ### `leave.applications.export`
 - **HTTP:** `POST /api/rpc/leave/applications/export` · **Code:** `backend/src/modules/leave/applications/`
 - **Access:** Logged in; as applications.list.
-- **Scope:** Same as applications.list: TEAM reporting tree, DEPARTMENT HOD department, or ALL Leave View data access.
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); Same as applications.list: TEAM reporting tree, DEPARTMENT HOD department, or ALL Leave View data access.
 - **Input:** Same as `leave.applications.list`: required from/to dates, scope default TEAM, optional companyIds/departmentIds (up to 100), search up to 100, statuses up to four PENDING/APPROVED/REJECTED/CANCELLED (default pending and approved).
 - **Returns:** Excel File with report data and Review notes. All authorized overlapping applications matching the selected filters: employee, type, dates, half-day boundaries, days, status, reason, request time and cancellation reason. Does not approve or cancel leave.
 - **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
@@ -4271,8 +4271,8 @@ leave year is the calendar year.
 ### `attendance.reports.list`
 - **HTTP:** `POST /api/rpc/attendance/reports/list` · **Code:** `backend/src/modules/attendance/reports/`
 - **Access:** any logged-in employee, with the requested scope checked in the service.
-- **Scope:** TEAM = current reporting-tree ids; DEPARTMENT = current HOD employees; ALL requires Attendance View and that active role's company/plant/department DataScope. No relationship gives an empty list. Supplied company/plant/department/work-location ids and search only narrow this scope. Identical scope applies to rows, total, all summaries and employee-period totals. Picker options contain only scoped employees' current places within the employment/date range, before report filters; no private employee fields returned. No broad Reports permission.
-- **Input:** `{scope?: TEAM|DEPARTMENT|ALL (TEAM), from: Date, to: Date, mode?: DETAIL|EXCEPTIONS (DETAIL), companyIds?, plantIds?, departmentIds?, workLocationIds?, search?, status?, exception?: ANY|LATE|EARLY|ABSENT|MISSED_PUNCH (ANY), page?: number (1), pageSize?: number (25)}`. Dates required UTC-midnight calendar dates, years 2020–2100, inclusive ordered span at most 366 calendar days; independent of the attendance/payroll cycle. Id arrays positive integers, max 100 each. Search trimmed max 100; every word matches code/first/middle/last name. Status is a DayStatus. Exception applies only in EXCEPTIONS mode: late/early minutes >0, ABSENT/MISSED_PUNCH in either half; ANY matches their union. Other filters combine with AND. Page positive integer; size 1–100.
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); TEAM = current reporting-tree ids; DEPARTMENT = current HOD employees; ALL requires Attendance View and that active role's company/plant/department DataScope. No relationship gives an empty list. Supplied company/plant/department/work-location ids and search only narrow this scope. Identical scope applies to rows, total, all summaries and employee-period totals. Picker options contain only scoped employees' current places within the employment/date range, before report filters; no private employee fields returned. No broad Reports permission.
+- **Input:** `{scope?: DIRECT|TEAM|DEPARTMENT|ALL (TEAM), from: Date, to: Date, mode?: DETAIL|EXCEPTIONS (DETAIL), companyIds?, plantIds?, departmentIds?, workLocationIds?, search?, status?, exception?: ANY|LATE|EARLY|ABSENT|MISSED_PUNCH (ANY), page?: number (1), pageSize?: number (25)}`. Dates required UTC-midnight calendar dates, years 2020–2100, inclusive ordered span at most 366 calendar days; independent of the attendance/payroll cycle. Id arrays positive integers, max 100 each. Search trimmed max 100; every word matches code/first/middle/last name. Status is a DayStatus. Exception applies only in EXCEPTIONS mode: late/early minutes >0, ABSENT/MISSED_PUNCH in either half; ANY matches their union. Other filters combine with AND. Page positive integer; size 1–100.
 - **Returns:** `{total,page,pageSize,items,summary,options}`. Rows: id, work date, employee code/name, current company/plant/department, shift code/name, overall/punch-derived/half statuses, first/last punch instants, worked/late/early minutes, stored punch count, calculation note, employee matching-day/late/early totals for the same filtered period. Summary: matching days, distinct employees, worked/late/early minutes, stored punch count, late/early/absent/missed-punch day counts. Counts include either half, not fractional-day absence totals; categories can overlap. Options: authorized companies/plants/departments. Internal employee ids/contacts are not returned.
 - **What it does:** read-only register of stored computed days; does not recompute or infer uncomputed/missing days as absent. Current placement/team membership governs visibility; historical placement is not claimed. Stable order date descending, employee code ascending, id ascending; pages above the end clamp to the last. Count/page/summaries share a repeatable-read transaction. UI `/attendance-reports`: scope, calendar dates, employee search, company/plant/department/status, detail/exception tabs, filter persistence in URL, compact summaries, pagination and existing days.punches drill-down. All-scoped company/group access works through ALL and the existing grants.
 - **Errors:** `400 BAD_REQUEST` invalid input/range; `401` no usable session; `403 FORBIDDEN` ALL without Attendance View. Outside-scope filters return no rows, not expanded access.
@@ -4280,7 +4280,7 @@ leave year is the calendar year.
 ### `attendance.reports.export`
 - **HTTP:** `POST /api/rpc/attendance/reports/export` · **Code:** `backend/src/modules/attendance/reports/`
 - **Access:** same as attendance.reports.list.
-- **Scope:** same identity/DataScope and filters as list, including every summary and employee-period total; never just the current page.
+- **Scope:** DIRECT (2026-11-27, the self-service home): only the people who report to the caller directly (the relationship, like TEAM); same identity/DataScope and filters as list, including every summary and employee-period total; never just the current page.
 - **Input:** the list filters without page/pageSize; same defaults and validation.
 - **Returns:** XLSX File with Attendance detail or Attendance exceptions, Summary and Review notes sheets. All matching rows, max 20,000; above cap refuses the export, never silently truncates. Codes and exact UTC ISO first/last timestamps are text; minutes/counts are numeric; work dates are date cells. Includes per-half/punch-derived statuses, shift, current placement, employee filtered-period totals and full stored calculation notes.
 - **What it does:** uses the same query and repeatable-read summary as the list; filters, current-placement/time/date limitations and preparer recorded in Review notes. Read-only, no corrections/approvals or payroll changes. No OT pay or penalty inferred.

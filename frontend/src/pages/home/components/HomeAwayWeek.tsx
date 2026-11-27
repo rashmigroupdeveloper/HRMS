@@ -15,22 +15,24 @@ import { AWAY_LEGEND, AWAY_TITLE, WEEKDAY_SHORT, weekOf } from './home-labels'
 // person with leave waiting or approved on a day from Monday to Sunday, today's column marked - so a manager sees at a
 // glance who is out before planning the week. Their team / HOD department in self-service, everyone in the role's Leave
 // View access in the role portal (the same views as Team leave).
-type Scope = 'TEAM' | 'DEPARTMENT' | 'ALL'
-const VIEW: Record<Scope, string> = { TEAM: 'team', DEPARTMENT: 'department', ALL: 'all' }
+type Scope = 'DIRECT' | 'TEAM' | 'DEPARTMENT' | 'ALL'
+const VIEW: Record<Scope, string> = { DIRECT: 'team', TEAM: 'team', DEPARTMENT: 'department', ALL: 'all' }
 const ROWS = 6
 
-export function HomeAwayWeek() {
+// `directReports`: the self-service home - only those who report to the viewer directly (the user, 2026-11-27)
+export function HomeAwayWeek({ directReports }: { directReports?: number }) {
   const { to, portal } = usePortal()
-  const overview = useQuery(orpc.leave.overview.queryOptions())
+  const direct = directReports !== undefined
+  const overview = useQuery({ ...orpc.leave.overview.queryOptions(), enabled: !direct })
   const o = overview.data
-  const scopes = o ? ([...(o.teamSize ? [['TEAM', 'My team']] : []), ...(o.departmentSize ? [['DEPARTMENT', 'My department']] : []), ...(o.canSeeAll ? [['ALL', 'Within my access']] : [])] as [Scope, string][]) : []
+  const scopes = direct ? (directReports ? ([['DIRECT', 'My direct reports']] as [Scope, string][]) : []) : o ? ([...(o.teamSize ? [['TEAM', 'My team']] : []), ...(o.departmentSize ? [['DEPARTMENT', 'My department']] : []), ...(o.canSeeAll ? [['ALL', 'Within my access']] : [])] as [Scope, string][]) : []
   const [selected, setSelected] = useState<Scope | null>(null)
   // self-service opens on one's team, the role portal on the role's access
   const scope = scopes.find(([value]) => value === selected)?.[0] ?? (portal === 'manage' ? scopes.at(-1) : scopes[0])?.[0]
   const today = todayDay()
   const week = weekOf(today)
   const leave = useQuery({ ...orpc.leave.applications.list.queryOptions({ input: { scope: scope ?? 'TEAM', from: week[0]!, to: week[6]! } }), enabled: !!scope })
-  if (o && !scopes.length) return null
+  if ((direct || o) && !scopes.length) return null
   // per person: each weekday approved / waiting (approved wins when two applications meet on a day)
   const people = new Map<string, { name: string; days: ('APPROVED' | 'PENDING' | null)[] }>()
   for (const a of leave.data ?? []) {
@@ -43,7 +45,7 @@ export function HomeAwayWeek() {
   const todayIndex = week.findIndex((d) => d.getTime() === today.getTime())
   const rows = [...people].filter(([, r]) => r.days.some(Boolean)).sort(([, a], [, b]) => a.days.findIndex(Boolean) - b.days.findIndex(Boolean) || a.name.localeCompare(b.name))
   const awayToday = rows.filter(([, r]) => r.days[todayIndex]).length
-  const pending = overview.isPending || leave.isPending
+  const pending = (!direct && overview.isPending) || leave.isPending
   return (
     <section className="home-panel min-w-0 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">

@@ -22,9 +22,10 @@ import * as daysService from './days/days.service.js'
 
 export async function getOverview(viewer: CurrentUser) {
   const person = await daysService.getVisiblePerson(viewer, viewer.employeeCode)
-  const [todayView, team, department, lock] = await Promise.all([
+  const [todayView, team, direct, department, lock] = await Promise.all([
     daysService.getDayOf(person, today()),
     employeesService.listReportingTreeIds(viewer.employeeId),
+    employeesService.listDirectReportIds(viewer.employeeId),
     hodsService.listDepartmentIds(viewer.employeeId),
     daysService.loadLockState(),
   ])
@@ -32,6 +33,8 @@ export async function getOverview(viewer: CurrentUser) {
     today: todayView,
     // the size of the viewer's reporting tree (0: no team tab)
     teamSize: team.length,
+    // how many report to the viewer directly - the self-service home shows only them (the user, 2026-11-27)
+    directReports: direct.length,
     // how many employees the viewer is the HOD of (0: no department tab - BACKLOG 3e)
     departmentSize: department.length,
     // the attendance month today is in (with RML's 26th start day, 26 Nov is already "December" - 2026-11-22)

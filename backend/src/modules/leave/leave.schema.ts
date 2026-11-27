@@ -12,7 +12,8 @@ export const yearSchema = z.number().int().min(2020).max(2100)
 // Whose leave a list shows: the viewer's reporting tree (TEAM), the employees whose HOD they are (DEPARTMENT, view only)
 // or everyone in their data access (ALL - Leave: View)
 export const peopleFilterSchema = z.object({
-  scope: z.enum(['TEAM', 'DEPARTMENT', 'ALL']).default('TEAM'),
+  // DIRECT (2026-11-27): only those who report to the viewer directly - the self-service home
+  scope: z.enum(['DIRECT', 'TEAM', 'DEPARTMENT', 'ALL']).default('TEAM'),
   companyIds: z.array(idSchema).max(100).optional(),
   departmentIds: z.array(idSchema).max(100).optional(),
   search: z.string().trim().max(100).optional(),

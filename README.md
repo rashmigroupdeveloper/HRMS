@@ -162,11 +162,17 @@ greeting, the attendance month as a segmented strip and big headline numbers (a 
 waiting; otherwise: leave days left, days to fix, days present). Below: "Today" as a ring (the shift so far by the clock,
 the first punch in the middle, last out / worked / late beside it), "My week" as bars of hours worked, "Needs your
 attention" (the days of the last 30 still to fix, each opening its regularization at `/ess/attendance?regularize=<date>`),
-leave, coming holidays, recent requests and details - for a manager or HOD also the decisions named to them (one slim row
-when none wait), People today (in / total, refreshing every 2 minutes) and who is away this week. The role home (`/manage`) shows the role's decisions, open joining tasks and accepted offers (Onboarding), and the
+leave, coming holidays, recent requests and details - for a manager also the decisions named to them, People today (in /
+total, refreshing every 2 minutes) and who is away this week. **What needs the employee comes first** (the user,
+2026-11-27): decisions waiting (past due first) and days to fix rise to the top of the main column; with nothing waiting
+they become slim calm rows at its bottom. **Self-service covers oneself and one's direct reports only** (the user,
+2026-11-27): the home's team cards and numbers use the `DIRECT` scope (`attendance.overview` `directReports`); the whole
+reporting tree and the HOD department stay on Team attendance / Team leave and in the role portal. The role home (`/manage`) shows the role's decisions, open joining tasks and accepted offers (Onboarding), and the
 role's numbers, each only with the access its reader needs (2026-11-27): the attendance month to close (Attendance setup
 Edit for every company), payroll runs (Payroll View, no amounts), joiners & leavers (Employees View) and who is away
-(Leave View); then People today in its access, the requests raised for others and the role's pages. Motion on the homes
+(Leave View); then People today in its access, the requests raised for others and the role's pages. Since 2026-11-27 it
+has the same header as `/ess` (headline numbers from the role's access, the people today in the role's access as a strip)
+and the same attention-first order: decisions waiting, a month over and not locked, a pay month without a run first. Motion on the homes
 only tells something (a changed number glows once, bars grow to their value, the "now" marker slides) and stops under
 reduced motion. The cream/charcoal/gold layout follows Crextio's composition: a wide light work column beside a narrower
 charcoal focus. Business priorities come from main. Both reuse existing typed APIs, without schema changes, role-name

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { CalendarCheck, CircleAlert, Fingerprint, FolderOpen, IdCard, Inbox, Palmtree, ShieldCheck, UserRound, Users, Wallet } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Fragment, type ReactNode, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
 import { HomeAttendanceSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
@@ -27,8 +27,12 @@ import { useToFix } from './components/useToFix'
 
 // Employee self-service's home (/ess) - redesigned 2026-11-27 after Crextio's composition (crextio-ref/NOTES.md): the
 // greeting with the attendance month as a segmented strip, big light headline numbers on the right, then cards with light
-// titles and a round arrow link - Today as a ring, My week as bars, one dark card (People today for a team, otherwise the
-// days to fix). Every value comes from the existing readers. The role's work is the role portal's home (/manage).
+// titles and a round arrow link. Two rules from the user (2026-11-27):
+// - what needs the employee comes first: decisions waiting and days to fix rise to the top of the main column; with
+//   nothing waiting they become slim calm rows at its bottom;
+// - self-service is about oneself and, for a manager, the people who report to them DIRECTLY - not the whole reporting
+//   tree or an HOD department (those stay on the Team attendance / Team leave pages and the role portal).
+// The role's work is the role portal's home (/manage).
 export function HomePage() {
   const { me, ready } = useAccess()
   const [now] = useState(() => new Date())
@@ -38,21 +42,24 @@ export function HomePage() {
   // Start the decision reader alongside overview: choosing a layout must not create a second loading sequence.
   const toDecide = useQuery({ ...orpc.approvals.listToDecide.queryOptions(), enabled: ready })
   const o = overview.data
-  // the layout this browser showed last (team or not), so the loading state draws the page that will load - a per-browser
-  // convenience only; the answer always comes from attendance.overview (2026-11-27)
-  const [rememberedTeam] = useState(() => readRememberedTeam())
-  const hasPeople = o ? o.teamSize > 0 || o.departmentSize > 0 : overview.isPending && rememberedTeam
-  useEffect(() => { if (o) rememberTeam(o.teamSize > 0 || o.departmentSize > 0) }, [o])
-  // the headline numbers: for a team its size, who punched in today (the same board People today opens on) and the
-  // decisions; for everyone else the leave days left, the days to fix and the days present this attendance month
-  const teamScope = o?.teamSize ? 'TEAM' : 'DEPARTMENT'
-  const board = useQuery({ ...orpc.attendance.days.board.queryOptions({ input: { scope: teamScope, date } }), enabled: !!o && hasPeople })
-  const balances = useQuery({ ...orpc.leave.balances.get.queryOptions(), enabled: ready && !hasPeople })
-  const fix = useToFix(hasPeople ? undefined : o)
+  // what this browser showed last (a team; decisions / days to fix waiting), so the loading state draws the page that will
+  // load - a per-browser convenience only; the answers always come from the readers (2026-11-27)
+  const [remembered] = useState(readRemembered)
+  const hasPeople = o ? o.directReports > 0 : overview.isPending && remembered.team
+  const fix = useToFix(o)
   const my = useMyDays(o)
+  const decisionsWaiting = toDecide.data ? toDecide.data.length > 0 : remembered.decisions
+  const fixWaiting = !fix.pending ? fix.days.length > 0 : remembered.fix
+  useEffect(() => {
+    if (o && toDecide.data && !fix.pending) remember({ team: o.directReports > 0, decisions: toDecide.data.length > 0, fix: fix.days.length > 0 })
+  }, [o, toDecide.data, fix.pending, fix.days.length])
+  // the headline numbers: for a manager the direct reports, who of them punched in today and the decisions; for everyone
+  // else the leave days left, the days to fix and the days present this attendance month
+  const board = useQuery({ ...orpc.attendance.days.board.queryOptions({ input: { scope: 'DIRECT', date } }), enabled: !!o && hasPeople })
+  const balances = useQuery({ ...orpc.leave.balances.get.queryOptions(), enabled: ready && !hasPeople })
   const headlines: { icon: Headline['icon']; label: string; value: number | null; to: string }[] = hasPeople
     ? [
-        { icon: Users, label: o && !o.teamSize ? 'In my department' : 'In my team', value: o ? o.teamSize || o.departmentSize : null, to: '/ess/team-attendance' },
+        { icon: Users, label: 'Report to me', value: o ? o.directReports : null, to: '/ess/team-attendance' },
         { icon: Fingerprint, label: 'Punched in today', value: board.data?.summary.in ?? null, to: '/ess/team-attendance' },
         { icon: Inbox, label: 'Decisions waiting', value: toDecide.data?.length ?? null, to: '/ess/approvals' },
       ]
@@ -62,9 +69,24 @@ export function HomePage() {
         { icon: CalendarCheck, label: 'Present this month', value: my.month && !my.pending ? my.month.totals.present : null, to: '/ess/attendance' },
       ]
   const loadingHeadlines = headlines.some((h) => h.value === null) && !overview.isError
-  const links = <PersonalLinks hasSalary={!!profile.data?.salary} loading={profile.isPending} />
-  const today = o ? <HomeToday overview={o} /> : overview.isPending ? <HomeTodaySkeleton /> : null
-  const week = o ? <HomeWeek overview={o} /> : overview.isPending ? <HomeWeekSkeleton /> : null
+  const links = (narrow: boolean) => <PersonalLinks narrow={narrow} hasSalary={!!profile.data?.salary} loading={profile.isPending} />
+  const todayWeek = (
+    <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+      {o ? <HomeToday overview={o} /> : overview.isPending ? <HomeTodaySkeleton /> : null}
+      {o ? <HomeWeek overview={o} /> : overview.isPending ? <HomeWeekSkeleton /> : null}
+    </div>
+  )
+  // the main column, most urgent first (a stable sort keeps the rest in this order): decisions past due, decisions waiting,
+  // days to fix, then the employee's day, the team's week, time off - and the calm "nothing waiting" rows last
+  const late = toDecide.data?.some((r) => r.step?.late) ?? false
+  const cards: { key: string; score: number; node: ReactNode }[] = [
+    // without a team a decision is rare (an escalation, a functional manager): shown only when one waits
+    ...(hasPeople || decisionsWaiting ? [{ key: 'decisions', score: decisionsWaiting ? (late ? 50 : 40) : 1, node: <HomeDecisions light /> }] : []),
+    { key: 'fix', score: fixWaiting ? 30 : 1, node: <HomeToFix overview={o} dark={!hasPeople && fixWaiting} /> },
+    { key: 'today', score: 20, node: todayWeek },
+    ...(hasPeople ? [{ key: 'away', score: 10, node: <HomeAwayWeek directReports={o?.directReports ?? 0} /> }] : []),
+    { key: 'time-off', score: 5, node: <div className="grid min-w-0 items-start gap-3 sm:grid-cols-2"><HomeLeave /><HomeHolidays /></div> },
+  ].sort((x, y) => y.score - x.score)
   const overviewError = overview.isError && (
     <section className="home-panel p-5"><h2 className="text-xl font-light">Attendance</h2><FormError error={overview.error} /><Link to="/ess/attendance" className="flex min-h-10 items-center text-sm underline underline-offset-4">Open attendance to retry</Link></section>
   )
@@ -80,45 +102,36 @@ export function HomePage() {
       <div className="min-w-0 lg:col-span-5 lg:justify-self-end"><HeadlineStats stats={headlines.map((h) => ({ ...h, value: h.value ?? '—' }))} loading={loadingHeadlines} /></div>
     </header>
     {overviewError}
-    {!overview.isError && (hasPeople ? (
-      <>
-        <div className="grid min-w-0 items-start gap-3 lg:grid-cols-12">
-          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:col-span-8">{today}{week}</div>
-          <div className="min-w-0 space-y-3 lg:col-span-4 lg:row-span-3">{o ? <HomeAttendance overview={o} date={date} dark /> : <section className="home-panel home-panel-dark home-people-dark min-w-0 p-4 text-hero-foreground sm:p-5"><h2 className="text-xl font-light tracking-tight">People today</h2><HomeAttendanceSkeleton dark /></section>}<HomeToFix overview={o} /></div>
-          <div className="min-w-0 lg:col-span-8"><HomeDecisions light /></div>
-          <div className="min-w-0 lg:col-span-8"><HomeAwayWeek /></div>
-        </div>
-        <div className="grid min-w-0 items-start gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <HomeLeave />
-          <HomeHolidays />
+    {!overview.isError && (
+      <div className="grid min-w-0 items-start gap-3 lg:grid-cols-12">
+        <div className="min-w-0 space-y-3 lg:col-span-8">{cards.map((c) => <Fragment key={c.key}>{c.node}</Fragment>)}</div>
+        <div className="min-w-0 space-y-3 lg:col-span-4">
+          {hasPeople && (o ? <HomeAttendance overview={o} date={date} dark direct /> : <section className="home-panel home-panel-dark home-people-dark min-w-0 p-4 text-hero-foreground sm:p-5"><h2 className="text-xl font-light tracking-tight">People today</h2><HomeAttendanceSkeleton dark /></section>)}
           <HomeMyRequests />
+          {/* without a team the right column has room for one's details; with one they run along the bottom */}
+          {!hasPeople && links(true)}
         </div>
-        {links}
-      </>
-    ) : (
-      <>
-        {/* a decision named to someone without a team (an escalation, a functional manager) - only when one waits */}
-        {!!toDecide.data?.length && <HomeDecisions light />}
-        <div className="grid min-w-0 items-start gap-3 lg:grid-cols-12">
-          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:col-span-8">{today}{week}</div>
-          <div className="min-w-0 space-y-3 lg:col-span-4 lg:row-span-2"><HomeToFix overview={o} dark /><HomeMyRequests /></div>
-          <div className="grid min-w-0 items-start gap-3 sm:grid-cols-2 lg:col-span-8"><HomeLeave /><HomeHolidays /></div>
-        </div>
-        {links}
-      </>
-    ))}
+      </div>
+    )}
+    {(hasPeople || overview.isError) && links(false)}
   </div>
 }
 
-function PersonalLinks({ hasSalary, loading }: { hasSalary: boolean; loading: boolean }) {
+function PersonalLinks({ hasSalary, loading, narrow }: { hasSalary: boolean; loading: boolean; narrow: boolean }) {
   const links: Shortcut[] = [{ to: '/ess/me?tab=personal', icon: UserRound, title: 'Personal details', text: 'Family & contacts' }, { to: '/ess/me?tab=ids', icon: IdCard, title: 'IDs & bank', text: 'Your saved information' }, { to: '/ess/me?tab=documents', icon: FolderOpen, title: 'My documents', text: 'Joining documents' }, { to: '/ess/employees', icon: Users, title: 'People directory', text: 'Find a colleague' }, { to: '/ess/me?tab=statutory', icon: ShieldCheck, title: 'PF & ESIC', text: 'Your statutory numbers' }]
-  return <div className="home-panel p-4 sm:p-5"><CardTitle title="My details & documents" action={<CornerLink to="/ess/me" label="Open my profile" />} /><div className="mt-2 grid grid-cols-2 gap-x-4 sm:grid-cols-3 xl:grid-cols-6">{links.map(item => <QuickLink key={item.to} {...item} />)}{loading ? <div role="status" aria-label="Loading your salary link" className="flex min-h-14 items-center gap-2"><Skeleton className="size-8 shrink-0 rounded-full" /><div className="space-y-2"><Skeleton className="h-3 w-24 rounded" /><Skeleton className="h-3 w-20 rounded" /></div></div> : hasSalary && <QuickLink to="/ess/me?tab=salary" icon={Wallet} title="My salary" text="CTC & monthly breakup" />}</div></div>
+  return <div className="home-panel p-4 sm:p-5"><CardTitle title="My details & documents" action={<CornerLink to="/ess/me" label="Open my profile" />} /><div className={`mt-2 grid grid-cols-2 gap-x-4 ${narrow ? 'sm:grid-cols-3 lg:grid-cols-2' : 'sm:grid-cols-3 xl:grid-cols-6'}`}>{links.map(item => <QuickLink key={item.to} {...item} />)}{loading ? <div role="status" aria-label="Loading your salary link" className="flex min-h-14 items-center gap-2"><Skeleton className="size-8 shrink-0 rounded-full" /><div className="space-y-2"><Skeleton className="h-3 w-24 rounded" /><Skeleton className="h-3 w-20 rounded" /></div></div> : hasSalary && <QuickLink to="/ess/me?tab=salary" icon={Wallet} title="My salary" text="CTC & monthly breakup" />}</div></div>
 }
 
-const TEAM_KEY = 'hrms.home.team'
-function readRememberedTeam() {
-  try { return window.localStorage.getItem(TEAM_KEY) === '1' } catch { return false }
+const REMEMBER_KEY = 'hrms.home.layout'
+type Remembered = { team: boolean; decisions: boolean; fix: boolean }
+function readRemembered(): Remembered {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(REMEMBER_KEY) ?? '{}') as Partial<Remembered>
+    return { team: v.team === true, decisions: v.decisions === true, fix: v.fix === true }
+  } catch {
+    return { team: false, decisions: false, fix: false }
+  }
 }
-function rememberTeam(team: boolean) {
-  try { window.localStorage.setItem(TEAM_KEY, team ? '1' : '0') } catch { /* storage blocked: the default layout loads */ }
+function remember(value: Remembered) {
+  try { window.localStorage.setItem(REMEMBER_KEY, JSON.stringify(value)) } catch { /* storage blocked: the default layout loads */ }
 }

@@ -4,6 +4,7 @@ import { FormError } from '@/components/FormError'
 import { HomeToFixSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { cn, toDateInput } from '@/lib/utils'
 import type { Overview } from '@/pages/attendance/components/labels'
+import { CornerLink } from './HomeParts'
 import { TO_FIX_TITLE, shortDay } from './home-labels'
 import { problemOf, useToFix } from './useToFix'
 
@@ -14,6 +15,15 @@ import { problemOf, useToFix } from './useToFix'
 export function HomeToFix({ overview, dark = false }: { overview: Overview | undefined; dark?: boolean }) {
   const fix = useToFix(overview)
   const muted = dark ? 'text-hero-foreground/70' : 'text-muted-foreground'
+  // nothing to fix: one calm slim row (the home moves it below the cards that need attention - 2026-11-27)
+  if (!fix.pending && !fix.error && fix.days.length === 0) return (
+    <section className="home-panel flex min-w-0 items-center gap-4 p-4 sm:px-5">
+      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-positive/15 text-positive-ink"><Check aria-hidden className="size-5" /></span>
+      <div className="min-w-0 flex-1"><h2 className="text-xl font-light tracking-tight">{TO_FIX_TITLE}</h2><p className="text-xs text-muted-foreground">Every working day of the last 30 is in order.</p></div>
+      <span className="text-[44px] leading-none font-light tabular-nums">0</span>
+      <CornerLink to="/ess/attendance" label="Open my attendance" />
+    </section>
+  )
   return (
     <section className={cn('home-panel min-w-0 p-4 sm:p-5', dark && 'home-panel-dark home-people-dark text-hero-foreground')}>
       <div className="flex items-start justify-between gap-3">

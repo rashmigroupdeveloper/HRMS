@@ -1,35 +1,21 @@
-import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
 import { HomePayrollSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { Skeleton } from '@/components/ui/skeleton'
-import { orpc } from '@/lib/orpc'
-import { formatDate, todayDay } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import type { Overview } from '@/pages/attendance/components/labels'
 import { monthLabel } from '@/pages/payroll/components/payroll-labels'
 import { PAYROLL_TITLE } from './home-labels'
+import { usePayrollRuns } from './usePayrollRuns'
 
 // The payroll runs of the latest pay month on the role portal's home (2026-11-27) - for Payroll View. Each company's run:
 // how many people it holds and whether its days have been taken from the locked attendance - never an amount (salary
 // figures need Salary access too, and stay on the run's page). The pay month that ended last with no run yet is named.
 // Runs are by whole company: access to part of a company shows none (payroll.list).
 export function HomePayroll({ overview }: { overview: Overview | undefined }) {
-  const year = todayDay().getUTCFullYear()
-  const runs = useQuery(orpc.payroll.list.queryOptions({ input: { year, pageSize: 50 } }))
-  // early in a year the latest runs are last year's
-  const lookBack = !!runs.data && runs.data.items.length === 0
-  const lastYear = useQuery({ ...orpc.payroll.list.queryOptions({ input: { year: year - 1, pageSize: 50 } }), enabled: lookBack })
-  const items = lookBack ? (lastYear.data?.items ?? []) : (runs.data?.items ?? [])
-  const pending = runs.isPending || (lookBack && lastYear.isPending)
-  const latest = items[0]?.payMonth
-  const ofLatest = latest ? items.filter((r) => r.payMonth.getTime() === latest.getTime()) : []
-  // the attendance month that ended last (the one before today's) - the month to pay next
-  const c = overview?.currentMonth
-  const due = c && new Date(Date.UTC(c.month === 1 ? c.year - 1 : c.year, (c.month === 1 ? 12 : c.month - 1) - 1, 1))
-  // only when runs are visible at all: a viewer with part of a company sees none, which says nothing about the month
-  const dueMissing = !pending && !!due && !!latest && latest.getTime() < due.getTime()
+  const { pending, latest, ofLatest, due, dueMissing, error } = usePayrollRuns(overview)
   return (
     <section className="home-panel min-w-0 p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
@@ -37,7 +23,7 @@ export function HomePayroll({ overview }: { overview: Overview | undefined }) {
         <Link to="/manage/payroll" aria-label="Open payroll" className="grid size-9 place-items-center rounded-full bg-surface-2 outline-none hover:bg-surface-2/70 focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight aria-hidden className="size-4" /></Link>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{pending ? <Skeleton className="inline-block h-3 w-44 rounded" /> : latest ? `${monthLabel(latest)} · draft runs by company` : 'Monthly draft runs by company'}</div>
-      <FormError error={runs.error ?? lastYear.error} />
+      <FormError error={error} />
       {pending && <HomePayrollSkeleton />}
       {!pending && ofLatest.length === 0 && <p className="py-3 text-sm text-muted-foreground">No company payroll runs within your access yet. Runs cover a whole company.</p>}
       <ul className="mt-1 divide-y divide-border/60">

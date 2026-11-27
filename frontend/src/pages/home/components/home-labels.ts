@@ -8,6 +8,8 @@ export const TO_FIX_TITLE = 'Needs your attention'
 export const HOLIDAYS_TITLE = 'Coming holidays'
 // People today's split bar and its legend, in this order
 export const PEOPLE_LEGEND = ['in', 'on leave', 'not in yet'] as const
+// the role home's strip of the people today in the role's access (its skeleton draws the same parts)
+export const PEOPLE_STRIP = ['Punched in', 'On leave', 'Not in yet', 'Absent'] as const
 // the attendance month's strip under the greeting, in this order (the skeleton draws the same parts)
 export const MONTH_STRIP = ['Present', 'Leave', 'Absent or missed', 'Off days', 'Still to come'] as const
 

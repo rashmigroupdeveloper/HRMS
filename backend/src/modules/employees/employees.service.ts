@@ -877,6 +877,11 @@ export async function listReportingTreeIds(managerId: number, db?: DbClient) {
   return [...seen]
 }
 
+// Only those who report to a manager directly (the self-service home's team - the user, 2026-11-27)
+export function listDirectReportIds(managerId: number, db?: DbClient) {
+  return employeesRepository.listDirectReportIds([managerId], db)
+}
+
 // The employee's teammates: everyone else with the same reporting manager (none without a manager) - the leave team
 // coverage warning (2026-11-22)
 export async function listTeammateIds(employeeId: number, managerId: number | null, db?: DbClient) {

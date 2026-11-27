@@ -11,7 +11,8 @@ export const monthSchema = z.object({ year: z.number().int().min(2020).max(2100)
 
 // Whose attendance a list shows: the viewer's reporting tree (TEAM), the employees whose HOD the viewer is (DEPARTMENT -
 // "My department", BACKLOG 3e, view only) or everyone (ALL - Attendance: View)
-export const scopeSchema = z.enum(['TEAM', 'DEPARTMENT', 'ALL'])
+// DIRECT (2026-11-27): only those who report to the viewer directly - the self-service home; TEAM: the whole reporting tree
+export const scopeSchema = z.enum(['DIRECT', 'TEAM', 'DEPARTMENT', 'ALL'])
 
 // Which employees a list shows, within the scope
 export const peopleFilterSchema = z.object({
