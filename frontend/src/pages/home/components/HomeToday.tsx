@@ -4,7 +4,8 @@ import { CardTitle, CornerLink, TILE } from './HomeParts'
 import { MY_DAY_NOTE, MY_DAY_TILES, shortDay, span } from './home-labels'
 import { useNow } from './useNow'
 
-// "Today" on the self-service home (2026-11-27, the redesign - Crextio's time tracker as a ring): the ring is the shift
+// "Today" on the self-service home (2026-11-27, the redesign - Crextio's time tracker as a ring, made thick with a
+// dotted outer scale 2026-11-28): the ring is the shift
 // from its start to its end, filled up to the clock now (time, not presence - punches arrive by upload); in its middle
 // the first punch; beside it the last punch, the time worked and how late. A weekly off, holiday, leave or a person whose
 // attendance is not tracked says so in the middle instead.
@@ -35,7 +36,7 @@ function dayOff(t: Today) {
   return null
 }
 
-const R = 54
+const R = 50
 const CIRCUMFERENCE = 2 * Math.PI * R
 
 export function HomeToday({ overview }: { overview: Overview }) {
@@ -60,11 +61,12 @@ export function HomeToday({ overview }: { overview: Overview }) {
       <div className="mt-2 flex flex-1 items-center gap-4">
         <div className="relative size-32 shrink-0">
           <svg viewBox="0 0 128 128" className="size-full -rotate-90" aria-hidden>
-            <circle cx="64" cy="64" r={R} fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="1.2 5.6" className="text-foreground/25" />
-            {share > 0 && <circle cx="64" cy="64" r={R} fill="none" stroke="var(--color-gold)" strokeWidth="7" strokeLinecap="round" strokeDasharray={`${CIRCUMFERENCE * share} ${CIRCUMFERENCE}`} className="home-ring" />}
+            <circle cx="64" cy="64" r={R + 8} fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="1 5" className="text-foreground/25" />
+            <circle cx="64" cy="64" r={R} fill="none" stroke="currentColor" strokeWidth="10" className="text-foreground/[0.07]" />
+            {share > 0 && <circle cx="64" cy="64" r={R} fill="none" stroke="var(--color-gold)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${CIRCUMFERENCE * share} ${CIRCUMFERENCE}`} className="home-ring" />}
           </svg>
           <div className="absolute inset-0 grid place-content-center text-center">
-            <span className="text-[28px] leading-none font-light tabular-nums">{off ? off.big : (t.inAt ?? '—')}</span>
+            <span className="text-[30px] leading-none font-light tabular-nums">{off ? off.big : (t.inAt ?? '—')}</span>
             <span className="mt-1 max-w-20 truncate text-[11px] text-muted-foreground">{off ? off.small : t.inAt ? MY_DAY_TILES[0] : 'not in yet'}</span>
           </div>
         </div>

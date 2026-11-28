@@ -473,7 +473,7 @@ of them until it is reconciled.
 ## Master Control — private developer workspace (2026-11-28)
 
 The developer workspace at `/ess/master-control` or `/manage/master-control` shows a selectable service map,
-24-hour execution rhythm, job search/result/time filters and paging, mail retry metadata, runtime/storage/migration
+open outcome numerals, proportional execution mix, selectable 24-hour execution rhythm, job search/result/time filters and paging, mail retry metadata, runtime/storage/migration
 observations and a redacted diagnostic copy/download. Automatic refresh can be paused. Unknown recovery status is
 shown explicitly; there is no simulated backup/heartbeat/delivery status and no web-based arbitrary job rerun.
 

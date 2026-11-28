@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
 import { HomeAttendanceSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
-import { HomeTodaySkeleton, HomeWeekSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
+import { HomeMeSkeleton, HomeTodaySkeleton, HomeWeekSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
@@ -14,6 +14,7 @@ import { HomeAttendance } from './components/HomeAttendance'
 import { HomeAwayWeek } from './components/HomeAwayWeek'
 import { HomeHolidays } from './components/HomeHolidays'
 import { HomeLeave } from './components/HomeLeave'
+import { HomeMe } from './components/HomeMe'
 import { HomeMonthStrip } from './components/HomeMonthStrip'
 import { AllClear, CardTitle, CornerLink, type Headline, HeadlineStats, TILE } from './components/HomeParts'
 import { HomeDecisions, HomeMyRequests } from './components/HomeRequests'
@@ -84,13 +85,14 @@ export function HomePage() {
   const tiles: { key: string; score: number; span: 1 | 2; node: ReactNode }[] = [
     ...(decisionsWaiting ? [{ key: 'decisions', score: late ? 50 : 40, span: 2 as const, node: <HomeDecisions light /> }] : []),
     ...(fixWaiting ? [{ key: 'fix', score: 30, span: 1 as const, node: <HomeToFix overview={o} dark={!hasPeople} /> }] : []),
+    { key: 'me', score: 22, span: 1 as const, node: me && !profile.isPending ? <HomeMe name={me.name} employeeCode={me.employeeCode} job={[profile.data?.designation?.name, profile.data?.department?.name].filter(Boolean).join(' · ')} joined={profile.data?.dateOfJoining ?? null} /> : <HomeMeSkeleton /> },
     ...(hasPeople ? [{ key: 'people', score: 25, span: 1 as const, node: o ? <HomeAttendance overview={o} date={date} dark direct /> : <section className={cn(TILE, 'home-panel-dark home-people-dark text-hero-foreground')}><h2 className="text-xl leading-tight font-light tracking-tight">People today</h2><HomeAttendanceSkeleton dark /></section> }] : []),
     { key: 'today', score: 20, span: 1 as const, node: o ? <HomeToday overview={o} /> : <HomeTodaySkeleton /> },
     { key: 'week', score: 19, span: 1 as const, node: o ? <HomeWeek overview={o} /> : <HomeWeekSkeleton /> },
     ...(hasPeople && someoneAway ? [{ key: 'away', score: 12, span: 2 as const, node: <HomeAwayWeek directReports={o?.directReports ?? 0} /> }] : []),
     { key: 'leave', score: 10, span: 1 as const, node: <HomeLeave /> },
     { key: 'holidays', score: 9, span: 1 as const, node: <HomeHolidays /> },
-    ...(anyRequests ? [{ key: 'requests', score: 8, span: 1 as const, node: <HomeMyRequests /> }] : []),
+    ...(anyRequests ? [{ key: 'requests', score: 8, span: 1 as const, node: <HomeMyRequests dark={!hasPeople && !fixWaiting} /> }] : []),
   ].sort((x, y) => y.score - x.score)
   // the details tile completes the last row (four columns wide, two from md), so the grid ends square
   const used = tiles.reduce((n, t) => n + t.span, 0)

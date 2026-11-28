@@ -1,17 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, CircleCheck, Clock3 } from 'lucide-react'
+import { ArrowRight, Check, CircleCheck, Clock3, Minus, Pause, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
-import { Pill } from '@/components/Pill'
 import { HomeRequestRowsSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
 import { Button } from '@/components/ui/button'
 import { useAccess } from '@/hooks/useAccess'
 import { usePortal } from '@/hooks/usePortal'
 import { orpc } from '@/lib/orpc'
-import { formatDate, initialsOf } from '@/lib/utils'
+import { cn, formatDate, initialsOf } from '@/lib/utils'
 import { ApprovalDrawer } from '@/pages/approvals/components/ApprovalDrawer'
-import { CardTitle, CornerLink, TILE } from './HomeParts'
+import { CornerLink, TILE } from './HomeParts'
 
 // who a request is about: the employee - or, for a pay run, its company (payroll stage 5)
 const subjectOf = (r: { employee: { employeeCode: string; name: string } | null; company: { code: string; name: string } | null }) => r.employee ?? { employeeCode: r.company?.code ?? '', name: r.company?.name ?? '' }
@@ -49,7 +48,19 @@ export function HomeDecisions({ light = false, compact = false }: { light?: bool
   </section>
 }
 
-export function HomeMyRequests() {
+type MyRequest = { status: string; held: object | null }
+const statusOf = (r: MyRequest) => (r.held ? 'Held' : r.status === 'PENDING' ? 'Waiting' : r.status === 'APPROVED' ? 'Approved' : r.status === 'REJECTED' ? 'Rejected' : r.status === 'CANCELLED' ? 'Withdrawn' : 'Expired')
+// each row's round status chip, as the ticks of Crextio's onboarding task list: approved a gold tick, waiting a clock
+// on an outlined ring, held a pause, rejected a cross, withdrawn / expired a dash
+function StatusChip({ r, dark }: { r: MyRequest; dark: boolean }) {
+  const Icon = r.held ? Pause : r.status === 'APPROVED' ? Check : r.status === 'PENDING' ? Clock3 : r.status === 'REJECTED' ? X : Minus
+  const tone = r.held ? 'bg-warning/25 text-warning-ink' : r.status === 'APPROVED' ? 'bg-gold text-gold-foreground' : r.status === 'PENDING' ? (dark ? 'border border-hero-foreground/30' : 'border border-foreground/25') : r.status === 'REJECTED' ? 'bg-destructive/20 text-negative-ink' : dark ? 'bg-hero-foreground/10' : 'bg-surface-2'
+  return <span title={statusOf(r)} className={cn('grid size-8 shrink-0 place-items-center rounded-full', tone, dark && r.status === 'REJECTED' && !r.held && 'text-destructive')}><Icon aria-hidden className="size-3.5" /></span>
+}
+
+// "Recent requests" (one's own, self-service) / "Raised for others" (role portal). `dark`: the screen's one charcoal card
+// (2026-11-28, Crextio's "Onboarding Task 2/8") - the home makes it dark only when no other tile is.
+export function HomeMyRequests({ dark = false }: { dark?: boolean }) {
   const { ready } = useAccess()
   const { to, portal } = usePortal()
   // one's own requests in self-service, the ones raised for others in the role portal (2026-11-25)
@@ -57,11 +68,28 @@ export function HomeMyRequests() {
   const requests = useQuery({ ...orpc.approvals.listMine.queryOptions(), enabled: ready })
   const [open, setOpen] = useState<number | null>(null)
   const rows = requests.data?.slice(0, 3)
-  return <section className={TILE}>
-    <CardTitle title={title} sub={portal === 'ess' ? 'Leave, corrections and shift changes' : 'Job and salary changes'} action={<CornerLink to={to('/approvals?tab=mine')} label="Open all requests" />} />
-    <FormError error={requests.error} />{requests.isPending && <HomeRequestRowsSkeleton />}
+  const waiting = requests.data?.filter(r => r.status === 'PENDING').length ?? 0
+  // the header: the title with the arrow, then the waiting count as the card's one big number (Crextio's "2/8"); each row
+  // the status chip, what was asked, then the status word (gold while waiting) and its summary; a footer link fills the
+  // card's foot
+  return <section className={cn(TILE, dark && 'home-panel-dark home-people-dark text-hero-foreground')}>
+    <div className="flex items-start justify-between gap-3">
+      <h2 className="min-w-0 truncate text-xl leading-tight font-light tracking-tight">{title}</h2>
+      <CornerLink to={to('/approvals?tab=mine')} label="Open all requests" dark={dark} />
+    </div>
+    {requests.data?.length
+      ? <p className="-mt-1 flex items-baseline gap-2"><span className="text-[34px] leading-none font-light tracking-tight tabular-nums">{waiting}<span className="text-muted-foreground">/{requests.data.length}</span></span><span className="text-xs text-muted-foreground">{waiting === 1 ? 'request' : 'requests'} waiting for a decision</span></p>
+      : <p className="mt-0.5 text-xs text-muted-foreground">{portal === 'ess' ? 'Leave, corrections and shift changes' : 'Job and salary changes'}</p>}
+    <FormError error={requests.error} />{requests.isPending && <HomeRequestRowsSkeleton dark={dark} />}
     {rows?.length === 0 && <p className="py-3 text-sm text-muted-foreground">{portal === 'ess' ? 'No requests raised yet. Leave, regularization and shift changes will appear here.' : 'Nothing raised for others yet. Job and salary changes you raise appear here.'}</p>}
-    {!!rows?.length && <ul className="mt-2 divide-y divide-border/60">{rows.map(r => <li key={r.id}><button type="button" className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl py-1.5 text-left outline-none hover:bg-surface-2/50 focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setOpen(r.id)}><div className="min-w-0"><p className="truncate text-sm font-medium">{r.label} <span className="text-xs font-normal text-muted-foreground">· {formatDate(r.raisedAt)}</span></p><p className="truncate text-xs text-muted-foreground">{r.summary}</p></div><Pill tone={r.status === 'APPROVED' ? 'positive' : r.status === 'REJECTED' ? 'negative' : r.held ? 'warning' : 'neutral'}>{r.held ? 'Held' : r.status === 'PENDING' ? 'Waiting' : r.status === 'APPROVED' ? 'Approved' : r.status === 'REJECTED' ? 'Rejected' : r.status === 'CANCELLED' ? 'Withdrawn' : 'Expired'}</Pill></button></li>)}</ul>}
+    {!!rows?.length && <ul className="mt-3 space-y-1">{rows.map(r => <li key={r.id}><button type="button" className={cn('-mx-2 flex min-h-13 w-[calc(100%+1rem)] items-center gap-3 rounded-2xl px-2 py-2 text-left outline-none transition-colors focus-visible:ring-2', dark ? 'hover:bg-hero-foreground/[0.06] focus-visible:ring-gold' : 'hover:bg-surface-2/60 focus-visible:ring-ring')} onClick={() => setOpen(r.id)}>
+      <StatusChip r={r} dark={dark} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] leading-snug">{r.label}</p>
+        <p className="mt-0.5 truncate text-[11px] text-muted-foreground"><span className={cn(r.status === 'PENDING' && !r.held && (dark ? 'text-gold' : 'font-medium text-foreground'))}>{statusOf(r)}</span> · {r.summary}</p>
+      </div>
+    </button></li>)}</ul>}
+    {!!requests.data?.length && <Link to={to('/approvals?tab=mine')} className={cn('home-cta mt-auto flex min-h-8 items-center gap-1.5 border-t pt-2 text-xs font-medium', dark ? 'border-hero-foreground/15' : 'border-border/60')}>{requests.data.length > 3 ? `All ${requests.data.length} requests` : portal === 'ess' ? 'Open my requests' : 'Open what I raised'} <ArrowRight aria-hidden className="size-4" /></Link>}
     {open !== null && <ApprovalDrawer id={open} onClose={() => setOpen(null)} />}
   </section>
 }

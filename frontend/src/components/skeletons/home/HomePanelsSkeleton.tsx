@@ -6,7 +6,7 @@ export function HomeRequestRowsSkeleton({ dark = false }: { dark?: boolean }) {
   return <div role="status" aria-label="Loading requests" className="mt-2 divide-y divide-current/10">{Array.from({ length: 3 }, (_, i) => <div key={i} className="flex min-h-12 items-center gap-2.5 py-1.5"><Skeleton className={`size-8 shrink-0 rounded-full ${dark ? 'bg-hero-foreground/10' : ''}`} /><div className="min-w-0 flex-1 space-y-2"><Skeleton className={`h-3.5 w-36 rounded ${dark ? 'bg-hero-foreground/10' : ''}`} /><Skeleton className={`h-3 w-64 max-w-full rounded ${dark ? 'bg-hero-foreground/10' : ''}`} /></div></div>)}</div>
 }
 export function HomeLeaveSkeleton() {
-  return <div role="status" aria-label="Loading your leave balances" className="mt-2 divide-y divide-border/60">{Array.from({ length: 3 }, (_, i) => <div key={i} className="flex min-h-11 items-center justify-between gap-3 py-1"><Skeleton className="h-3.5 w-28 rounded" /><Skeleton className="h-6 w-8 rounded" /></div>)}</div>
+  return <div role="status" aria-label="Loading your leave balances" className="mt-1 space-y-2.5">{Array.from({ length: 3 }, (_, i) => <div key={i}><div className="flex items-end justify-between gap-3"><Skeleton className="h-3.5 w-28 rounded" /><Skeleton className="h-6 w-8 rounded" /></div><Skeleton className="mt-1.5 h-1.5 w-full rounded-full" /></div>)}</div>
 }
 // People today's body: the in / total number, the split bar, its legend (real words) and the people rows
 export function HomeAttendanceSkeleton({ dark = false, figures = true }: { dark?: boolean; figures?: boolean }) {

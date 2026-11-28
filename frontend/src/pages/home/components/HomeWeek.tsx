@@ -7,8 +7,9 @@ import { WEEKDAY_SHORT, weekOf } from './home-labels'
 import { useMyDays } from './useMyDays'
 
 // "My week" on the self-service home (2026-11-27, Crextio's "Progress - 6.1 h work time this week" bars): the hours
-// worked on each day from Monday to Sunday as thin bars - today gold, a weekly off / holiday hatched, leave soft gold, an
-// absence or missed punch as a red / amber stub, days to come dotted. Hours come from the punches as worked out.
+// worked on each day from Monday to Sunday, each day a striped capsule filled to its hours (2026-11-28) - today gold,
+// leave soft gold, an absence or missed punch as a red / amber stub, a weekly off / holiday and days to come the empty
+// capsule, paler. Hours come from the punches as worked out.
 const FULL = 600 // a 10-hour day fills the bar
 
 export function HomeWeek({ overview }: { overview: Overview }) {
@@ -41,19 +42,26 @@ export function HomeWeek({ overview }: { overview: Overview }) {
           {days.map((d, i) => {
             const off = d.planned === 'WEEKLY_OFF' || d.planned === 'HOLIDAY'
             const short = d.status === 'ABSENT' || d.status === 'MISSED_PUNCH'
-            const height = d.minutes ? Math.max(10, Math.min(100, (d.minutes / FULL) * 100)) : d.inNow ? 14 : d.status === 'LEAVE' ? 45 : off || d.future ? 22 : short ? 10 : 6
+            // the fill inside the day's capsule; a day off or to come shows only the striped capsule
+            const height = d.minutes ? Math.max(12, Math.min(100, (d.minutes / FULL) * 100)) : d.inNow ? 14 : d.status === 'LEAVE' ? 45 : short ? 12 : 0
             return (
               <div key={i} className="flex flex-col items-center gap-1.5">
                 <div className="relative flex h-24 w-full items-end justify-center">
-                  {d.isToday && d.minutes > 0 && <span className="absolute left-1/2 -translate-x-1/2 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-gold-foreground tabular-nums" style={{ bottom: `calc(${height}% + 6px)` }}>{hours(d.minutes)}</span>}
+                  {d.isToday && d.minutes > 0 && <span className="absolute left-1/2 z-10 -translate-x-1/2 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-gold-foreground tabular-nums" style={{ bottom: `calc(${height}% + 6px)` }}>{hours(d.minutes)}</span>}
                   <span
                     title={`${WEEKDAY_SHORT[i]}: ${d.future ? 'to come' : d.minutes ? hours(d.minutes) : d.status ? STATUS[d.status].label : off ? 'off' : 'not worked out yet'}`}
-                    className={cn(
-                      'home-rise w-2 rounded-full',
-                      d.minutes || d.inNow ? (d.isToday ? 'bg-gold' : 'bg-foreground') : d.status === 'LEAVE' ? 'bg-gold-soft' : short ? (d.status === 'ABSENT' ? 'bg-destructive/50' : 'bg-warning/60') : 'home-hatch',
+                    className={cn('relative flex h-full w-3 items-end overflow-hidden rounded-full', d.future || off ? 'home-hatch opacity-60' : 'home-hatch')}
+                  >
+                    {height > 0 && (
+                      <span
+                        className={cn(
+                          'home-rise w-full rounded-full',
+                          d.minutes || d.inNow ? (d.isToday ? 'bg-gold' : 'bg-foreground') : d.status === 'LEAVE' ? 'bg-gold-soft' : d.status === 'ABSENT' ? 'bg-destructive/60' : 'bg-warning/70',
+                        )}
+                        style={{ height: `${height}%`, animationDelay: `${i * 40}ms` }}
+                      />
                     )}
-                    style={{ height: `${height}%`, animationDelay: `${i * 40}ms` }}
-                  />
+                  </span>
                 </div>
                 <span aria-hidden className={cn('size-1.5 rounded-full', d.isToday ? 'bg-gold' : d.future ? 'bg-foreground/15' : 'bg-foreground/60')} />
                 <span className={cn('text-xs', d.isToday ? 'font-medium text-foreground' : 'text-muted-foreground')}>{WEEKDAY_SHORT[i]![0]}</span>

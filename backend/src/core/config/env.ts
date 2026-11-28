@@ -28,7 +28,7 @@ const envSchema = z.object({
   // Address of the web app as candidates open it - links in e-mails: the offer APP_URL/offer/<token>, the joining form
   // APP_URL/joining-form/<token>
   APP_URL: z.url().default('http://localhost:5180'),
-  // Outgoing e-mail (offer letters, one-time codes). Without SMTP_HOST, e-mails are written to the server log
+  // Outgoing e-mail (offer letters, one-time codes). Without SMTP_HOST, .eml files are saved in STORAGE_DIR/outbox
   // instead of being sent (development / until IT gives the mail server details).
   SMTP_HOST: z.string().min(1).optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),

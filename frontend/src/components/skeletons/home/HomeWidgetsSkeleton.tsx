@@ -14,7 +14,7 @@ export function HomeTodaySkeleton() {
         <span className="size-9 rounded-full bg-surface-2" />
       </div>
       <div className="mt-2 flex flex-1 items-center gap-4">
-        <div className="grid size-32 shrink-0 place-items-center rounded-full border-2 border-dotted border-foreground/15"><Skeleton className="h-7 w-16 rounded" /></div>
+        <div className="grid size-32 shrink-0 place-items-center rounded-full border-2 border-dotted border-foreground/15 p-1.5"><div className="grid size-full place-items-center rounded-full border-[10px] border-foreground/[0.07]"><Skeleton className="h-7 w-16 rounded" /></div></div>
         <dl className="min-w-0 flex-1 divide-y divide-border/60">
           {[MY_DAY_TILES[1], MY_DAY_TILES[2], 'Late'].map((label) => (
             <div key={label} className="flex items-baseline justify-between gap-3 py-1.5"><dt className="text-xs text-muted-foreground">{label}</dt><dd><Skeleton className="h-4 w-10 rounded" /></dd></div>
@@ -26,13 +26,28 @@ export function HomeTodaySkeleton() {
   )
 }
 
+// HomeMe's portrait card while the profile and the photo load: the warm card, the round link, the name, job, joining line
+// and code pill as bars where they sit
+export function HomeMeSkeleton() {
+  return (
+    <section role="status" aria-label="Loading your card" className={`${TILE} home-me-blank relative min-h-72 p-0`}>
+      <div className="flex justify-end p-4"><span className="home-me-glass size-9 rounded-full" /></div>
+      <div className="mt-auto px-5 pb-5">
+        <Skeleton className="h-7 w-40 rounded bg-white/35" />
+        <Skeleton className="mt-1.5 h-3 w-32 rounded bg-white/30" />
+        <div className="mt-3 flex items-center justify-between gap-3"><Skeleton className="h-3 w-36 rounded bg-white/30" /><Skeleton className="h-6 w-24 rounded-full bg-white/30" /></div>
+      </div>
+    </section>
+  )
+}
+
 // "My week": the bars of seven days (also inside HomeWeek while the days load)
 export function HomeWeekBarsSkeleton() {
   return (
     <div role="status" aria-label="Loading your week" className="mt-auto grid grid-cols-7 items-end gap-1 pt-4">
       {WEEKDAY_SHORT.map((d, i) => (
         <div key={d} className="flex flex-col items-center gap-1.5">
-          <div className="flex h-24 w-full items-end justify-center"><Skeleton className="w-2 rounded-full" style={{ height: `${[70, 82, 64, 90, 40, 22, 22][i]}%` }} /></div>
+          <div className="flex h-24 w-full items-end justify-center"><span className="home-hatch flex h-full w-3 items-end overflow-hidden rounded-full opacity-60"><Skeleton className="w-full rounded-full" style={{ height: `${[70, 82, 64, 90, 40, 0, 0][i]}%` }} /></span></div>
           <span className="size-1.5 rounded-full bg-foreground/15" />
           <span className="text-xs text-muted-foreground">{d[0]}</span>
         </div>
@@ -83,10 +98,9 @@ export function HomeToFixSkeleton() {
 export function HomeHolidaysSkeleton() {
   return (
     <div role="status" aria-label="Loading your holidays">
-      <div className="mt-2.5 rounded-2xl bg-surface-2/60 px-3 py-2.5">
-        <Skeleton className="h-3 w-24 rounded" />
-        <Skeleton className="mt-2 h-6 w-40 rounded" />
-        <Skeleton className="mt-2 h-4 w-28 rounded" />
+      <div className="mt-2.5 flex gap-3 rounded-2xl bg-gold-soft/60 px-3 py-2.5">
+        <div className="flex w-12 shrink-0 flex-col items-center"><Skeleton className="h-8 w-9 rounded" /><Skeleton className="mt-1.5 h-3 w-10 rounded" /></div>
+        <div className="flex-1"><Skeleton className="h-5 w-36 rounded" /><Skeleton className="mt-2 h-4 w-28 rounded" /></div>
       </div>
       <div className="mt-1 divide-y divide-border/60">
         {Array.from({ length: 2 }, (_, i) => (

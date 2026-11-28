@@ -626,6 +626,10 @@ region (on the work location), the work location's address, lay offs, and the jo
 - **Needs:** use the photograph the joining documents already ask for (document type `PHOTO`, `employee_documents`) as
   the employee's picture: a small, safe read of only the photo for every logged-in employee (today documents need
   Employee · Documents & letters), a resized thumbnail, and what to show when there is none or it was rejected.
+- **Done so far (2026-11-28):** one's OWN photo on the self-service home's portrait card, read with the existing
+  `employees.documents.list` / `download` (own record - no new API; verified copy first, else one's own copy waiting for
+  HR; a PDF counts as none). Still waiting: the header's account chip (needs the same photo on every page - one shared
+  hook), and everyone else's photo (directory, org chart, approval rows, team lists) - that needs the small read above.
 - **Also asked and left out:** "Starred" colleagues (a personal favourites list - a small table of who starred whom).### 28. Schedules as rules, not day rows (agreed with the user 2026-11-22 - after "finishing Attendance")
 - **Why it waits:** the user: "keep it in backlog first, complete what we find is missing" (half-day sessions, attendance
   policy, weekly-off patterns, month lock, shift changes through the approval service).
@@ -1381,8 +1385,8 @@ isolation, stale/replayed/concurrent requests, invalid rows/files, true Excel sc
 **Selected by the user:** advanced, useful and visually distinctive master controls available only to
 `core_developers@rashmigroup.com`, linked to employee `RML033903`.
 
-- **Built, first slice:** owner-only read-only operational console in both portals, selectable service map, exact
-  24-hour job counts/hourly rhythm, searchable/paged job runs with fixed safe failure advice, private mail retry
+- **Built, first slice:** owner-only read-only operational console in both portals, selectable service map, open outcome numerals/proportional execution mix and exact
+  24-hour job counts/selectable hourly rhythm, searchable/paged job runs with fixed safe failure advice, private mail retry
   metadata, API runtime, storage permission/capacity and migration-record diagnostics; pause/refresh and redacted
   diagnostic copy/download. Existing role/session/history/setup tools are linked only with ordinary active-role access.
   No models, migrations or libraries added. Reuses JobRun and MailRetry; neither is a delivery receipt or backup record.

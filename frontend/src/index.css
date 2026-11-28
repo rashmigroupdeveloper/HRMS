@@ -667,10 +667,22 @@
 .home-rise { transform-origin: bottom; animation: home-rise 650ms cubic-bezier(0.32, 0.72, 0, 1) both; }
 /* the self-service home's tile grid (2026-11-27): every tile one height from md up, so the rows stay regular */
 @media (min-width: 768px) { .home-tile { height: 316px; } }
+/* The portrait card on the self-service home (2026-11-28, Crextio's profile card): the photo fades into warm brown so
+   white type reads over any picture; without a photo the same warmth as a gradient. Glass for what sits on the photo. */
+.home-me-fade { background: linear-gradient(to top, rgb(58 44 32 / 0.92) 0%, rgb(58 44 32 / 0.55) 30%, transparent 60%); }
+.home-me-blank { background: radial-gradient(120% 85% at 50% 15%, var(--gold-soft) 0%, #e2cca8 42%, #a8896a 100%); color: rgb(255 255 255 / 0.9); }
+.home-me-glass, .home-me .home-corner { background: rgb(28 24 20 / 0.3); backdrop-filter: blur(10px); }
+.home-me .home-corner:hover, .home-me-glass:is(a):hover { background: rgb(28 24 20 / 0.45); }
+/* no photo: the top of the gradient is light, so its controls are ink on frosted white */
+.home-me-ink { color: var(--foreground); }
+.home-me-ink .home-me-glass, .home-me-ink .home-corner { background: rgb(255 255 255 / 0.55); }
+.home-me-ink .home-me-glass:is(a):hover, .home-me-ink .home-corner:hover { background: rgb(255 255 255 / 0.8); }
+@keyframes home-me-in { from { opacity: 0; scale: 1.04; } }
+.home-me-photo { animation: home-me-in 480ms cubic-bezier(0.23, 1, 0.32, 1) both; }
 .home-corner svg { transition: translate 200ms cubic-bezier(0.32, 0.72, 0, 1); }
 .home-corner:hover svg, .home-corner:focus-visible svg { translate: 2px -2px; }
 @media (prefers-reduced-motion: reduce) {
-  .home-changed, .home-grow, .home-live, .home-ring, .home-rise { animation: none; }
+  .home-changed, .home-grow, .home-live, .home-ring, .home-rise, .home-me-photo { animation: none; }
   .home-slide, .home-ring, .home-corner svg { transition: none; }
   .home-corner:hover svg, .home-corner:focus-visible svg { translate: none; }
 }
