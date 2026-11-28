@@ -22,8 +22,8 @@ one at a time, each planned with the user before it is built (the old HRMS is in
 4. **Payroll** - the month-end salary from attendance and leave - **in progress: stages 1 (draft runs) and 2 (people,
    salary copy, inputs) built 2026-11-26; stages 3 (the days and the earnings), 4 (deductions and net pay) and 5
    (approval and finalising) built 2026-11-27; stage 6 slice 1 (salary register, payslips) built 2026-11-27, slice 2
-   (salary payments) 2026-11-28; next slice 3 (statutory figures and deposits) - the bank file, SAP entry and PF / ESIC
-   files wait for finance's sample files**
+   (salary payments) and slice 3 (statutory deposits) 2026-11-28; next stage 7 (arrears, loans, leaving, tax year) - the
+   bank file, SAP entry and PF / ESIC upload files wait for finance's sample files**
 5. **Probation / confirmation** - intern -> probation, probation -> confirmed, with or without a salary hike
 6. **Promotion and increments** - a promotion with a hike, or a hike alone (salary revisions) - **done through job
    changes and the approval service (2026-11-20)**; what is left is item 24
@@ -948,8 +948,6 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
   the whole company; the e-mail carries a link, never the PDF; the leave table is on the payslip; the register can be
   downloaded as a DRAFT.
   **Still open:**
-  - [ ] Slice 3 - statutory figures and deposits: PF / ESIC / PT / LWF totals per company and month, challan references
-    and dates, a due-date calendar - propose first.
   - [ ] Waiting for finance's real sample files (never a layout from memory): the bank's salary upload and result file,
     the SAP upload layout and the account per component, which code is the SAP cost centre (OUMIS?); the PF ECR and ESIC
     upload files against a file the company uploaded before.
@@ -985,7 +983,44 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
     created columns.
   - [ ] Months finalised in the HRMS but paid outside it (go-live, the parallel run) show as owed until a batch is
     marked paid for them - a way to record such payments may be needed at cut-over.
-- [ ] Remaining pay-run lifecycle: lock inputs before the month's cut-off, reconciliation (stage 6, slice 3).
+- **Stage 6, slice 3 - statutory deposits - built 2026-11-28** (the user approved: the access area `STATUTORY_DEPOSITS`;
+  `StatutoryDueDate`, `StatutoryDeposit`, `StatutoryDepositGap`; `PayrollSetting.depositReminderDays`). Statutory deposits
+  (`/manage/statutory-deposits`): each company's month and scheme of the approved runs - PF (EPF, EPS, EDLI), ESIC,
+  professional tax and LWF per State - with what is due (worked out from the run, never stored), what is deposited, the due
+  date and where it stands; a month's page records returns / challans (filed, paid), marks people left out of a PF / ESIC
+  return and taken in by a later one, and downloads each person's figures (Excel); Due dates on Statutory settings; a daily
+  reminder e-mail; Pay & career › Statutory deposits for the employee. **Decided by the user 2026-11-28:** all four extras
+  (people left out, reminders, the employee's view, the figures sheet); income-tax challans with stage 7; PF admin charges,
+  interest and damages typed from the challan as "other charges" (no rate); its own access area; each person's amounts only
+  with Salary View over the whole company too; employees see a month once its payslips are released. Second round, the same
+  day: company totals stay with the area even when a total is one person's (one left out, one person in a State); the UAN /
+  ESIC numbers show with the area (needed to file); the reminder e-mails only until the challan is paid (people still left
+  out stay on the page); employees see why they are left out.
+  **Still open:**
+  - [ ] **Due dates**: nobody has entered them yet (PF and ESIC the 15th, WB professional tax the 21st, LWF per State - to
+    enter from the rules and check with the CA). They count from the pay month (November's pay, 26 Oct-25 Nov: due in
+    December) - **the CA to confirm** for the 26th-25th cycle, as wages are paid in the following month.
+  - [ ] Income tax (TDS) challans, linked to the quarterly statement (stage 7) - salary TDS and consultants' TDS go under
+    different sections (the CA).
+  - [ ] Interest, damages and late fees worked out (they are typed as other charges today); the "cost of late compliance"
+    report; a screenshot when a portal is down on the last day.
+  - [ ] The PF ECR / ESIC upload files and loading the portal's results (who went in) - when finance gives a file the
+    company uploaded before; until then the figures sheet (our own layout) and people left out are marked by hand.
+  - [ ] Books checks (deducted = filed = paid as one step that closes a month) - the deposits page shows the difference but
+    there is no "month closed" step yet.
+  - [ ] What is due is added up by the State of each person's work location as it is NOW and by each component's statutory
+    role as it is NOW - changing a work location's State or a component's role later re-splits an approved month (both
+    rarely change; copy them onto the run if it matters).
+  - [ ] The ESIC monthly absence return (Form 8B as reported) and the minimum-wage checks - not built.
+  - [ ] Someone left out who has left the company is still followed until deposited; the EPFO exit date is marked outside.
+  - [ ] **Go-live**: months approved in the HRMS whose challans were paid outside it (the parallel run) show as overdue and
+    are e-mailed daily until their returns / challans are entered here - enter them at cut-over.
+  - [ ] Chosen while building, for the user to confirm: what is due is added up with one SQL query (the first raw read
+    aggregate in the code - a list of every month would otherwise read every person's lines); a paid return / challan can
+    still be corrected or removed (each change kept in the change history); a supplementary return takes people in when it
+    is recorded (or later, "Taken in by…").
+- [ ] Remaining pay-run lifecycle: lock inputs before the month's cut-off; the books checks that close a month (net pay =
+  paid + owed; deducted = filed = paid - the statutory part is shown on Statutory deposits, stage 6 slice 3, 2026-11-28).
 - [ ] Employee run inputs: uploads, calculated items and backdated salary arrears (typed one-off earnings / deductions
   and component codes: stage 2; payable and unpaid days, component proration and the earned gross: stage 3, built
   2026-11-27 - to be checked against a register).
@@ -993,8 +1028,10 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
 - [ ] Run output bundles; bank payment files, SAP GL/JV mapping/exports and variance reports (payslips and one's own
   payslips: stage 6 slice 1, built 2026-11-27).
 - [ ] ECR, ESIC return, PTRC and Form D outputs from a finalised run (the calculations and dated rates: stage 4, built
-  2026-11-27).
-- [ ] Income tax: employee declarations, proofs and review, the old regime worked out, challans, reconciliation,
+  2026-11-27; the deposits, challans and a plain figures sheet per person: stage 6 slice 3, 2026-11-28 - the upload files
+  wait for finance's samples).
+- [ ] Income tax: employee declarations, proofs and review, the old regime worked out, challans (with the deposits of
+  stage 6 slice 3), reconciliation,
   Form 138 (was 24Q) and Form 130 (was 16); agree tax residential status (item 11). (New-regime monthly TDS and opening
   figures: stage 4, built 2026-11-27.)
 - [ ] Annual bonus true-up, bulk annual-increment simulation/application and retroactive arrears scheduling.
@@ -1004,8 +1041,8 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
 snapshots and monthly inputs; (3) locked attendance, payable days/LOP and gross earnings; (4) statutory/other deductions,
 net and rounding; (5) review/approval/reconciliation/finalization; (6) registers/payslips/bank/payment; (7) arrears, loans,
 F&F, annual/tax outputs and parallel-run cutover. Propose each later model/field before adding it. Stages 1-5 are built
-(2026-11-27), stage 6 slice 1 (register, payslips, 2026-11-27) and slice 2 (salary payments, 2026-11-28); slice 3
-(statutory figures and deposits) is next.
+(2026-11-27), stage 6 slice 1 (register, payslips, 2026-11-27), slice 2 (salary payments) and slice 3 (statutory deposits)
+2026-11-28; stage 7 is next.
 
 **Important differences from main:** new has group-wide attendance locks and two-half attendance facts. Main's
 company locks, SQL triggers, separate approval lifecycle, rupee rounding and post-cutoff assumed-presence policy are

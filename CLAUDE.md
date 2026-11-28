@@ -343,6 +343,20 @@ frontend/src/
   it. Nobody acts on their own payment (adding, taking out, holding, releasing, marking it paid or returned on its own);
   a batch-wide step (sent, paid, given up) covers everyone in the batch, the actor's own payment too - chosen while
   building (BACKLOG item 31), not yet confirmed by the user.
+  **Stage 6, slice 3 - statutory deposits (built 2026-11-28, `payroll/deposits/`, `/manage/statutory-deposits`):** decided by
+  the user - its own access area, **`STATUTORY_DEPOSITS`** ("Statutory deposits", apart from preparing and paying; whole
+  company only); what each FINALISED run must deposit to PF (EPF, EPS, EDLI), ESIC, professional tax and LWF (per State) is
+  worked out from the run's lines each time, never stored; HR records each return / challan (`StatutoryDeposit`: filed, then
+  paid) - its contributions compared with the run to the paisa, PF admin charges, interest and damages typed as "other
+  charges" (the company's cost); for PF and ESIC a person whose deduction could not go into the return is marked left out
+  with why (`StatutoryDepositGap`) until a later deposit takes them in. Due dates are dated rows on Statutory settings (Payroll
+  Edit for every company, never in code); a daily e-mail (`payroll.remindDeposits`) from `PayrollSetting.depositReminderDays`
+  before a due date until the challan is paid, to the people with Edit over the whole company. Company totals with the area
+  alone (even when the total is one person's - accepted by the user) and the UAN / ESIC numbers needed to file; each person's
+  amounts (the people list, the figures sheet) only with `SALARY` View over the whole company as well; nobody marks their own
+  PF or ESIC; employees see their own months in self-service (Pay & career › Statutory deposits) once the payslips are
+  released - "deposited" only when the month's deposit is complete and they are not left out, otherwise pending with why.
+  Income tax (TDS) challans come with stage 7.
   **Decided for stage 2 (the user, 2026-11-26):** monthly inputs are entered and changed only by someone with Payroll
   Edit covering the whole company - a plant-level HR person sends their figures to them; salary amounts inside a run
   (the salary copy and its lines) are shown only to a viewer who also has `SALARY` View covering the whole company

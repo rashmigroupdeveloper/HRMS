@@ -1,9 +1,10 @@
 import { accessProcedure } from '#core/rpc/procedures'
 import * as statutoryService from './statutory.service.js'
-import { deleteLwfInput, deletePtSlabsInput, deleteRateInput, deleteTaxSlabsInput, saveLwfInput, savePtSlabsInput, saveRateInput, saveSettingsInput, saveTaxSlabsInput } from './statutory.schema.js'
+import { deleteDueDateInput, deleteLwfInput, deletePtSlabsInput, deleteRateInput, deleteTaxSlabsInput, saveDueDateInput, saveLwfInput, savePtSlabsInput, saveRateInput, saveSettingsInput, saveTaxSlabsInput } from './statutory.schema.js'
 
 // The statutory settings (payroll stage 4): dated rates, professional-tax and income-tax slabs, labour welfare fund.
-// One list for the group: Payroll View reads it; a change needs Payroll Edit for every company (checked in the service).
+// Also the due dates of the statutory deposits (stage 6 slice 3). One list for the group: Payroll View reads it; a change
+// needs Payroll Edit for every company (checked in the service).
 export const statutoryRouter = {
   list: accessProcedure('PAYROLL', 'READ').handler(({ context }) => statutoryService.listSettings(context.user)),
   saveRate: accessProcedure('PAYROLL', 'WRITE').input(saveRateInput).handler(({ context, input }) => statutoryService.saveRate(context.user, input)),
@@ -15,5 +16,8 @@ export const statutoryRouter = {
   saveTaxSlabs: accessProcedure('PAYROLL', 'WRITE').input(saveTaxSlabsInput).handler(({ context, input }) => statutoryService.saveTaxSlabs(context.user, input)),
   deleteTaxSlabs: accessProcedure('PAYROLL', 'WRITE').input(deleteTaxSlabsInput).handler(({ context, input }) => statutoryService.deleteTaxSlabs(context.user, input)),
   // stage 5: the payroll settings row
+  // stage 6 slice 3: when the statutory deposits are due
+  saveDueDate: accessProcedure('PAYROLL', 'WRITE').input(saveDueDateInput).handler(({ context, input }) => statutoryService.saveDueDate(context.user, input)),
+  deleteDueDate: accessProcedure('PAYROLL', 'WRITE').input(deleteDueDateInput).handler(({ context, input }) => statutoryService.deleteDueDate(context.user, input)),
   saveSettings: accessProcedure('PAYROLL', 'WRITE').input(saveSettingsInput).handler(({ context, input }) => statutoryService.saveSettings(context.user, input)),
 }

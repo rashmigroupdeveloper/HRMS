@@ -529,6 +529,13 @@ export function listSalaryAccounts(employeeIds: number[], db: DbClient = prisma)
   })
 }
 
+// Each of these employees' PF UAN and ESIC insurance number as they are now (payroll stage 6 slice 3: who can go into a PF
+// or ESIC return)
+// data access: the people of an approved run - the payroll service checked Statutory deposits over their whole company first
+export function listStatutoryNumbers(employeeIds: number[], db: DbClient = prisma) {
+  return db.employeeStatutory.findMany({ where: { employeeId: { in: employeeIds } }, select: { employeeId: true, uan: true, esicIpNumber: true } })
+}
+
 // The salary that applies today (the newest one already in effect), with its monthly breakup in the components'
 // order, or null - confidential: only for the employee and SALARY READ (checked in the service)
 export async function findCurrentSalary(employeeId: number, db: DbClient = prisma) {

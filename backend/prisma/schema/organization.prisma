@@ -8,6 +8,8 @@ model Company {
   payrollRuns PayrollRun[]
   // the salary payment batches (payroll stage 6 slice 2)
   paymentBatches PayrollPaymentBatch[]
+  // its returns / challans to PF, ESIC, professional tax and LWF (payroll stage 6 slice 3)
+  statutoryDeposits StatutoryDeposit[]
   id                  Int      @id @default(autoincrement())
   // Short unique code, stored in UPPER CASE (e.g. RML)
   code                String   @unique

@@ -1,4 +1,4 @@
-import { prisma, createdBy, updatedBy, type ActorId, type DbClient, type Gender, type StatutoryParameter, type TaxRegime } from '#core/db/prisma'
+import { prisma, createdBy, updatedBy, type ActorId, type DbClient, type Gender, type StatutoryParameter, type StatutoryScheme, type TaxRegime } from '#core/db/prisma'
 
 // Database access for the statutory settings (payroll stage 4): one list for the whole group - not people's records.
 
@@ -8,10 +8,17 @@ const num = (d: { toNumber(): number }) => d.toNumber()
 // --- The payroll settings row (stage 5): one row, id 1 ---
 
 export function findPayrollSetting(db: DbClient = prisma) {
-  return db.payrollSetting.findUnique({ where: { id: 1 }, select: { tdsCountsDraftRuns: true, bigChangePercent: true, epsAgeSoonMonths: true, paymentDueDays: true, updatedAt: true, updatedById: true } })
+  return db.payrollSetting.findUnique({
+    where: { id: 1 },
+    select: { tdsCountsDraftRuns: true, bigChangePercent: true, epsAgeSoonMonths: true, paymentDueDays: true, depositReminderDays: true, updatedAt: true, updatedById: true },
+  })
 }
 
-export function savePayrollSetting(data: { tdsCountsDraftRuns: boolean; bigChangePercent: number; epsAgeSoonMonths: number; paymentDueDays: number }, actorId: ActorId, db: DbClient = prisma) {
+export function savePayrollSetting(
+  data: { tdsCountsDraftRuns: boolean; bigChangePercent: number; epsAgeSoonMonths: number; paymentDueDays: number; depositReminderDays: number },
+  actorId: ActorId,
+  db: DbClient = prisma,
+) {
   return db.payrollSetting.upsert({ where: { id: 1 }, create: { id: 1, ...data, ...createdBy(actorId) }, update: { ...data, ...updatedBy(actorId) }, select: { id: true } })
 }
 
@@ -75,6 +82,29 @@ export function updateLwf(id: number, data: LwfData, actorId: ActorId, db: DbCli
 
 export function deleteLwf(id: number, db: DbClient = prisma) {
   return db.labourWelfareRate.delete({ where: { id }, select: { id: true } })
+}
+
+// --- Due dates of the statutory deposits (stage 6 slice 3) ---
+
+export function listDueDates(db: DbClient = prisma) {
+  return db.statutoryDueDate.findMany({
+    orderBy: [{ scheme: 'asc' }, { stateCode: 'asc' }, { effectiveFrom: 'desc' }],
+    select: { id: true, scheme: true, stateCode: true, effectiveFrom: true, day: true, reference: true, ...audit },
+  })
+}
+
+type DueDateData = { scheme: StatutoryScheme; stateCode: string | null; effectiveFrom: Date; day: number; reference: string }
+
+export function createDueDate(data: DueDateData, actorId: ActorId, db: DbClient = prisma) {
+  return db.statutoryDueDate.create({ data: { ...data, ...createdBy(actorId) }, select: { id: true } })
+}
+
+export function updateDueDate(id: number, data: DueDateData, actorId: ActorId, db: DbClient = prisma) {
+  return db.statutoryDueDate.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: { id: true } })
+}
+
+export function deleteDueDate(id: number, db: DbClient = prisma) {
+  return db.statutoryDueDate.delete({ where: { id }, select: { id: true } })
 }
 
 // --- Income-tax slabs ---

@@ -31,7 +31,7 @@ export const ACCOUNT_STATUS: Record<Account['status'], { label: string; tone: To
 
 // Presentation groups only. "All areas" always includes new API areas even before they are grouped here.
 export const ACCESS_GROUPS: { id: string; label: string; areas: AccessArea[] }[] = [
-  { id: 'people', label: 'People & pay', areas: ['EMPLOYEES', 'EMPLOYEE_PERSONAL_DETAILS', 'EMPLOYEE_IDS_BANK', 'EMPLOYEE_DOCUMENTS', 'SALARY', 'MEDICAL', 'JOB_CHANGE_REQUEST', 'SALARY_CHANGE_REQUEST', 'JOB_CHANGE_APPROVAL', 'PAYROLL', 'PAYROLL_PAYMENTS'] },
+  { id: 'people', label: 'People & pay', areas: ['EMPLOYEES', 'EMPLOYEE_PERSONAL_DETAILS', 'EMPLOYEE_IDS_BANK', 'EMPLOYEE_DOCUMENTS', 'SALARY', 'MEDICAL', 'JOB_CHANGE_REQUEST', 'SALARY_CHANGE_REQUEST', 'JOB_CHANGE_APPROVAL', 'PAYROLL', 'PAYROLL_PAYMENTS', 'STATUTORY_DEPOSITS'] },
   { id: 'work', label: 'Time & tasks', areas: ['ONBOARDING', 'ATTENDANCE', 'ATTENDANCE_SETUP', 'LEAVE', 'JOINING_TASKS', 'JOINING_TASK_TYPES'] },
   { id: 'admin', label: 'Administration', areas: ['ORGANIZATION', 'HOD_APPOINTMENTS', 'LETTER_TEMPLATES', 'APPROVAL_CHAINS', 'ACCESS', 'CHANGE_HISTORY'] },
 ]

@@ -1,7 +1,7 @@
 import { writeReport } from '#core/excel/report'
 import { ACCESS_AREAS, assertAccess, hasAccess, higherLevel, type AccessMap } from '#core/auth/access'
 import { assertPasswordConfirmed } from '#core/auth/confirm'
-import { ALL_OF_GROUP, beyondGiver, hasLevelAt, levelOver, type Placement, type RoleGrant, scopeAllows, scopeOf, type ScopeRow, sliceContains, sliceCovers } from '#core/auth/scope'
+import { ALL_OF_GROUP, beyondGiver, hasLevelAt, levelOver, type Placement, type RoleGrant, scopeAllows, scopeOf, type ScopeRow, type Slice, sliceContains, sliceCovers } from '#core/auth/scope'
 import { countAccountTry, countPasswordTry } from '#core/auth/rate-limit'
 import { generatePassword, hashPassword, verifyPassword } from '#core/auth/password'
 import { clearSessionCookie, hashSessionToken, newSessionToken, readSessionToken, writeSessionCookie } from '#core/auth/session'
@@ -933,6 +933,25 @@ export async function mailRecipientsFor<T extends { placement: Placement }>(area
   const covered = new Map<number, T[]>()
   for (const account of accounts) {
     const mine = items.filter((item) => accountHas(account, area, level, item.placement))
+    if (mine.length) covered.set(account.employeeId, mine)
+  }
+  const people = (await employeesService.listMailContacts([...covered.keys()])).filter((person) => CAN_LOG_IN.includes(person.status))
+  return people.map((person) => ({ person, items: covered.get(person.id) ?? [] }))
+}
+
+// For a reminder about things that belong to a whole company (its statutory deposits - payroll stage 6 slice 3): each
+// person whose roles give at least this level over the WHOLE slice of one or more of them - one data-access row covering
+// it all, as payroll needs - with the ones they cover; who can still log in and has an e-mail address
+export async function mailRecipientsOver<T extends { slice: Slice }>(area: AccessArea, level: AccessLevel, items: T[]) {
+  const accounts = await accountsRepository.list()
+  const covered = new Map<number, T[]>()
+  for (const account of accounts) {
+    if (account.disabledAt) continue
+    const user = accessFromRoles(account)
+    const mine = items.filter((item) => {
+      const has = levelOver(user, area, item.slice)
+      return level === 'WRITE' ? has === 'WRITE' : has !== undefined
+    })
     if (mine.length) covered.set(account.employeeId, mine)
   }
   const people = (await employeesService.listMailContacts([...covered.keys()])).filter((person) => CAN_LOG_IN.includes(person.status))

@@ -178,6 +178,8 @@ model PayrollRunEmployee {
   // each attempt to pay them, and each time their pay was held (stage 6 slice 2)
   payments PayrollPayment[]
   paymentHolds PayrollPaymentHold[]
+  // their PF / ESIC deduction left out of the month's return, until a later deposit takes it in (stage 6 slice 3)
+  depositGaps StatutoryDepositGap[]
 
   @@unique([payrollRunId, employeeId])
   @@index([employeeId])
@@ -607,6 +609,9 @@ model PayrollSetting {
   // stage 6 slice 2 (approved by the user 2026-11-28): wages are due within this many days of the pay period's end - for
   // the days overdue on the owed list (the Code on Wages' limit as researched - to verify with counsel)
   paymentDueDays     Int      @default(7) @map("payment_due_days") @db.SmallInt
+  // stage 6 slice 3 (approved by the user 2026-11-28): the daily reminder of a statutory deposit starts this many days
+  // before its due date, and goes on until its challan is paid in full (people still left out are not e-mailed)
+  depositReminderDays Int     @default(3) @map("deposit_reminder_days") @db.SmallInt
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById        Int      @map("created_by_id")
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -758,4 +763,136 @@ model PayrollPaymentHold {
 
   @@index([payrollRunEmployeeId])
   @@map("payroll_payment_holds")
+}
+
+// --- Stage 6 slice 3 (approved by the user 2026-11-28): statutory deposits ---
+// What each approved run deducted from its people and owes on top for PF, ESIC, professional tax and LWF must reach the
+// scheme: a return / challan per company, scheme and pay month (per State for professional tax and LWF). What is due is
+// never stored - it is worked out from the FINALISED runs' lines each time. HR records each return / challan
+// (StatutoryDeposit) and, for PF and ESIC, the people whose deduction could not go into the return (StatutoryDepositGap)
+// until a later (supplementary) deposit takes them in - the Code on Wages s.18(5): the employee is not responsible for a
+// deduction not deposited, so each one is followed until it is. Access: the "Statutory deposits" area over the whole
+// company; the due dates are dated rows on Payroll › Statutory settings (Payroll Edit for every company - nothing written
+// in code). Income tax (TDS) challans come with stage 7.
+
+// A statutory scheme deposits are made to
+enum StatutoryScheme {
+  // EPF, EPS and EDLI together: the employee's and the employer's shares - one return (ECR) and one challan
+  PF
+  ESIC
+  // per State: the work location's State at the end of the pay period, as the run charged it
+  PROFESSIONAL_TAX
+  LWF
+
+  @@map("statutory_scheme")
+}
+
+// When a scheme's deposit is due: on this day of the month after the pay month (November's pay - 26 Oct to 25 Nov - PF
+// by 15 December), from a date; the row in force on the pay month's first day counts. Professional tax and LWF have rows
+// per State (WB professional tax: the 21st), PF and ESIC one for the group. No row = "no due date set" - never guessed.
+// One row per scheme, State and date (a unique index in the migration, as the State may be empty).
+model StatutoryDueDate {
+  id            Int             @id @default(autoincrement())
+  scheme        StatutoryScheme
+  // professional tax and LWF: the State, as WorkLocation.stateCode (WB); PF and ESIC: empty (a migration CHECK)
+  stateCode     String?         @map("state_code") @db.Char(2)
+  effectiveFrom DateTime        @map("effective_from") @db.Date
+  // 1-31 of the month after the pay month; a day past that month's end means its last day
+  day           Int             @db.SmallInt
+  // the rule or notification it comes from - for the CA's check
+  reference     String
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int             @map("created_by_id")
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int             @map("updated_by_id")
+
+  @@map("statutory_due_dates")
+}
+
+// One return / challan of a company to a scheme for a pay month (professional tax and LWF: of one State), recorded by
+// someone with Statutory deposits Edit over the whole company when it is filed (made on the portal) - paid then or later.
+// A month may have several: a supplementary return takes in people left out of the first. Its contributions are compared
+// with what the month's FINALISED runs worked out; the other charges on the same challan (PF admin charges, interest,
+// damages, a late fee) are the company's own cost, never the employee's - typed from the challan, as the portal works
+// them out.
+model StatutoryDeposit {
+  id               Int             @id @default(autoincrement())
+  companyId        Int             @map("company_id")
+  scheme           StatutoryScheme
+  // professional tax and LWF: the State; PF and ESIC: empty (a migration CHECK)
+  stateCode        String?         @map("state_code") @db.Char(2)
+  // the first day of the pay month whose deductions it deposits
+  payMonth         DateTime        @map("pay_month") @db.Date
+  // the return / challan's reference on the portal: PF's TRRN, ESIC's challan number, a State's GRN
+  reference        String
+  // the day it was filed (made on the portal)
+  filedOn          DateTime        @map("filed_on") @db.Date
+  // the employees' and the employer's shares it carries, to the paisa - compared with the runs
+  contributions    Decimal         @db.Decimal(12, 2)
+  // the other amounts on the same challan: admin charges, interest, damages, late fee - the company's cost
+  otherCharges     Decimal         @default(0) @map("other_charges") @db.Decimal(12, 2)
+  // paid: the day, the payment's reference (CRN / CIN / the bank's), who recorded it when - all empty = filed, not paid
+  paidOn           DateTime?       @map("paid_on") @db.Date
+  paymentReference String?         @map("payment_reference")
+  paidAt           DateTime?       @map("paid_at") @db.Timestamptz(3)
+  paidById         Int?            @map("paid_by_id")
+  note             String?
+  // createdAt / createdById: who recorded it (filed), when
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById      Int             @map("created_by_id")
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById      Int             @map("updated_by_id")
+
+  company     Company               @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  // the people left out of an earlier deposit of the month whom this one took in
+  gapsCovered StatutoryDepositGap[]
+
+  @@index([companyId, payMonth])
+  @@map("statutory_deposits")
+}
+
+// Why a person's PF or ESIC deduction is not in the scheme's return
+enum DepositGapReason {
+  // PF: no UAN yet - the return goes by UAN
+  NO_UAN
+  // ESIC: no insurance (IP) number yet
+  NO_ESIC_NUMBER
+  // name, date of birth or Aadhaar not matching the scheme's record (PF: fixed by a joint declaration)
+  DETAILS_MISMATCH
+  // PF: the UAN still tied to the last employer (their exit not marked)
+  PREVIOUS_EMPLOYER
+  // anything else - the note says what
+  OTHER
+
+  @@map("deposit_gap_reason")
+}
+
+// A person of a FINALISED run whose PF or ESIC deduction could not go into the month's return - followed until a later
+// deposit of the same company, scheme and pay month takes it in (`depositId`). Marked by someone with Statutory deposits
+// Edit over the whole company, never about themselves; removed only while not taken in (marked by mistake - the removal
+// stays in the change history). One per person of a run and scheme.
+model StatutoryDepositGap {
+  id                   Int              @id @default(autoincrement())
+  payrollRunEmployeeId Int              @map("payroll_run_employee_id")
+  // PF or ESIC (a migration CHECK)
+  scheme               StatutoryScheme
+  reason               DepositGapReason
+  // what is wrong or being done - required with OTHER (a migration CHECK)
+  note                 String?
+  // the later deposit that took them in, and who recorded that, when - set together
+  depositId            Int?             @map("deposit_id")
+  coveredAt            DateTime?        @map("covered_at") @db.Timestamptz(3)
+  coveredById          Int?             @map("covered_by_id")
+  // createdAt / createdById: who marked them left out, when
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          Int              @map("created_by_id")
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById          Int              @map("updated_by_id")
+
+  runEmployee PayrollRunEmployee @relation(fields: [payrollRunEmployeeId], references: [id], onDelete: Restrict)
+  deposit     StatutoryDeposit?  @relation(fields: [depositId], references: [id], onDelete: Restrict)
+
+  @@unique([payrollRunEmployeeId, scheme])
+  @@index([depositId])
+  @@map("statutory_deposit_gaps")
 }

@@ -1,14 +1,14 @@
 import { ORPCError } from '@orpc/server'
 import { assertAccess } from '#core/auth/access'
 import { ALL_OF_GROUP, assertGroupWide, levelOver } from '#core/auth/scope'
-import { prisma, type DbClient, type Gender, type StatutoryParameter, type TaxRegime } from '#core/db/prisma'
+import { prisma, type DbClient, type Gender, type StatutoryParameter, type StatutoryScheme, type TaxRegime } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService } from '#modules/employees'
 import { formatDate } from '#shared/utils/dates'
 import type { z } from 'zod'
 import * as statutoryRepository from './statutory.repository.js'
 import type { PtSlabRow, TaxSlabRow } from './statutory.repository.js'
-import type { SavePtSlabsInput, SaveTaxSlabsInput, saveLwfInput, saveRateInput, saveSettingsInput } from './statutory.schema.js'
+import type { SavePtSlabsInput, SaveTaxSlabsInput, saveDueDateInput, saveLwfInput, saveRateInput, saveSettingsInput } from './statutory.schema.js'
 
 // Payroll stage 4 (approved by the user 2026-11-27): the statutory settings - every rate, ceiling and slab payroll works
 // with is a dated row entered here from the official notification (the CA checks them); nothing is seeded or written in
@@ -23,12 +23,14 @@ const PERCENT = new Set<StatutoryParameter>(['PF_EMPLOYEE_RATE', 'PF_EMPLOYER_RA
 // --- The payroll settings (stage 5, approved by the user 2026-11-27: "nothing should be hardcoded") ---
 
 // Until the row is saved these apply: TDS counts finalised runs only, a 20% change of net pay is a warning, the EPS age
-// limit is warned of 2 months ahead
-export const DEFAULT_SETTINGS = { tdsCountsDraftRuns: false, bigChangePercent: 20, epsAgeSoonMonths: 2, paymentDueDays: 7 }
+// limit is warned of 2 months ahead, wages are due 7 days after the pay period, deposit reminders start 3 days ahead
+export const DEFAULT_SETTINGS = { tdsCountsDraftRuns: false, bigChangePercent: 20, epsAgeSoonMonths: 2, paymentDueDays: 7, depositReminderDays: 3 }
 
 export async function runSettings(db?: DbClient) {
   const row = await statutoryRepository.findPayrollSetting(db)
-  return row ? { tdsCountsDraftRuns: row.tdsCountsDraftRuns, bigChangePercent: row.bigChangePercent, epsAgeSoonMonths: row.epsAgeSoonMonths, paymentDueDays: row.paymentDueDays } : DEFAULT_SETTINGS
+  return row
+    ? { tdsCountsDraftRuns: row.tdsCountsDraftRuns, bigChangePercent: row.bigChangePercent, epsAgeSoonMonths: row.epsAgeSoonMonths, paymentDueDays: row.paymentDueDays, depositReminderDays: row.depositReminderDays }
+    : DEFAULT_SETTINGS
 }
 
 export async function saveSettings(viewer: CurrentUser, input: z.infer<typeof saveSettingsInput>) {
@@ -41,8 +43,15 @@ export async function saveSettings(viewer: CurrentUser, input: z.infer<typeof sa
 
 export async function listSettings(viewer: CurrentUser) {
   assertAccess(viewer.access, 'PAYROLL', 'READ')
-  const [rates, ptSlabs, lwf, taxSlabs, setting] = await Promise.all([statutoryRepository.listRates(), statutoryRepository.listPtSlabs(), statutoryRepository.listLwf(), statutoryRepository.listTaxSlabs(), statutoryRepository.findPayrollSetting()])
-  const person = await employeesService.lookupPeople([...rates, ...ptSlabs, ...lwf, ...taxSlabs, ...(setting ? [setting] : [])].map((r) => r.updatedById))
+  const [rates, ptSlabs, lwf, taxSlabs, dueDates, setting] = await Promise.all([
+    statutoryRepository.listRates(),
+    statutoryRepository.listPtSlabs(),
+    statutoryRepository.listLwf(),
+    statutoryRepository.listTaxSlabs(),
+    statutoryRepository.listDueDates(),
+    statutoryRepository.findPayrollSetting(),
+  ])
+  const person = await employeesService.lookupPeople([...rates, ...ptSlabs, ...lwf, ...taxSlabs, ...dueDates, ...(setting ? [setting] : [])].map((r) => r.updatedById))
   const by = <T extends { createdById: number; updatedById: number }>({ createdById: _c, updatedById, ...row }: T) => ({ ...row, updatedBy: person(updatedById) })
   // the slabs as sets: one State from one day, one regime for one tax year
   const ptSets = new Map<string, { stateCode: string; effectiveFrom: Date; reference: string; updatedAt: Date; slabs: PtSlabRow[] }>()
@@ -66,9 +75,20 @@ export async function listSettings(viewer: CurrentUser) {
     ptSets: [...ptSets.values()],
     lwf: lwf.map(by),
     taxSets: [...taxSets.values()],
+    // when the statutory deposits are due (stage 6 slice 3)
+    dueDates: dueDates.map(by),
     // the payroll settings (stage 5): saved, or the defaults
     settings: setting
-      ? { tdsCountsDraftRuns: setting.tdsCountsDraftRuns, bigChangePercent: setting.bigChangePercent, epsAgeSoonMonths: setting.epsAgeSoonMonths, paymentDueDays: setting.paymentDueDays, saved: true, updatedAt: setting.updatedAt, updatedBy: person(setting.updatedById) }
+      ? {
+          tdsCountsDraftRuns: setting.tdsCountsDraftRuns,
+          bigChangePercent: setting.bigChangePercent,
+          epsAgeSoonMonths: setting.epsAgeSoonMonths,
+          paymentDueDays: setting.paymentDueDays,
+          depositReminderDays: setting.depositReminderDays,
+          saved: true,
+          updatedAt: setting.updatedAt,
+          updatedBy: person(setting.updatedById),
+        }
       : { ...DEFAULT_SETTINGS, saved: false, updatedAt: null, updatedBy: null },
     canChange: levelOver(viewer, 'PAYROLL', ALL_OF_GROUP) === 'WRITE',
   }
@@ -122,6 +142,24 @@ export function lwfOn<T extends { stateCode: string; effectiveFrom: Date }>(rows
   let found: T | undefined
   for (const r of rows) if (r.stateCode === stateCode && r.effectiveFrom <= day && (!found || r.effectiveFrom > found.effectiveFrom)) found = r
   return found ?? null
+}
+
+// The due date of a scheme's deposit for a pay month (the first day of the month): the day of the following month in the
+// row in force on the pay month's first day (professional tax and LWF: the State's row) - a day past that month's end is
+// its last day. Null when no row is in force ("no due date set" - never guessed).
+export function dueOn<T extends { scheme: StatutoryScheme; stateCode: string | null; effectiveFrom: Date; day: number }>(rows: T[], scheme: StatutoryScheme, stateCode: string | null, payMonth: Date): Date | null {
+  let found: T | undefined
+  for (const r of rows) if (r.scheme === scheme && r.stateCode === stateCode && r.effectiveFrom <= payMonth && (!found || r.effectiveFrom > found.effectiveFrom)) found = r
+  if (!found) return null
+  const year = payMonth.getUTCFullYear()
+  const month = payMonth.getUTCMonth() + 1
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  return new Date(Date.UTC(year, month, Math.min(found.day, lastDay)))
+}
+
+// Every due date, for the deposits (system read: a list shared by every company)
+export function loadDueDates(db?: DbClient) {
+  return statutoryRepository.listDueDates(db)
 }
 
 // The income-tax slabs of a regime for a tax year, or null
@@ -211,6 +249,17 @@ export async function saveLwf(viewer: CurrentUser, { id, ...data }: z.infer<type
 export async function deleteLwf(viewer: CurrentUser, { id }: { id: number }) {
   assertCanChange(viewer)
   return statutoryRepository.deleteLwf(id)
+}
+
+export async function saveDueDate(viewer: CurrentUser, { id, ...data }: z.infer<typeof saveDueDateInput>) {
+  assertCanChange(viewer)
+  // (the same scheme and State twice from one day: CONFLICT, mapped centrally)
+  return prisma.$transaction((tx) => (id ? statutoryRepository.updateDueDate(id, data, viewer.employeeId, tx) : statutoryRepository.createDueDate(data, viewer.employeeId, tx)))
+}
+
+export async function deleteDueDate(viewer: CurrentUser, { id }: { id: number }) {
+  assertCanChange(viewer)
+  return statutoryRepository.deleteDueDate(id)
 }
 
 export async function saveTaxSlabs(viewer: CurrentUser, input: SaveTaxSlabsInput) {

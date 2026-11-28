@@ -24,6 +24,11 @@ export const AREA_INFO: Record<AccessArea, { label: string; read: string; write:
     read: "See each person's payment of the approved pay runs - the amounts, the batches and what is still owed (companies covered in full)",
     write: 'Also make payment batches (bank transfer, cheque or cash), download the payment list with full account numbers, mark batches sent, paid or returned, and hold or release pay - never one\'s own',
   },
+  STATUTORY_DEPOSITS: {
+    label: 'Statutory deposits',
+    read: 'See what each approved pay run must deposit to PF, ESIC, professional tax and LWF, the due dates, the returns and challans recorded, and who is left out of a return - company totals; each person\'s amounts also need Salary View (companies covered in full)',
+    write: 'Also record returns and challans (filed, paid), mark people left out of a PF or ESIC return and taken in by a later one - never about oneself',
+  },
   ONBOARDING: {
     label: 'Onboarding',
     read: 'See candidates, offers, joining forms, documents, background checks and medical results',

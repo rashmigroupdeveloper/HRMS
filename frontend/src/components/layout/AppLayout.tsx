@@ -113,6 +113,8 @@ export function AppLayout() {
           ...(can('PAYROLL') ? [{ to: '/manage/payroll', label: 'Payroll' }] : []),
           // paying the approved runs (payroll stage 6 slice 2) - often finance's, apart from payroll
           ...(can('PAYROLL_PAYMENTS') ? [{ to: '/manage/salary-payments', label: 'Salary payments', short: 'Payments' }] : []),
+          // what the approved runs must deposit to PF, ESIC, professional tax and LWF (payroll stage 6 slice 3)
+          ...(can('STATUTORY_DEPOSITS') ? [{ to: '/manage/statutory-deposits', label: 'Statutory deposits', short: 'Deposits' }] : []),
           ...(can('LETTER_TEMPLATES') ? [{ to: '/manage/letter-templates', label: 'Letter templates' }] : []),
           ...(can('ACCESS') ? [{ to: '/manage/access', label: 'Roles & access' }] : []),
           ...(can('ATTENDANCE_SETUP') ? [{ to: '/manage/attendance-setup', label: 'Attendance setup', short: 'Setup' }] : []),

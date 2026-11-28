@@ -1001,6 +1001,12 @@ export async function listSalaryAccounts(employeeIds: number[], db?: DbClient) {
   return new Map((await employeesRepository.listSalaryAccounts(employeeIds, db)).map(({ employeeId, ...account }) => [employeeId, account]))
 }
 
+// Each person's PF UAN and ESIC insurance number now (payroll stage 6 slice 3 - the people of a PF / ESIC return). No viewer
+// check: the payroll service checked Statutory deposits over their whole company first.
+export async function listStatutoryNumbers(employeeIds: number[], db?: DbClient) {
+  return new Map((await employeesRepository.listStatutoryNumbers(employeeIds, db)).map(({ employeeId, ...numbers }) => [employeeId, numbers]))
+}
+
 // What each person's payslip prints (payroll stage 6, approved by the user 2026-11-27), with the salary account number and
 // the PAN decrypted IN FULL - the user chose full numbers on the payslip. No viewer check: the payroll service found the
 // run with Payroll and Salary View covering the whole company (or makes the payslips as System after the release).

@@ -206,6 +206,12 @@ enum AccessArea {
   // paying is often finance's job): View sees each person's payment of the approved runs, the amounts and what is still
   // owed; Edit makes payment batches, marks them sent / paid / returned and holds or releases pay. Whole company only.
   PAYROLL_PAYMENTS
+  // "Statutory deposits" (payroll stage 6 slice 3, approved by the user 2026-11-28 - apart from preparing and paying the
+  // payroll, so the compliance or finance people can have it alone): View sees what each approved run must deposit to PF,
+  // ESIC, professional tax and LWF, the due dates, the returns / challans recorded and who is left out (company totals;
+  // each person's amounts also need Salary View over the whole company); Edit records returns and challans and marks people
+  // left out / taken in - never about oneself. Whole company only.
+  STATUTORY_DEPOSITS
   // Candidates: offers, joining forms, documents, background checks, medical, joining confirmation
   ONBOARDING
   // "Employee · Directory & job": find employees and open their profile - job, placement, managers, the job timeline and

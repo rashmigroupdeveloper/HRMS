@@ -8,6 +8,8 @@ export const STATUTORY_TABS = [
   { value: 'pt', label: 'Professional tax' },
   { value: 'lwf', label: 'Labour welfare fund' },
   { value: 'tax', label: 'Income tax' },
+  // stage 6 slice 3: when the statutory deposits are due
+  { value: 'due', label: 'Due dates' },
   { value: 'openings', label: 'Opening tax figures' },
   { value: 'settings', label: 'Run settings' },
 ] as const
@@ -18,6 +20,8 @@ export const SETTING_LABELS = {
   epsAgeSoonMonths: ['EPS age limit soon', 'Warn this many months before a member reaches the EPS age limit'],
   // stage 6 slice 2: the owed list's days overdue
   paymentDueDays: ['Wages due', 'Wages are due this many days after the pay period ends - the owed list counts days overdue from then (to verify with counsel)'],
+  // stage 6 slice 3: the daily reminder of the statutory deposits
+  depositReminderDays: ['Deposit reminders', 'The people who record statutory deposits get a daily e-mail from this many days before a due date until its challan is paid'],
 } as const
 export type StatutoryTab = (typeof STATUTORY_TABS)[number]['value']
 export const CHANGE_NOTE = 'Changing them needs Payroll Edit for every company.'
@@ -50,6 +54,11 @@ export const LWF_COLUMNS = ['State', 'From', 'Employee', 'Employer', 'Pay months
 export const LWF_WIDTHS = ['10%', '14%', '12%', '12%', '16%', '28%', '8%'] as const
 export const TAX_COLUMNS = ['Tax year', 'Regime', 'Slabs (taxable income → rate)', 'Notification', ''] as const
 export const TAX_WIDTHS = ['14%', '10%', '42%', '26%', '8%'] as const
+// When the statutory deposits are due (stage 6 slice 3): the day of the month after the pay month, per scheme (and State)
+export const DUE_COLUMNS = ['Scheme', 'State', 'From', 'Due', 'Rule', ''] as const
+export const DUE_WIDTHS = ['18%', '10%', '14%', '24%', '26%', '8%'] as const
+export const DUE_NOTE = 'When each deposit of a pay month is due: a day of the month after it (November’s pay - 26 Oct to 25 Nov - PF by 15 December). PF and ESIC have one date for the group, professional tax and LWF one per State. A month without a date in force shows “no due date set” - never a guess.'
+export const ordinalDay = (day: number) => `${day}${day % 10 === 1 && day !== 11 ? 'st' : day % 10 === 2 && day !== 12 ? 'nd' : day % 10 === 3 && day !== 13 ? 'rd' : 'th'}`
 export const OPENING_COLUMNS = ['Employee', 'Covers up to', 'Taxable income', 'Tax deducted', 'Note', ''] as const
 export const OPENING_WIDTHS = ['26%', '14%', '15%', '15%', '22%', '8%'] as const
 export const OPENING_NOTE = 'What an employee earned and had deducted as income tax earlier in the tax year outside this system - in greytHR before the go-live, or with a previous employer (Form 122). The monthly TDS spreads the rest of the year\'s tax over the months left.'

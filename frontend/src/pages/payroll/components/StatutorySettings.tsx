@@ -14,9 +14,10 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { client, orpc } from '@/lib/orpc'
 import { formatDate, fromDateInput, toDateInput } from '@/lib/utils'
+import { SCHEME, SCHEMES, type Scheme } from './deposits-labels'
 import {
   GENDER, LWF_COLUMNS, LWF_WIDTHS, MONTHS, PARAMETERS, PT_COLUMNS, PT_WIDTHS, RATE_COLUMNS, RATE_WIDTHS, REGIME, TAX_COLUMNS, TAX_WIDTHS, amountText, taxYearLabel, type Parameter,
-  SETTING_LABELS,
+  DUE_COLUMNS, DUE_NOTE, DUE_WIDTHS, SETTING_LABELS, ordinalDay,
 } from './statutory-labels'
 
 // The statutory settings (payroll stage 4): dated rates, professional-tax slabs per State, the labour welfare fund per
@@ -28,6 +29,7 @@ type Rate = Settings['rates'][number]
 type PtSet = Settings['ptSets'][number]
 type Lwf = Settings['lwf'][number]
 type TaxSet = Settings['taxSets'][number]
+type DueDate = Settings['dueDates'][number]
 type RunSettings = Settings['settings']
 
 const cell = 'px-2 py-2 align-top'
@@ -486,6 +488,111 @@ function TaxDrawer({ existing, close }: { existing?: TaxSet; close: () => void }
   )
 }
 
+// --- Due dates of the statutory deposits (stage 6 slice 3) ---
+
+const dueText = (day: number) => `${ordinalDay(day)} of the next month${day > 28 ? ' (or its last day)' : ''}`
+const byState = (scheme: Scheme) => scheme === 'PROFESSIONAL_TAX' || scheme === 'LWF'
+
+export function DueDatesTab({ data, pending, canChange }: { data: Settings | undefined; pending: boolean; canChange: boolean }) {
+  const [editing, setEditing] = useState<DueDate | 'new' | null>(null)
+  const [removing, setRemoving] = useState<DueDate | null>(null)
+  const reload = useReload()
+  const remove = useMutation({ ...orpc.payroll.statutory.deleteDueDate.mutationOptions(), onSuccess: () => { setRemoving(null); reload() } })
+  const rows = [...(data?.dueDates ?? [])].sort((a, b) => SCHEMES.indexOf(a.scheme) - SCHEMES.indexOf(b.scheme) || (a.stateCode ?? '').localeCompare(b.stateCode ?? '') || b.effectiveFrom.getTime() - a.effectiveFrom.getTime())
+  return (
+    <>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="max-w-3xl text-xs text-muted-foreground">{DUE_NOTE}</p>
+        {canChange && <Button className="min-h-9 gap-1.5 rounded-full" disabled={pending} onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden />Add a due date</Button>}
+      </div>
+      <FormError error={remove.error} />
+      {pending ? <StatutoryTableSkeleton columns={DUE_COLUMNS} widths={DUE_WIDTHS} rows={4} /> : !rows.length ? (
+        <EmptyState className="py-6" title="No due dates yet" hint="Add PF and ESIC, and professional tax and LWF for each State - each from its rule." />
+      ) : (
+        <div className="overflow-x-auto">
+          <Table aria-label="Due dates" className="min-w-[720px] table-fixed text-[13px]">
+            <TableHeader><TableRow>{DUE_COLUMNS.map((h, i) => <TableHead key={`${h}-${i}`} style={{ width: DUE_WIDTHS[i] }} className={head}>{h}</TableHead>)}</TableRow></TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className={`${cell} font-medium`}>{SCHEME[r.scheme]}</TableCell>
+                  <TableCell className={cell}>{r.stateCode ?? <span className="text-muted-foreground">Group</span>}</TableCell>
+                  <TableCell className={`${cell} tabular-nums`}>{formatDate(r.effectiveFrom)}</TableCell>
+                  <TableCell className={cell}>{dueText(r.day)}</TableCell>
+                  <TableCell className={`${cell} break-words text-xs`}>{r.reference}</TableCell>
+                  <TableCell className={cell}><Actions canChange={canChange} what={`${SCHEME[r.scheme]}${r.stateCode ? ` ${r.stateCode}` : ''} due date`} edit={() => setEditing(r)} remove={() => setRemoving(r)} /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+      {editing && <DueDateDrawer existing={editing === 'new' ? undefined : editing} close={() => setEditing(null)} />}
+      {removing && (
+        <ConfirmDialog
+          title="Remove this due date?"
+          description={`${SCHEME[removing.scheme]}${removing.stateCode ? ` in ${removing.stateCode}` : ''} from ${formatDate(removing.effectiveFrom)}. Months it applied to show “no due date set” until another one is in force.`}
+          confirm={remove.isPending ? 'Removing…' : 'Remove'}
+          pending={remove.isPending}
+          onConfirm={() => remove.mutate({ id: removing.id })}
+          onClose={() => { if (!remove.isPending) setRemoving(null) }}
+        />
+      )}
+    </>
+  )
+}
+
+function DueDateDrawer({ existing, close }: { existing?: DueDate; close: () => void }) {
+  const [scheme, setScheme] = useState<Scheme>(existing?.scheme ?? 'PF')
+  const [state, setState] = useState(existing?.stateCode ?? '')
+  const [from, setFrom] = useState(toDateInput(existing?.effectiveFrom))
+  const [day, setDay] = useState(existing ? String(existing.day) : '')
+  const [reference, setReference] = useState(existing?.reference ?? '')
+  const [initial] = useState(() => JSON.stringify({ scheme, state, from, day, reference }))
+  const reload = useReload()
+  const save = useMutation({ ...orpc.payroll.statutory.saveDueDate.mutationOptions(), onSuccess: reload })
+  const perState = byState(scheme)
+  const valid = (!perState || /^[A-Za-z]{2}$/.test(state.trim())) && !!fromDateInput(from) && /^\d{1,2}$/.test(day) && Number(day) >= 1 && Number(day) <= 31 && reference.trim().length >= 3
+  const dirty = JSON.stringify({ scheme, state, from, day, reference }) !== initial
+  const submit = () => {
+    if (!valid || save.isPending) return
+    save.mutate({ ...(existing && { id: existing.id }), scheme, stateCode: perState ? state.trim().toUpperCase() : null, effectiveFrom: fromDateInput(from)!, day: Number(day), reference: reference.trim() })
+  }
+  return (
+    <FormDrawer
+      onClose={close}
+      closed={save.isSuccess}
+      dirty={dirty && !save.isSuccess}
+      title={existing ? `${SCHEME[existing.scheme]} due date` : 'Add a due date'}
+      description="The day of the month after the pay month a deposit is due by, from a date. A later row replaces it from its own date."
+      footer={<><DrawerCancel /><Button disabled={!valid || save.isPending} onClick={submit}>{save.isPending ? 'Saving…' : 'Save'}</Button></>}
+    >
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); submit() }}>
+        <fieldset disabled={save.isPending} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field id="dd-scheme" label="Scheme">
+              <NativeSelect id="dd-scheme" className="w-full [&_select]:h-9" value={scheme} onChange={(e) => setScheme(e.target.value as Scheme)}>
+                {SCHEMES.map((s) => <NativeSelectOption key={s} value={s}>{SCHEME[s]}</NativeSelectOption>)}
+              </NativeSelect>
+            </Field>
+            {perState ? (
+              <Field id="dd-state" label="State"><Input id="dd-state" className="h-9 uppercase" maxLength={2} value={state} onChange={(e) => setState(e.target.value)} /></Field>
+            ) : (
+              <Field id="dd-group" label="State" hint="One date for the group"><Input id="dd-group" className="h-9" disabled value="—" /></Field>
+            )}
+            <Field id="dd-from" label="From"><Input id="dd-from" type="date" className="h-9" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
+            <Field id="dd-day" label="Day of the next month" hint={/^\d{1,2}$/.test(day) && Number(day) >= 1 && Number(day) <= 31 ? dueText(Number(day)) : 'e.g. 15'}>
+              <Input id="dd-day" className="h-9 tabular-nums" inputMode="numeric" maxLength={2} value={day} onChange={(e) => setDay(e.target.value)} />
+            </Field>
+          </div>
+          <Field id="dd-reference" label="Rule" hint="The rule or notification it comes from, e.g. the scheme's paragraph"><Input id="dd-reference" className="h-9" value={reference} onChange={(e) => setReference(e.target.value)} /></Field>
+        </fieldset>
+        <FormError error={save.error} />
+      </form>
+    </FormDrawer>
+  )
+}
+
 // --- Run settings (stage 5, the user 2026-11-27: "nothing should be hardcoded") ---
 
 const settingValue = (key: keyof typeof SETTING_LABELS, s: RunSettings) =>
@@ -495,7 +602,9 @@ const settingValue = (key: keyof typeof SETTING_LABELS, s: RunSettings) =>
       ? `More than ${s.bigChangePercent}%`
       : key === 'paymentDueDays'
         ? `${s.paymentDueDays} ${s.paymentDueDays === 1 ? 'day' : 'days'} after the period`
-        : `${s.epsAgeSoonMonths} ${s.epsAgeSoonMonths === 1 ? 'month' : 'months'} ahead`
+        : key === 'depositReminderDays'
+          ? `From ${s.depositReminderDays} ${s.depositReminderDays === 1 ? 'day' : 'days'} before`
+          : `${s.epsAgeSoonMonths} ${s.epsAgeSoonMonths === 1 ? 'month' : 'months'} ahead`
 
 export function RunSettingsTab({ data, pending, canChange }: { data: Settings | undefined; pending: boolean; canChange: boolean }) {
   const [editing, setEditing] = useState(false)
@@ -506,7 +615,7 @@ export function RunSettingsTab({ data, pending, canChange }: { data: Settings | 
         <p className="text-xs text-muted-foreground">{s ? (s.saved ? `Saved${s.updatedBy ? ` by ${s.updatedBy.name}` : ''}.` : 'Not saved yet - these defaults apply.') : ''} Changes count from the next “Work out pay”.</p>
         {canChange && <Button className="min-h-9 gap-1.5 rounded-full" disabled={pending} onClick={() => setEditing(true)}><Pencil className="size-4" aria-hidden />Change</Button>}
       </div>
-      <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {(Object.keys(SETTING_LABELS) as (keyof typeof SETTING_LABELS)[]).map((key) => (
           <div key={key} className="rounded-xl bg-surface-2/40 px-3 py-2">
             <dt className="text-xs text-muted-foreground">{SETTING_LABELS[key][0]}</dt>
@@ -525,10 +634,12 @@ function RunSettingsDialog({ current, close }: { current: RunSettings; close: ()
   const [percent, setPercent] = useState(String(current.bigChangePercent))
   const [months, setMonths] = useState(String(current.epsAgeSoonMonths))
   const [dueDays, setDueDays] = useState(String(current.paymentDueDays))
+  const [reminderDays, setReminderDays] = useState(String(current.depositReminderDays))
   const reload = useReload()
   const save = useMutation({ ...orpc.payroll.statutory.saveSettings.mutationOptions(), onSuccess: () => { reload(); close() } })
-  const valid = /^\d{1,4}$/.test(percent) && Number(percent) >= 1 && Number(percent) <= 1000 && /^\d{1,2}$/.test(months) && Number(months) <= 24 && /^\d{1,2}$/.test(dueDays) && Number(dueDays) <= 60
-  const dirty = drafts !== (current.tdsCountsDraftRuns ? 'yes' : 'no') || percent !== String(current.bigChangePercent) || months !== String(current.epsAgeSoonMonths) || dueDays !== String(current.paymentDueDays)
+  const valid = /^\d{1,4}$/.test(percent) && Number(percent) >= 1 && Number(percent) <= 1000 && /^\d{1,2}$/.test(months) && Number(months) <= 24 && /^\d{1,2}$/.test(dueDays) && Number(dueDays) <= 60 && /^\d{1,2}$/.test(reminderDays) && Number(reminderDays) <= 30
+  const dirty =
+    drafts !== (current.tdsCountsDraftRuns ? 'yes' : 'no') || percent !== String(current.bigChangePercent) || months !== String(current.epsAgeSoonMonths) || dueDays !== String(current.paymentDueDays) || reminderDays !== String(current.depositReminderDays)
   return (
     <FormDrawer
       onClose={close}
@@ -536,7 +647,7 @@ function RunSettingsDialog({ current, close }: { current: RunSettings; close: ()
       dirty={dirty && !save.isSuccess}
       title="Run settings"
       description="For every company. Draft runs follow them the next time their pay is worked out."
-      footer={<><DrawerCancel /><Button disabled={!valid || save.isPending} onClick={() => valid && save.mutate({ tdsCountsDraftRuns: drafts === 'yes', bigChangePercent: Number(percent), epsAgeSoonMonths: Number(months), paymentDueDays: Number(dueDays) })}>{save.isPending ? 'Saving…' : 'Save'}</Button></>}
+      footer={<><DrawerCancel /><Button disabled={!valid || save.isPending} onClick={() => valid && save.mutate({ tdsCountsDraftRuns: drafts === 'yes', bigChangePercent: Number(percent), epsAgeSoonMonths: Number(months), paymentDueDays: Number(dueDays), depositReminderDays: Number(reminderDays) })}>{save.isPending ? 'Saving…' : 'Save'}</Button></>}
     >
       <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
         <fieldset disabled={save.isPending} className="space-y-4">
@@ -554,6 +665,9 @@ function RunSettingsDialog({ current, close }: { current: RunSettings; close: ()
           </Field>
           <Field id="rs-due" label={`${SETTING_LABELS.paymentDueDays[0]} (days after the pay period)`} hint={SETTING_LABELS.paymentDueDays[1]}>
             <Input id="rs-due" className="h-9 tabular-nums" inputMode="numeric" value={dueDays} onChange={(e) => setDueDays(e.target.value)} />
+          </Field>
+          <Field id="rs-reminder" label={`${SETTING_LABELS.depositReminderDays[0]} (days before the due date)`} hint={SETTING_LABELS.depositReminderDays[1]}>
+            <Input id="rs-reminder" className="h-9 tabular-nums" inputMode="numeric" value={reminderDays} onChange={(e) => setReminderDays(e.target.value)} />
           </Field>
         </fieldset>
         <FormError error={save.error} />

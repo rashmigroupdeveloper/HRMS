@@ -2,6 +2,8 @@ import { PayrollPage } from '@/pages/payroll/PayrollPage'
 import { PayrollRunPage } from '@/pages/payroll/PayrollRunPage'
 import { PaymentBatchPage } from '@/pages/payroll/PaymentBatchPage'
 import { PaymentsPage } from '@/pages/payroll/PaymentsPage'
+import { DepositMonthPage } from '@/pages/payroll/DepositMonthPage'
+import { StatutoryDepositsPage } from '@/pages/payroll/StatutoryDepositsPage'
 import { StatutoryPage } from '@/pages/payroll/StatutoryPage'
 import { AttendanceReportsPage } from '@/pages/attendance/AttendanceReportsPage'
 import { createBrowserRouter, Navigate } from 'react-router'
@@ -75,6 +77,9 @@ import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 //                                    and opening tax figures (whole-company Payroll scope)
 //     /manage/salary-payments[/:id] - paying the approved runs: to pay & owed, batches, one batch (Payroll payments: View;
 //                                    changes Edit - over the whole company; payroll stage 6 slice 2)
+//     /manage/statutory-deposits[/:companyId/:month] - what the approved runs must deposit to PF, ESIC, professional tax
+//                                    and LWF, one company's month (Statutory deposits: View; changes Edit - over the whole
+//                                    company; payroll stage 6 slice 3)
 //     /manage/pay-career           - raising job / salary changes, the change register
 //     /manage/approvals            - the role's steps and the requests raised for others
 //     /manage/organization         - Organization: View, or HOD appointments: View (the Department heads tab only)
@@ -124,6 +129,7 @@ export const router = createBrowserRouter([
               { index: true, element: <ManageHomePage /> },
               { element: <RequireAccess area="PAYROLL" />, children: [{ path: 'payroll', element: <PayrollPage /> }, { path: 'payroll/statutory', element: <StatutoryPage /> }, { path: 'payroll/:id', element: <PayrollRunPage /> }] },
               { element: <RequireAccess area="PAYROLL_PAYMENTS" />, children: [{ path: 'salary-payments', element: <PaymentsPage /> }, { path: 'salary-payments/:id', element: <PaymentBatchPage /> }] },
+              { element: <RequireAccess area="STATUTORY_DEPOSITS" />, children: [{ path: 'statutory-deposits', element: <StatutoryDepositsPage /> }, { path: 'statutory-deposits/:companyId/:month', element: <DepositMonthPage /> }] },
               { path: 'employees', element: <PeoplePage /> },
               { path: 'employees/:employeeCode', element: <EmployeeProfilePage /> },
               { path: 'joining-tasks', element: <JoiningTasksPage /> },

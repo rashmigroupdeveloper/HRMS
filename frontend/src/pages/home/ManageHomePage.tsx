@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Building2, CalendarCog, CircleAlert, FileText, Fingerprint, HandCoins, History, Inbox, ListChecks, ShieldCheck, UserPlus, Users, Workflow } from 'lucide-react'
+import { Building2, CalendarCog, CircleAlert, FileText, Fingerprint, HandCoins, History, Inbox, Landmark, ListChecks, ShieldCheck, UserPlus, Users, Workflow } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
@@ -83,6 +83,7 @@ export function ManageHomePage() {
     ...(can('ORGANIZATION') || can('HOD_APPOINTMENTS') ? [{ to: '/manage/organization', icon: Building2, title: 'Organization', text: 'Companies & places' }] : []),
     ...(can('ATTENDANCE_SETUP') ? [{ to: '/manage/attendance-setup', icon: CalendarCog, title: 'Attendance setup', text: 'Shifts, holidays & punches' }] : []),
     ...(can('PAYROLL_PAYMENTS') ? [{ to: '/manage/salary-payments', icon: HandCoins, title: 'Salary payments', text: 'Batches & what is owed' }] : []),
+    ...(can('STATUTORY_DEPOSITS') ? [{ to: '/manage/statutory-deposits', icon: Landmark, title: 'Statutory deposits', text: 'PF, ESIC, PT & LWF due' }] : []),
     ...(can('LETTER_TEMPLATES') ? [{ to: '/manage/letter-templates', icon: FileText, title: 'Letter templates', text: 'Manage your letters' }] : []),
     ...(can('ACCESS') ? [{ to: '/manage/access', icon: ShieldCheck, title: 'Roles & access', text: 'Logins & permissions' }] : []),
     ...(can('APPROVAL_CHAINS') ? [{ to: '/manage/approval-chains', icon: Workflow, title: 'Approval rules', text: 'Who approves what' }] : []),

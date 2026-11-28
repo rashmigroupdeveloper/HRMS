@@ -32,7 +32,8 @@ change - includes View). Written below as e.g. "Onboarding: Edit".
   attendance, Edit sets it up, corrects days and gives HR's approval of shift changes), `LEAVE` "Leave" (2026-11-22 - View sees everyone's
   leave applications, balances and the leave types; Edit adjusts balances and changes the leave types), `PAYROLL` "Payroll"
   (2026-11-26 - pay runs of companies covered in full), `PAYROLL_PAYMENTS` "Payroll payments" (2026-11-28 - paying the
-  approved runs, apart from Payroll), `HOD_APPOINTMENTS` "HOD appointments"
+  approved runs, apart from Payroll), `STATUTORY_DEPOSITS` "Statutory deposits" (2026-11-28 - what the approved runs must
+  deposit to PF, ESIC, professional tax and LWF), `HOD_APPOINTMENTS` "HOD appointments"
   (2026-11-18, changed 2026-11-19 - View sees the HODs, the places they head and the gap list; Edit appoints and ends HODs,
   only for places inside the caller's data access; a place = a department at a plant), and the **employee areas** (split 2026-11-16): `EMPLOYEES` "Employee · Directory & job" (the
   directory, job, record - the way into anyone else's profile), `EMPLOYEE_PERSONAL_DETAILS` "Employee · Personal"
@@ -85,7 +86,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 339**
+**Total APIs: 353**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -428,6 +429,20 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 337 | `payroll.payments.paymentList` | Payroll payments: Edit covering whole company | The plain payment list of a bank batch as Excel (full account numbers) |
 | 338 | `payroll.payments.hold` | Payroll payments: Edit covering whole company | Hold a person's pay of an approved run, with a reason |
 | 339 | `payroll.payments.releaseHold` | Payroll payments: Edit covering whole company | Release a held pay |
+| 340 | `payroll.statutory.saveDueDate` | Payroll: Edit for every company | Add or change when a statutory deposit is due |
+| 341 | `payroll.statutory.deleteDueDate` | Payroll: Edit for every company | Remove a due date |
+| 342 | `payroll.deposits.list` | Statutory deposits: View covering whole company | Each company's month and scheme of the approved runs - due, deposited, due date, where it stands |
+| 343 | `payroll.deposits.month` | Statutory deposits: View covering whole company | One company's pay month: each scheme's figures, returns / challans, who is left out |
+| 344 | `payroll.deposits.people` | Statutory deposits: View covering whole company | The people of a month's PF or ESIC - number, left out, amounts with Salary View |
+| 345 | `payroll.deposits.figures` | Statutory deposits + Salary: View covering whole company | Each person's PF / ESIC / PT / LWF of a month as Excel (not the upload file) |
+| 346 | `payroll.deposits.record` | Statutory deposits: Edit covering whole company | Record a return / challan (filed, maybe paid) |
+| 347 | `payroll.deposits.update` | Statutory deposits: Edit covering whole company | Correct a recorded return / challan |
+| 348 | `payroll.deposits.markPaid` | Statutory deposits: Edit covering whole company | Mark a filed return / challan paid |
+| 349 | `payroll.deposits.remove` | Statutory deposits: Edit covering whole company | Remove a return / challan recorded by mistake |
+| 350 | `payroll.deposits.leaveOut` | Statutory deposits: Edit covering whole company | Mark people left out of a PF / ESIC return, with why |
+| 351 | `payroll.deposits.takeIn` | Statutory deposits: Edit covering whole company | People left out taken in by a later deposit (or not after all) |
+| 352 | `payroll.deposits.removeGaps` | Statutory deposits: Edit covering whole company | Remove left-out marks made by mistake |
+| 353 | `payroll.deposits.mine` | Own record | Whether one's own PF / ESIC / PT / LWF deductions were deposited, each released month |
 
 ---
 
@@ -4671,9 +4686,10 @@ The deductions themselves are worked out by `payroll.calculation.compute` and re
 - **Returns:** `{ rates: [{ id, parameter, effectiveFrom, value, reference, updatedAt, updatedBy }], ptSets: [{ stateCode,
   effectiveFrom, reference, updatedAt, slabs: [{ gender, wagesFrom, wagesTo, amount, specialMonth, specialAmount }] }], lwf:
   [{ id, stateCode, effectiveFrom, employeeAmount, employerAmount, months, reference, updatedAt, updatedBy }], taxSets: [{
-  regime, taxYearFrom, reference, updatedAt, slabs: [{ incomeFrom, incomeTo, ratePercent }] }], settings: { tdsCountsDraftRuns,
-  bigChangePercent, epsAgeSoonMonths, paymentDueDays (stage 6 slice 2), saved, updatedAt, updatedBy } (stage 5 - the defaults
-  until saved), canChange }` -
+  regime, taxYearFrom, reference, updatedAt, slabs: [{ incomeFrom, incomeTo, ratePercent }] }], dueDates: [{ id, scheme,
+  stateCode, effectiveFrom, day, reference, createdAt, updatedAt, updatedBy }] (stage 6 slice 3), settings: { tdsCountsDraftRuns,
+  bigChangePercent, epsAgeSoonMonths, paymentDueDays (stage 6 slice 2), depositReminderDays (stage 6 slice 3), saved, updatedAt,
+  updatedBy } (stage 5 - the defaults until saved), canChange }` -
   `canChange`: Payroll Edit for every company.
 - **Does:** the statutory settings page (`/manage/payroll/statutory`).
 - **Errors:** UNAUTHORIZED, FORBIDDEN.
@@ -4804,14 +4820,39 @@ The deductions themselves are worked out by `payroll.calculation.compute` and re
 - **HTTP:** `POST /api/rpc/payroll/statutory/saveSettings` · **Code:** `backend/src/modules/payroll/statutory/`
 - **Access:** as `payroll.statutory.saveRate`.
 - **Scope:** as `payroll.statutory.saveRate` (one row for the group).
-- **Input:** `{ tdsCountsDraftRuns: boolean, bigChangePercent: 1-1000, epsAgeSoonMonths: 0-24, paymentDueDays: 0-60 }`; strict.
+- **Input:** `{ tdsCountsDraftRuns: boolean, bigChangePercent: 1-1000, epsAgeSoonMonths: 0-24, paymentDueDays: 0-60,
+  depositReminderDays: 0-30 }`; strict.
 - **Returns:** the settings now in force.
 - **Does:** saves the payroll settings (stage 5, approved 2026-11-27 - "nothing should be hardcoded"): whether earlier months'
   TDS counts draft runs too (default: finalised only), the BIG_CHANGE warning's % (default 20), how many months ahead the
   EPS age limit is warned of (default 2), and (stage 6 slice 2, 2026-11-28) how many days after the pay period's end wages
-  are due - the owed list's days overdue (default 7; to verify with counsel). They count from the next "Work out pay".
-  Recorded in the change history.
+  are due - the owed list's days overdue (default 7; to verify with counsel), and (stage 6 slice 3) how many days before a
+  statutory deposit's due date its daily reminder starts (default 3). They count from the next "Work out pay" (the reminder
+  from its next run). Recorded in the change history.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
+
+### `payroll.statutory.saveDueDate`
+- **HTTP:** `POST /api/rpc/payroll/statutory/saveDueDate` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate` (one list for the group).
+- **Input:** `{ id?: positive int (a change), scheme: 'PF' | 'ESIC' | 'PROFESSIONAL_TAX' | 'LWF', stateCode: 2 letters (professional
+  tax and LWF) | null (PF and ESIC), effectiveFrom: a day, day: 1-31, reference: string 3-300 }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** stage 6 slice 3 (approved 2026-11-28): when a scheme's deposit of a pay month is due - on `day` of the month after
+  the pay month (a day past that month's end = its last day), from `effectiveFrom` (the row in force on the pay month's first
+  day counts). Nothing is written in code: a month with no row in force shows "no due date set". Recorded in the change
+  history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST (a State given for PF / ESIC or missing for professional tax / LWF),
+  CONFLICT the same scheme and State from that day already, NOT_FOUND (a change of a row that is gone).
+
+### `payroll.statutory.deleteDueDate`
+- **HTTP:** `POST /api/rpc/payroll/statutory/deleteDueDate` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate`.
+- **Input:** `{ id: positive int }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** removes a due date (kept in the change history).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
 
 ## Payroll — Stage 5, approval and finalising (2026-11-27)
 
@@ -5073,6 +5114,166 @@ scope (`wholeCompanyScopeOf`) - outside it NOT_FOUND or an empty list; changes n
 - **Returns:** `{ released: true }`.
 - **Does:** closes the open hold (who, when, note); the person is to pay again.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT not held.
+
+## Payroll stage 6 slice 3 — statutory deposits (2026-11-28)
+
+Approved by the user 2026-11-28: the "Statutory deposits" area (apart from preparing and paying the payroll); what each
+approved (FINALISED) run must deposit to PF (EPF, EPS, EDLI), ESIC, professional tax and LWF - per company, scheme and pay
+month, professional tax and LWF per State (the work location's State at the end of the period, as the run charged it) - is
+worked out from the runs' lines each time, never stored. HR records each return / challan (`StatutoryDeposit`: filed, then
+paid) with the contributions it carries (compared with the runs to the paisa) and the other charges on it (admin charges,
+interest, damages - the company's cost, typed from the challan); for PF and ESIC the people whose deduction could not go
+into the return are marked left out (`StatutoryDepositGap`, with why) until a later deposit takes them in. Due dates are
+dated rows (`payroll.statutory.saveDueDate`); a daily job (`payroll.remindDeposits`, 09:00) e-mails the people with
+Statutory deposits Edit over the whole company about the months whose challan is not paid in full - not deposited, filed but
+not paid or short - from `depositReminderDays` before the due date (never a person's amount; people still left out once the
+challans are paid are not e-mailed - the user, 2026-11-28). Every API: the month / deposit / person is found through its
+company with whole-company Statutory deposits scope (`wholeCompanyScopeOf`) - outside it NOT_FOUND or an empty list; changes
+need Edit over that whole company; company totals with the area alone, each person's amounts only with Salary View over the
+whole company as well (the user's choice); nobody marks their own PF or ESIC. Income tax (TDS) challans come with stage 7.
+
+Where a scheme's month stands (`state`): `DEPOSITED` (deposited = due), `PEOPLE_LEFT_OUT` (deposited = due less the people
+left out, not taken in yet), `FILED_NOT_PAID` (a return / challan filed and not paid, less than due deposited),
+`SHORT` (less than due deposited, nothing filed waiting), `MORE_THAN_DUE` (to check), `NOT_DEPOSITED`.
+`daysOverdue`: today past the due date while anything is owed; `daysLate`: the last payment after the due date.
+
+### `payroll.deposits.list`
+- **HTTP:** `POST /api/rpc/payroll/deposits/list` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: View.
+- **Scope:** the approved runs and deposits of the companies the viewer covers in full (`wholeCompanyScopeOf`); another
+  company or a plant-level row: nothing.
+- **Input:** `{ companyId?, show: 'OPEN' (default - anything not fully deposited) | 'ALL', page (default 1), pageSize (1-200,
+  default 50) }`; strict.
+- **Returns:** `{ items: [{ company { id, code, name }, payMonth, scheme, stateCode, payslipsReleased, people, due, deposited,
+  filedUnpaid, otherCharges, lastPaidOn, leftOut { count, amount }, takenIn, dueOn, state, expected, difference, daysOverdue,
+  daysLate }], total, counts { open, overdue, dueSoon, filedNotPaid, peopleLeftOut, noDueDate }, reminderDays, companies: [{
+  id, code, name, canRecord }] }` - company totals only. OPEN: the most overdue first, then by due date; ALL: newest month first.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
+
+### `payroll.deposits.month`
+- **HTTP:** `POST /api/rpc/payroll/deposits/month` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: View.
+- **Scope:** the company covered in full and an approved run of it for the month (else NOT_FOUND).
+- **Input:** `{ companyId, payMonth: the first day of the month }`; strict.
+- **Returns:** `{ company, payMonth, runs: [{ id, payslipsReleased }], lines: [{ ...as a list item, roles: { <statutory role>:
+  { amount, base, people } }, noNumber (PF / ESIC: people with no UAN / ESIC number not marked left out), deposits: [{ id,
+  scheme, stateCode, payMonth, reference, filedOn, contributions, otherCharges, paidOn, paymentReference, paidAt, note,
+  createdAt, updatedAt, takesIn, recordedBy, paidBy }] }], canRecord, seesAmounts }` - totals per statutory role (company
+  figures); `seesAmounts`: Salary View over the whole company too.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
+
+### `payroll.deposits.people`
+- **HTTP:** `POST /api/rpc/payroll/deposits/people` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: View.
+- **Scope:** as `payroll.deposits.month`; each person's amounts only with Salary View over the whole company as well.
+- **Input:** `{ companyId, payMonth, scheme: 'PF' | 'ESIC', show: 'ALL' (default) | 'LEFT_OUT' | 'NO_NUMBER', search? (code,
+  name or number, max 100), page, pageSize }`; strict.
+- **Returns:** `{ items: [{ personId, employeeCode, name, number (UAN / ESIC number) | null, own, gap { id, reason, note, at,
+  by, takenIn { depositId, reference, paidOn, at, by } | null } | null, amounts { wages, employee, employer } | null }], total,
+  counts { all, leftOut, takenIn, noNumber }, canMark, seesAmounts }`.
+- **Does:** everyone of the month's approved runs with an amount of the scheme, by employee code.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+
+### `payroll.deposits.figures`
+- **HTTP:** `POST /api/rpc/payroll/deposits/figures` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: View, and Salary View over the whole company (checked in the service).
+- **Scope:** as `payroll.deposits.month`; without Salary View over the whole company FORBIDDEN.
+- **Input:** `{ companyId, payMonth }`; strict.
+- **Returns:** an Excel file `statutory-figures-<company>-<yyyy-mm>.xlsx`: sheets PF (code, name, UAN, PF / EPS / EDLI wages,
+  employee share, EPS, employer EPF, EDLI, unpaid days, left out), ESIC (code, name, ESIC number, paid days, ESI wages,
+  shares, left out), Professional tax (State, gross, tax), LWF (State, shares) - only the schemes with people - and Totals.
+- **Does:** our own plain layout for preparing and checking the returns - not the ECR / ESIC upload file (that waits for a
+  sample from finance).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
+
+### `payroll.deposits.record`
+- **HTTP:** `POST /api/rpc/payroll/deposits/record` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: Edit.
+- **Scope:** Edit over the company in full (not seen: NOT_FOUND; View only: FORBIDDEN); an approved run of the month.
+- **Input:** `{ companyId, payMonth, scheme, stateCode: 2 letters (professional tax, LWF) | null (PF, ESIC), reference: 1-100,
+  filedOn: a day (not in the future), contributions: >= 0 (2 decimals), otherCharges: >= 0 (default 0) - together above 0,
+  paid?: { paidOn (not in the future, not before filedOn), paymentReference: 1-100 }, note? (max 500), takeIn?: 1-1000 ids of
+  people left out (PF / ESIC only) }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** records a return / challan filed (paid at once when `paid` is given - who and when recorded). The month's run must
+  have an amount of the scheme (in that State). `takeIn`: a supplementary return takes in these people left out of the same
+  company's month and scheme in the same step (so the month never shows more deposited than due in between) - each still
+  left out, never the viewer. Recorded in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN (also one's own mark in `takeIn`), NOT_FOUND (also a `takeIn` person not left out of
+  this month's return); BAD_REQUEST no such amount in the run, nothing deposited, a day in the future, paid before filed,
+  `takeIn` for professional tax / LWF; CONFLICT someone in `takeIn` already taken in.
+
+### `payroll.deposits.update`
+- **HTTP:** `POST /api/rpc/payroll/deposits/update` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: Edit.
+- **Scope:** as `record`, by the deposit's company.
+- **Input:** `{ id, reference, filedOn, contributions, otherCharges, note? (empty clears it), paid?: { paidOn, paymentReference }
+  (only for one already paid) }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** corrects a typing mistake; the change history keeps the old values.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST (paid details for one not paid - mark it paid instead; days);
+  CONFLICT changed meanwhile.
+
+### `payroll.deposits.markPaid`
+- **HTTP:** `POST /api/rpc/payroll/deposits/markPaid` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: Edit.
+- **Scope:** as `update`.
+- **Input:** `{ id, paidOn: a day (not in the future, not before it was filed), paymentReference: 1-100 }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** a filed return / challan paid - the day, the payment's reference, who recorded it when.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT already paid.
+
+### `payroll.deposits.remove`
+- **HTTP:** `POST /api/rpc/payroll/deposits/remove` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: Edit.
+- **Scope:** as `update`.
+- **Input:** `{ id }`; strict.
+- **Returns:** `{ removed: true }`.
+- **Does:** removes one recorded by mistake (kept in the change history) - not while it took people left out in.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT it took people in.
+
+### `payroll.deposits.leaveOut`
+- **HTTP:** `POST /api/rpc/payroll/deposits/leaveOut` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: Edit.
+- **Scope:** Edit over the company in full; every person must be of the month's approved run of that company; never one's own.
+- **Input:** `{ companyId, payMonth, scheme: 'PF' | 'ESIC', personIds: 1-1000 (ids in their runs), reason: 'NO_UAN' |
+  'NO_ESIC_NUMBER' | 'DETAILS_MISMATCH' | 'PREVIOUS_EMPLOYER' | 'OTHER', note? (max 300; 3+ with OTHER) }`; strict.
+- **Returns:** `{ marked }`.
+- **Does:** checks everyone first: each must have an amount of the scheme that month and no mark of it yet - CONFLICT listing
+  who and why; then marks them left out (who, when).
+- **Errors:** UNAUTHORIZED; FORBIDDEN one's own or View only; NOT_FOUND; CONFLICT; BAD_REQUEST.
+
+### `payroll.deposits.takeIn`
+- **HTTP:** `POST /api/rpc/payroll/deposits/takeIn` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: Edit.
+- **Scope:** the marks' company covered in full (else NOT_FOUND), Edit over it; never one's own.
+- **Input:** `{ gapIds: 1-1000, depositId: id | null }`; strict - all of one company, pay month and scheme.
+- **Returns:** `{ changed }`.
+- **Does:** with a deposit (of the same company, month and scheme): the people left out are taken in by it (who, when); with
+  null: not taken in after all (left out again).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST (mixed months / schemes, another month's deposit); CONFLICT
+  already taken in (or not, for null), or changed meanwhile.
+
+### `payroll.deposits.removeGaps`
+- **HTTP:** `POST /api/rpc/payroll/deposits/removeGaps` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** Statutory deposits: Edit.
+- **Scope:** as `takeIn`.
+- **Input:** `{ gapIds: 1-1000 }`; strict.
+- **Returns:** `{ removed }`.
+- **Does:** takes away marks made by mistake (kept in the change history) - only while not taken in.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT taken in, or changed meanwhile.
+
+### `payroll.deposits.mine`
+- **HTTP:** `POST /api/rpc/payroll/deposits/mine` · **Code:** `backend/src/modules/payroll/deposits/`
+- **Access:** any logged-in employee (`authedProcedure`), both portals.
+- **Scope:** one's own record - the logged-in employee's approved runs whose payslips are released; only the standing of
+  their company's month reaches them, never anyone else's amount.
+- **Input:** none.
+- **Returns:** `[{ payMonth, company { code, name }, employeeCode, schemes: [{ scheme, stateCode, amount (their own
+  deduction), deposited, depositedOn, leftOut (reason) | null, dueOn }] }]`, newest month first.
+- **Does:** "deposited" only when the month's deposit of the scheme is complete and they are not left out (or a later deposit
+  took them in and is paid) - otherwise pending (Pay & career › Statutory deposits).
+- **Errors:** UNAUTHORIZED.
 
 ## Attendance — "attendance not tracked" (2026-11-27)
 

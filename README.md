@@ -114,8 +114,9 @@ HRMS_NEW/
 │     │  │                      statutory/ (dated rates and slabs, run settings), tax-openings/ (opening tax
 │     │  │                      figures), checks/ (warnings to acknowledge before sending for approval),
 │     │  │                      register/ (the salary register, Excel), payslips/ (release, make, download;
-│     │  │                      one's own) + payroll.jobs.ts (makes the released payslips), payments/ (batches,
-│     │  │                      holds, what is owed)
+│     │  │                      one's own) + payroll.jobs.ts (makes the released payslips, reminds of deposits),
+│     │  │                      payments/ (batches, holds, what is owed), deposits/ (PF, ESIC, PT and LWF
+│     │  │                      due, returns and challans, people left out)
 │     │  ├─ daily-movement-reports/ group-wide email schedule and HR Head role settings; delivery follows later
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
@@ -437,8 +438,19 @@ reference (each cheque with its number); a payment the bank sends back is **Retu
 later batch. Pay can be held with a reason and released. "Wages due" on Run settings (default 7 days after the pay
 period) sets the days overdue. Nobody pays themselves.
 
+**Stage 6, statutory deposits (2026-11-28):** give the new **Statutory deposits** area (Roles & access) to whoever files PF,
+ESIC, professional tax and LWF; each person's amounts also need Salary View. First enter the due dates on **Payroll ›
+Statutory settings › Due dates** (PF and ESIC once, professional tax and LWF per State - nothing is filled in). **Statutory
+deposits** (`/manage/statutory-deposits`) lists each company's month and scheme of the approved runs with what is due, what
+is deposited and the due date - the open ones first. Open a month: **Record a return / challan** (its reference, the day it
+was filed, the contributions, any admin charges or interest), then **Paid** with the day and reference; download
+**Figures** (each person's PF, ESIC, PT and LWF - a plain sheet, not the upload file). For PF and ESIC, mark anyone who
+could not go into the return as **left out** (no UAN, details not matching...) and later **taken in** by the supplementary
+return. The people who record deposits get a daily e-mail from 3 days (Run settings) before a due date until the challan is
+paid; employees see their own months in **Pay & career › Statutory deposits**.
+
 The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). The bank file and
 statutory files follow the staged plan in BACKLOG.md, with each new model/field agreed before
 migration. Apply the migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3:
 `payroll_stage3_days`, `payroll_stage3_amounts`; stage 4: `payroll_stage4_deductions`; stage 5: `payroll_stage5_approval`;
-stage 6: `payroll_stage6_payslips`, `payroll_stage6_payments`).
+stage 6: `payroll_stage6_payslips`, `payroll_stage6_payments`, `payroll_stage6_deposits`).

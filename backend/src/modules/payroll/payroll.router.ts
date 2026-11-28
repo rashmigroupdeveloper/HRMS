@@ -10,6 +10,7 @@ import { taxOpeningsRouter } from './tax-openings/tax-openings.router.js'
 import { payslipsRouter } from './payslips/payslips.router.js'
 import { registerRouter } from './register/register.router.js'
 import { paymentsRouter } from './payments/payments.router.js'
+import { depositsRouter } from './deposits/deposits.router.js'
 
 export const payrollRouter = {
   setup: accessProcedure('PAYROLL', 'READ').input(setupInput).handler(({ context, input }) => payrollService.getSetup(context.user, input)),
@@ -33,4 +34,6 @@ export const payrollRouter = {
   register: registerRouter,
   // stage 6 slice 2: paying the approved runs - batches, holds and what is owed ("Payroll payments" area)
   payments: paymentsRouter,
+  // stage 6 slice 3: what the approved runs must deposit to PF, ESIC, professional tax and LWF ("Statutory deposits" area)
+  deposits: depositsRouter,
 }

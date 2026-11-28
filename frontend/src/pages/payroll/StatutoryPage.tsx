@@ -7,13 +7,13 @@ import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
 import { OpeningsTab } from './components/OpeningsTab'
-import { LwfTab, PtTab, RatesTab, RunSettingsTab, TaxTab } from './components/StatutorySettings'
+import { DueDatesTab, LwfTab, PtTab, RatesTab, RunSettingsTab, TaxTab } from './components/StatutorySettings'
 import { CHANGE_NOTE, STATUTORY_NOTE, STATUTORY_TABS, STATUTORY_TITLE, type StatutoryTab } from './components/statutory-labels'
 
 // Payroll › Statutory settings (payroll stage 4, approved 2026-11-27): the dated rates, the professional-tax and
 // income-tax slabs, the labour welfare fund - one list for the group (Payroll View; changes need Payroll Edit for every
 // company) - opening tax figures, which are people's records (whole-company Payroll scope by the employee's company),
-// and the run settings (stage 5).
+// the run settings (stage 5) and the due dates of the statutory deposits (stage 6 slice 3).
 export function StatutoryPage() {
   const [params, setParams] = useSearchParams()
   const tab: StatutoryTab = STATUTORY_TABS.some((t) => t.value === params.get('tab')) ? (params.get('tab') as StatutoryTab) : 'rates'
@@ -42,6 +42,7 @@ export function StatutoryPage() {
         <TabsContent value="pt" className="mt-3"><section className="min-w-0 space-y-3 rounded-2xl bg-card p-3 shadow-card sm:p-4"><PtTab {...tabProps} /></section></TabsContent>
         <TabsContent value="lwf" className="mt-3"><section className="min-w-0 space-y-3 rounded-2xl bg-card p-3 shadow-card sm:p-4"><LwfTab {...tabProps} /></section></TabsContent>
         <TabsContent value="tax" className="mt-3"><section className="min-w-0 space-y-3 rounded-2xl bg-card p-3 shadow-card sm:p-4"><TaxTab {...tabProps} /></section></TabsContent>
+        <TabsContent value="due" className="mt-3"><section className="min-w-0 space-y-3 rounded-2xl bg-card p-3 shadow-card sm:p-4"><DueDatesTab {...tabProps} /></section></TabsContent>
         <TabsContent value="settings" className="mt-3"><section className="min-w-0 space-y-3 rounded-2xl bg-card p-3 shadow-card sm:p-4"><RunSettingsTab {...tabProps} /></section></TabsContent>
         <TabsContent value="openings" className="mt-3"><section className="min-w-0 space-y-3 rounded-2xl bg-card p-3 shadow-card sm:p-4"><OpeningsTab canAdd={ready && can('PAYROLL', 'WRITE')} /></section></TabsContent>
       </Tabs>

@@ -13,6 +13,7 @@ import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
 import { formatDate, formatDateTime, formatDoneBy, formatMoney } from '@/lib/utils'
 import { RunChecks } from './components/RunChecks'
+import { monthPath } from './components/deposits-labels'
 import { RunInputs } from './components/RunInputs'
 import { RunPeople } from './components/RunPeople'
 import { PayslipsLine, RegisterButton } from './components/RunPayslips'
@@ -33,7 +34,7 @@ export function PayrollRunPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [sending, setSending] = useState(false)
   const [withdrawing, setWithdrawing] = useState(false)
-  const { ready, can } = useAccess()
+  const { ready, can, coversWhole } = useAccess()
   const queryClient = useQueryClient()
   const run = useQuery({ ...orpc.payroll.get.queryOptions({ input: { id } }), enabled: valid })
   const reload = () => void queryClient.invalidateQueries({ queryKey: orpc.payroll.key() })
@@ -131,6 +132,12 @@ export function PayrollRunPage() {
               <span className="font-medium">Payments: </span>
               {[`${r.payments.paid} of ${r.payments.total} paid`, r.payments.inBatch ? `${r.payments.inBatch} in a batch` : '', r.payments.toPay ? `${r.payments.toPay} to pay` : '', r.payments.held ? `${r.payments.held} held` : '', r.payments.returned ? `${r.payments.returned} returned` : ''].filter(Boolean).join(' · ')}.{' '}
               <Link to={`/manage/salary-payments?company=${r.company.id}&run=${id}`} className="underline underline-offset-4">Open salary payments</Link>
+            </p>
+          )}
+          {/* stage 6 slice 3: what it must deposit to PF, ESIC, professional tax and LWF (Statutory deposits over the company) */}
+          {r.status === 'FINALISED' && ready && coversWhole('STATUTORY_DEPOSITS', 'READ', { companyId: r.company.id }) && (
+            <p className="text-xs text-muted-foreground">
+              <Link to={monthPath(r.company.id, r.payMonth)} className="underline underline-offset-4">Statutory deposits of this month</Link> - PF, ESIC, professional tax and LWF.
             </p>
           )}
           {r.status === 'DRAFT' && r.canChange && r.blockers.length > 0 && r.computedAt && <p className="text-xs text-muted-foreground">Before sending: {r.blockers.join(' · ')}.</p>}

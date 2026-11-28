@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Gender, StatutoryParameter, TaxRegime } from '#core/db/prisma'
+import { Gender, StatutoryParameter, StatutoryScheme, TaxRegime } from '#core/db/prisma'
 import { hasPaiseOnly } from '#shared/utils/money'
 
 // Payroll stage 4 (approved 2026-11-27): the statutory settings - dated rates, professional-tax slabs, labour welfare
@@ -49,9 +49,27 @@ export const saveTaxSlabsInput = z
   .strict()
 export const deleteTaxSlabsInput = z.object({ regime: z.enum(TaxRegime), taxYearFrom }).strict()
 
+// When a statutory deposit is due (stage 6 slice 3, approved 2026-11-28): the day of the month after the pay month, from a
+// date; professional tax and LWF per State, PF and ESIC without one
+export const saveDueDateInput = z
+  .object({ id: id.optional(), scheme: z.enum(StatutoryScheme), stateCode: stateCode.nullable(), effectiveFrom: day, day: z.number().int().min(1).max(31), reference })
+  .strict()
+  .refine((d) => (d.scheme === 'PROFESSIONAL_TAX' || d.scheme === 'LWF') === (d.stateCode !== null), {
+    message: 'Professional tax and LWF go by State (give it); PF and ESIC have one due date for the group (no State)',
+    path: ['stateCode'],
+  })
+export const deleteDueDateInput = z.object({ id }).strict()
+
 // The payroll settings (stage 5, approved 2026-11-27 - "nothing should be hardcoded")
 export const saveSettingsInput = z
-  .object({ tdsCountsDraftRuns: z.boolean(), bigChangePercent: z.number().int().min(1).max(1000), epsAgeSoonMonths: z.number().int().min(0).max(24), paymentDueDays: z.number().int().min(0).max(60) })
+  .object({
+    tdsCountsDraftRuns: z.boolean(),
+    bigChangePercent: z.number().int().min(1).max(1000),
+    epsAgeSoonMonths: z.number().int().min(0).max(24),
+    paymentDueDays: z.number().int().min(0).max(60),
+    // stage 6 slice 3: reminders of a statutory deposit start this many days before it is due
+    depositReminderDays: z.number().int().min(0).max(30),
+  })
   .strict()
 
 export type SavePtSlabsInput = z.infer<typeof savePtSlabsInput>
