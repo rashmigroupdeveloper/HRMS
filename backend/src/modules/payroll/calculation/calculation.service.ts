@@ -126,6 +126,7 @@ export async function workOutRun(run: { id: number; payMonth: Date; attendanceFr
   const openingOf = new Map(openings.map((o) => [o.employeeId, o]))
   const earlierOf = new Map<number, Map<string, deductionsService.EarlierMonth>>()
   for (const line of earlierLines) {
+    if (line.kind === null) throw new ORPCError('CONFLICT', { message: peopleService.UNVERIFIED_CLASSIFICATIONS })
     const months = earlierOf.get(line.employeeId) ?? earlierOf.set(line.employeeId, new Map()).get(line.employeeId)!
     const key = deductionsService.monthKey(line.payMonth)
     const month = months.get(key) ?? { taxable: 0, tds: 0, workedOut: false }
@@ -148,6 +149,13 @@ export async function workOutRun(run: { id: number; payMonth: Date; attendanceFr
     }
     const last = person.segments.at(-1)!
     const fact = factsOf.get(person.employeeId)!
+    const stateCode = last.workLocationId === null ? null : (stateOf.get(last.workLocationId) ?? null)
+    // Every output line captures the classifications used in this same calculation, even held earnings.
+    const snapshot = (salaryComponentId: number) => {
+      const component = componentInfo.get(salaryComponentId)
+      if (!component) throw new ORPCError('CONFLICT', { message: 'A salary component changed while pay was being worked out - try again' })
+      return { kind: component.kind, statutoryRole: component.statutoryRole, stateCode }
+    }
     const deductions = deductionsService.workOutDeductions(
       {
         earnings: pay.lines,
@@ -168,12 +176,12 @@ export async function workOutRun(run: { id: number; payMonth: Date; attendanceFr
       context,
     )
     // the earnings are kept even when the deductions hold the person (the user, 2026-11-27: show what they earned)
-    for (const line of pay.lines) lines.push({ payrollRunEmployeeId: person.id, ...line, base: null })
+    for (const line of pay.lines) lines.push({ payrollRunEmployeeId: person.id, ...line, base: null, ...snapshot(line.salaryComponentId) })
     if (deductions.heldFor.length) {
       held.push({ id: person.id, heldFor: deductions.heldFor, heldNote: deductions.notes.join('; ') })
       continue
     }
-    for (const line of deductions.lines) lines.push({ payrollRunEmployeeId: person.id, ...line })
+    for (const line of deductions.lines) lines.push({ payrollRunEmployeeId: person.id, ...line, ...snapshot(line.salaryComponentId) })
   }
   await calculationRepository.replaceLines(run.id, lines, actorId, tx)
   await calculationRepository.writeHolds(run.id, held, actorId, tx)

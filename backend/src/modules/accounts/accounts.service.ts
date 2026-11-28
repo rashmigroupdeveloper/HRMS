@@ -117,7 +117,7 @@ function selectActiveRole(account: AccountRoles, selection?: string) {
 
 // What the frontend gets about the logged-in employee. Pages and menus are shown from `access`.
 async function toMe(
-  user: Pick<CurrentUser, 'employeeId' | 'employeeCode' | 'name' | 'roles' | 'isSuperAdmin' | 'access' | 'grants' | 'mustChangePassword' | 'passwordConfirmedUntil' | 'availableRoles' | 'activeRoleId'>,
+  user: Pick<CurrentUser, 'accountId' | 'employeeId' | 'employeeCode' | 'name' | 'roles' | 'isSuperAdmin' | 'access' | 'grants' | 'mustChangePassword' | 'passwordConfirmedUntil' | 'availableRoles' | 'activeRoleId'>,
 ) {
   return {
     // what the password pages say a new password needs (security rules)
@@ -128,6 +128,7 @@ async function toMe(
     availableRoles: user.availableRoles,
     activeRoleId: user.activeRoleId ?? null,
     isSuperAdmin: user.isSuperAdmin,
+    canMasterControl: !user.mustChangePassword && await canUseMasterControl(user),
     access: user.access,
     // whose records each area covers, to view (READ) and to change (WRITE): 'ALL' or slices of the group (null = every
     // company / plant / department) - forms offer only what may be chosen; the backend checks it on every call
@@ -141,6 +142,20 @@ async function toMe(
     // until when the password counts as re-entered (changing roles asks for it again after that)
     passwordConfirmedUntil: user.passwordConfirmedUntil,
   }
+}
+
+// Owner-only technical capability (the user, 2026-11-28), independent of HR roles and their data access.
+// No Super Admin, role assignment, request header or email edit can replace the pinned account identity.
+export async function canUseMasterControl(user: Pick<CurrentUser, 'accountId' | 'employeeId'>) {
+  if (!env.MASTER_CONTROL_ACCOUNT_ID || user.accountId !== env.MASTER_CONTROL_ACCOUNT_ID) return false
+  const identity = await accountsRepository.findMasterIdentity(user.accountId)
+  return Boolean(identity && identity.employeeId === user.employeeId && !identity.disabledAt &&
+    CAN_LOG_IN.includes(identity.employee.status) &&
+    identity.employee.workEmail?.trim().toLowerCase() === 'core_developers@rashmigroup.com')
+}
+
+export async function assertMasterControl(user: CurrentUser) {
+  if (user.mustChangePassword || !await canUseMasterControl(user)) throw new ORPCError('NOT_FOUND', { message: 'Page not found' })
 }
 
 // A wrong password (signing in or re-entering it): counted; at maxFailedLogins the login locks for lockMinutes and the count
@@ -205,6 +220,7 @@ export async function login(
   writeSessionCookie(resHeaders, token, expiresAt)
   await accountsRepository.recordSignInEvent({ action: 'SIGN_IN', actorId: employee.id, employeeId: employee.id })
   return toMe({
+    accountId: account.id,
     employeeId: employee.id,
     employeeCode: employee.employeeCode,
     name: fullName(employee),

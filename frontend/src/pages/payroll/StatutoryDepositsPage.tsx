@@ -73,6 +73,12 @@ export function StatutoryDepositsPage() {
               </div>
             ))}
           </div>
+          {data.unverifiedMonths.length > 0 && (
+            <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">
+              Not shown: {data.unverifiedMonths.map((m) => `${m.company.code} ${MONTH_LABEL(m.payMonth)}`).join(', ')} - approved before pay runs saved each line's
+              statutory role and State, so their deposits cannot be worked out until they are reconciled.
+            </p>
+          )}
           <section className="space-y-2 rounded-2xl bg-card p-3 shadow-card sm:p-4">
             {data.items.length === 0 ? (
               <EmptyState
@@ -99,7 +105,7 @@ export function StatutoryDepositsPage() {
                         <TableCell className="px-2 py-1.5 text-xs tabular-nums">{l.dueOn ? <span className={l.daysOverdue ? 'text-negative-ink' : undefined}>{formatDate(l.dueOn)}</span> : <span className="text-warning-ink">Not set</span>}</TableCell>
                         <TableCell className="px-2 py-1.5">
                           <Pill tone={DEPOSIT_STATE[l.state][1]} className="py-0.5">{DEPOSIT_STATE[l.state][0]}</Pill>
-                          <p className={cn('mt-0.5 truncate text-xs', l.daysOverdue ? 'text-negative-ink' : 'text-muted-foreground')}>{standingDetail(l)}</p>
+                          <p className={cn('mt-0.5 truncate text-xs', l.daysOverdue ? 'text-negative-ink' : 'text-muted-foreground')} title={standingDetail(l)}>{standingDetail(l)}</p>
                         </TableCell>
                       </TableRow>
                     ))}

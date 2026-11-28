@@ -1,3 +1,4 @@
+import { MasterControlPage } from '@/pages/master-control/MasterControlPage'
 import { PayrollPage } from '@/pages/payroll/PayrollPage'
 import { PayrollRunPage } from '@/pages/payroll/PayrollRunPage'
 import { PaymentBatchPage } from '@/pages/payroll/PaymentBatchPage'
@@ -108,6 +109,7 @@ export const router = createBrowserRouter([
             element: <RequirePortal portal="ess" />,
             children: [
               { index: true, element: <HomePage /> },
+              { path: 'master-control', element: <MasterControlPage /> },
               { path: 'me', element: <MyProfilePage /> },
               { path: 'attendance', element: <MyAttendancePage /> },
               { path: 'team-attendance', element: <TeamAttendancePage /> },
@@ -127,6 +129,7 @@ export const router = createBrowserRouter([
             element: <RequirePortal portal="manage" />,
             children: [
               { index: true, element: <ManageHomePage /> },
+              { path: 'master-control', element: <MasterControlPage /> },
               { element: <RequireAccess area="PAYROLL" />, children: [{ path: 'payroll', element: <PayrollPage /> }, { path: 'payroll/statutory', element: <StatutoryPage /> }, { path: 'payroll/:id', element: <PayrollRunPage /> }] },
               { element: <RequireAccess area="PAYROLL_PAYMENTS" />, children: [{ path: 'salary-payments', element: <PaymentsPage /> }, { path: 'salary-payments/:id', element: <PaymentBatchPage /> }] },
               { element: <RequireAccess area="STATUTORY_DEPOSITS" />, children: [{ path: 'statutory-deposits', element: <StatutoryDepositsPage /> }, { path: 'statutory-deposits/:companyId/:month', element: <DepositMonthPage /> }] },

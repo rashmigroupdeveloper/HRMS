@@ -9,6 +9,7 @@ import { employeesService } from '#modules/employees'
 import { companiesService } from '#modules/organization'
 import { today } from '#shared/utils/dates'
 import { fromPaise, toPaise } from '#shared/utils/money'
+import * as peopleService from '../people/people.service.js'
 import * as statutoryService from '../statutory/statutory.service.js'
 import * as paymentsRepository from './payments.repository.js'
 import type { BatchesInput, CreateBatchInput, HoldInput, MarkPaidInput, MarkReturnedInput, OwedInput, OwedState, ReleaseHoldInput } from './payments.schema.js'
@@ -44,6 +45,12 @@ function assertMayPay(viewer: CurrentUser, companyId: number, what: string) {
 
 const ownRefused = () => new ORPCError('FORBIDDEN', { message: 'Nobody acts on their own payment - ask a colleague with Payroll payments access' })
 
+// Every caller has already found these people within Payroll payments scope (or checked their run's company).
+async function netsFor(personIds: number[], db?: DbClient) {
+  await peopleService.assertClassifiedPeople(personIds, db)
+  return paymentsRepository.netsOf(personIds, db)
+}
+
 // --- What is owed ---
 
 export async function listOwed(viewer: CurrentUser, input: OwedInput) {
@@ -55,7 +62,7 @@ export async function listOwed(viewer: CurrentUser, input: OwedInput) {
     companiesOf(viewer),
   ])
   const [nets, accounts, person] = await Promise.all([
-    paymentsRepository.netsOf(rows.map((r) => r.id)),
+    netsFor(rows.map((r) => r.id)),
     employeesService.listSalaryAccounts([...new Set(rows.map((r) => r.employeeId))]),
     employeesService.lookupPeople(rows.flatMap((r) => [r.employeeId, r.paymentHolds[0]?.createdById])),
   ])
@@ -116,7 +123,7 @@ export async function runSummaryOf(viewer: CurrentUser, run: { id: number; compa
   if (run.status !== 'FINALISED' || levelOver(viewer, 'PAYROLL_PAYMENTS', companySlice(run.company.id)) === undefined) return null
   const all = await paymentsRepository.listRunPeople(run.id)
   // (nothing to pay - net nil - is left out, as on the owed list)
-  const nets = await paymentsRepository.netsOf(all.map((p) => p.id))
+  const nets = await netsFor(all.map((p) => p.id))
   const people = all.filter((p) => (nets.get(p.id) ?? 0) > 0)
   const stateOf = (p: (typeof people)[number]) =>
     p.payments[0]?.status === 'PAID' ? 'paid' : p.payments[0]?.status === 'IN_BATCH' ? 'inBatch' : p.paymentHolds.length ? 'held' : p.payments[0]?.status === 'RETURNED' ? 'returned' : 'toPay'
@@ -224,8 +231,9 @@ export async function createBatch(viewer: CurrentUser, input: CreateBatchInput) 
       await paymentsRepository.lockPeople(ids, tx)
       const people = await paymentsRepository.listPayable(ids, tx)
       if (people.length !== ids.length) throw new ORPCError('NOT_FOUND', { message: 'A person picked is not in a pay run - reload the list' })
+      if (people.some((p) => p.run.companyId !== input.companyId)) throw new ORPCError('NOT_FOUND', { message: 'A person picked is not in this company payroll' })
       if (people.some((p) => p.employeeId === viewer.employeeId)) throw ownRefused()
-      const [nets, accounts] = await Promise.all([paymentsRepository.netsOf(ids, tx), employeesService.listSalaryAccounts(people.map((p) => p.employeeId), tx)])
+      const [nets, accounts] = await Promise.all([netsFor(ids, tx), employeesService.listSalaryAccounts(people.map((p) => p.employeeId), tx)])
       const problems = people.flatMap((p) => {
         const why =
           p.run.companyId !== input.companyId || p.run.status !== 'FINALISED'

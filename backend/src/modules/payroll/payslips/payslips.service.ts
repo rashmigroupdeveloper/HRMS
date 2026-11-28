@@ -41,12 +41,13 @@ const runOf = (run: FoundRun): Run => ({ id: run.id, companyId: run.company.id, 
 // employee's records (name, designation, bank account and PAN in full...) and their leave in the pay period
 export async function payslipsOf(run: Run, personIds?: number[], db?: DbClient) {
   const period = peopleService.payPeriodOf(run)
-  const [company, people, lines, days] = await Promise.all([
+  const [company, people, rawLines, days] = await Promise.all([
     companiesService.getCompany(run.companyId, db),
     payslipsRepository.listPeople(run.id, personIds, db),
     payslipsRepository.listLines(run.id, personIds, db),
     peopleService.dayTotalsOf(run.id, db),
   ])
+  const lines = peopleService.classifiedLines(rawLines)
   const employeeIds = people.map((p) => p.employeeId)
   const [facts, leave] = await Promise.all([
     employeesService.listPayslipFacts(employeeIds, period.to, db),
@@ -136,6 +137,7 @@ export async function release(viewer: CurrentUser, { runId, templateId }: Releas
   assertAccess(viewer.access, 'PAYROLL', 'WRITE')
   assertWholeSlice(viewer, 'PAYROLL', companySlice(run.company.id), 'Releasing payslips')
   if (run.status !== 'FINALISED') throw new ORPCError('CONFLICT', { message: 'Only an approved (final) run can release its payslips' })
+  await peopleService.assertClassifiedRun(run.id)
   if (run.payslipsReleasedAt) throw new ORPCError('CONFLICT', { message: "This run's payslips are already released" })
   await letterTemplatesService.assertPayslipTemplate(templateId)
   if (!(await payslipsRepository.release(run.id, templateId, viewer.employeeId))) {
@@ -158,8 +160,9 @@ export async function download(viewer: CurrentUser, { runId, personId }: Payslip
 export async function statusOf(viewer: CurrentUser, run: { id: number; company: { id: number }; status: string; payslipsReleasedAt: Date | null; payslipTemplate: { id: number; name: string } | null }) {
   if (run.status !== 'FINALISED') return null
   const counts = await payslipsRepository.countMade(run.id)
-  const canRelease = !run.payslipsReleasedAt && levelOver(viewer, 'PAYROLL', companySlice(run.company.id)) === 'WRITE'
-  const mayPreview = !run.payslipsReleasedAt && peopleService.seesSalaries(viewer, run.company.id)
+  const verified = await peopleService.classificationsVerified(run.id)
+  const canRelease = verified && !run.payslipsReleasedAt && levelOver(viewer, 'PAYROLL', companySlice(run.company.id)) === 'WRITE'
+  const mayPreview = verified && !run.payslipsReleasedAt && peopleService.seesSalaries(viewer, run.company.id)
   return {
     releasedAt: run.payslipsReleasedAt,
     template: run.payslipTemplate,

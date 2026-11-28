@@ -13,7 +13,9 @@ export async function listEarlierTaxLines(employeeIds: number[], taxYearFrom: Da
     where: { runEmployee: { employeeId: { in: employeeIds }, run: { id: { not: exceptRunId }, payMonth: { gte: taxYearFrom, lt: beforePayMonth }, ...(finalisedOnly && { status: 'FINALISED' as const }) } } },
     select: {
       amount: true,
-      salaryComponent: { select: { kind: true, taxable: true, statutoryRole: true } },
+      kind: true,
+      statutoryRole: true,
+      salaryComponent: { select: { taxable: true } },
       runEmployee: { select: { employeeId: true, run: { select: { payMonth: true } } } },
     },
   })
@@ -21,8 +23,8 @@ export async function listEarlierTaxLines(employeeIds: number[], taxYearFrom: Da
     employeeId: r.runEmployee.employeeId,
     payMonth: r.runEmployee.run.payMonth,
     amount: r.amount.toNumber(),
-    kind: r.salaryComponent.kind,
+    kind: r.kind,
     taxable: r.salaryComponent.taxable,
-    statutoryRole: r.salaryComponent.statutoryRole,
+    statutoryRole: r.statutoryRole,
   }))
 }

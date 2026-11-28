@@ -86,7 +86,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 353**
+**Total APIs: 355**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -443,6 +443,8 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 351 | `payroll.deposits.takeIn` | Statutory deposits: Edit covering whole company | People left out taken in by a later deposit (or not after all) |
 | 352 | `payroll.deposits.removeGaps` | Statutory deposits: Edit covering whole company | Remove left-out marks made by mistake |
 | 353 | `payroll.deposits.mine` | Own record | Whether one's own PF / ESIC / PT / LWF deductions were deposited, each released month |
+| 354 | `masterControl.overview` | Pinned developer account only | Private operational health, execution rhythm, mail retry counts and runtime diagnostics |
+| 355 | `masterControl.runs` | Pinned developer account only | Filtered, paged job history with fixed failure guidance |
 
 ---
 
@@ -1140,7 +1142,7 @@ access.
 - **Scope:** not limited by data access - the caller's own login; returns the caller's own data access (`dataAccess`).
 - **Input:** none
 - **Returns:** `{ employeeCode, name, roles: string[] (role names), isSuperAdmin, access, dataAccess, hodPosts, mustChangePassword,
-  passwordConfirmedUntil, passwordRule, availableRoles, activeRoleId }` - `dataAccess` (2026-11-18): per area of `access`, `{ READ, WRITE }` - whose
+  passwordConfirmedUntil, passwordRule, availableRoles, activeRoleId, canMasterControl }` - `dataAccess` (2026-11-18): per area of `access`, `{ READ, WRITE }` - whose
   records it covers to view / change: `'ALL'` or slices `{ companyId, plantId, departmentId }` (null = every ...), so forms
   offer only what may be chosen; `passwordConfirmedUntil`: until when the password counts as re-entered
   (`accounts.confirmPassword`), else null; `passwordRule` `{ minLength, history }` what a new password needs (the
@@ -1151,7 +1153,10 @@ access.
   `mustChangePassword` = signed in with a temporary password (the frontend sends them to "Change password");
   `hodPosts` (2026-11-18) how many places (plant + department) the caller heads now as HOD (0: no "My department" page).
 - **What it does:** tells the frontend who is logged in and which pages, menus and buttons to show. The frontend
-  decides from `access` only, never from role names.
+  decides business capabilities from `access`, never from role names. `canMasterControl` (2026-11-28) is a separate
+  technical capability: true only for the enabled account pinned by `MASTER_CONTROL_ACCOUNT_ID`, whose employee has
+  work email `core_developers@rashmigroup.com`, is ACTIVE/ON_NOTICE and has changed its temporary password. This flag
+  grants no HR permissions. Every Master Control API revalidates the identity; other Super Admins do not inherit it.
 - **Errors:** `401 UNAUTHORIZED` not logged in, session expired, or the employee can no longer log in.
 
 ### `accounts.changePassword`
@@ -4426,6 +4431,14 @@ and can include two events per employee. No existing API provides that contract.
 
 ## Payroll — Stage 1 (2026-11-26)
 
+### Payroll classification snapshot rule (2026-11-28)
+
+`PayrollRunLine` captures `kind`, `statutoryRole` and `stateCode` when computed. Null `kind` identifies an older,
+unverified line; null statutoryRole with a captured kind is an ordinary non-statutory line. Never infer old
+classifications from current components/locations or backfill finalised runs. Output reads use saved kind/role; the
+State is available for statutory grouping. Affected endpoints below retain their existing whole-company scope and
+Salary View rules. The three fields do not snapshot component labels, taxability/PF-wage flags or registrations.
+
 ### `payroll.setup`
 - **HTTP:** `POST /api/rpc/payroll/setup` · **Code:** `backend/src/modules/payroll/`
 - **Access:** Payroll READ on the active role. Salary/Organization/Attendance access alone is insufficient.
@@ -4489,6 +4502,7 @@ and can include two events per employee. No existing API provides that contract.
   with pay worked out, for a FINALISED run and a viewer with Payroll payments View over the whole company (no amounts).
 - **Does:** read-only run header detail for `/manage/payroll/:id`.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+- **Classification snapshots (2026-11-28):** also returns `classificationsVerified` (no stored line has a missing kind) and `classificationNotice: string | null`. An unverified run stays readable; classified pay totals and payment summary are null, draft warning calculation is skipped and sending is blocked until recalculated. The notice does not certify numerical accuracy.
 
 ### `payroll.create`
 - **HTTP:** `POST /api/rpc/payroll/create` · **Code:** `backend/src/modules/payroll/`
@@ -4536,6 +4550,7 @@ and can include two events per employee. No existing API provides that contract.
   worked out with no PF. A person held by the deductions keeps `earnedGross` (deductions and net stay null); the run's
   `earnedGross` counts them, its `netPay` does not.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+- **Classification snapshots:** pay totals and PF membership read saved line kind/role. CONFLICT for unverified stored lines after the run scope check; recalculate a draft.
 
 ### `payroll.people.get`
 - **HTTP:** `POST /api/rpc/payroll/people/get` · **Code:** `backend/src/modules/payroll/people/`
@@ -4556,6 +4571,7 @@ and can include two events per employee. No existing API provides that contract.
   (stage 3, 2026-11-27) each day as the run took it from the locked attendance and what they earned; (stage 4) what is
   deducted and what the company pays on top, each with what it was worked out on (`base`), and the net pay.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+- **Classification snapshots:** `pay.lines[].component.kind / statutoryRole` come from the result line, which also returns `stateCode: string | null`. CONFLICT for an unverified line after run/person scope checks. Salary-copy component metadata remains current.
 
 ### `payroll.people.refresh`
 - **HTTP:** `POST /api/rpc/payroll/people/refresh` · **Code:** `backend/src/modules/payroll/people/`
@@ -4677,6 +4693,7 @@ and can include two events per employee. No existing API provides that contract.
 The rates, ceilings and slabs every pay run's deductions are worked out with (approved by the user 2026-11-27: rates are
 data - entered from the official notifications, nothing seeded; a figure not in force holds the person, never a zero).
 The deductions themselves are worked out by `payroll.calculation.compute` and read with `payroll.people.list / get`.
+- **Classification snapshots:** writes kind, statutory role and the deduction State on every new result line, including typed inputs and held earnings. No backfill of existing approved lines. CONFLICT if earlier-run tax inputs have unverified classifications; a reviewed historical reconciliation is required.
 
 ### `payroll.statutory.list`
 - **HTTP:** `POST /api/rpc/payroll/statutory/list` · **Code:** `backend/src/modules/payroll/statutory/`
@@ -4875,6 +4892,7 @@ changes); rejected, withdrawn or expired = `DRAFT` again.
   is refused (no fallback approver). E-mails go to the first approvers after the transaction.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT not a draft, attendance not locked, people held,
   warnings open, no pay-run chain, sent a moment ago.
+- **Classification snapshots:** recalculation captures the three fields; CONFLICT if earlier-run tax inputs or previous-net comparisons are unverified. Final approval also refuses a pre-snapshot run; withdraw and recalculate before sending again.
 
 ### `payroll.checks.list`
 - **HTTP:** `POST /api/rpc/payroll/checks/list` · **Code:** `backend/src/modules/payroll/checks/`
@@ -4890,6 +4908,7 @@ changes); rejected, withdrawn or expired = `DRAFT` again.
   Aadhaar, a salary account's IFSC / holder - never a number; last month's run of the company for BIG_CHANGE; the payroll
   settings' tolerances) with its acknowledgement; once sent (`frozen`): the acknowledgements made before it was sent.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+- **Classification snapshots:** draft checks use saved result kinds/roles; CONFLICT when current or previous-net comparison lines are unverified. Frozen acknowledgement reads remain available.
 
 ### `payroll.checks.acknowledge`
 - **HTTP:** `POST /api/rpc/payroll/checks/acknowledge` · **Code:** `backend/src/modules/payroll/checks/`
@@ -4910,6 +4929,7 @@ template; made and stored by the background job `payroll.makePayslips` (every mi
 `employees/<code>/PAYSLIP-<yyyy-mm>/...`, each employee e-mailed a link to self-service (never the PDF: it shows the full
 bank account number and PAN, the user's choice); made payslips never change and move with the employee's files on a
 company transfer. The register can be downloaded before the run is final, marked DRAFT.
+- **Classification snapshots:** CONFLICT if current warnings or their previous-net comparison depend on unverified lines.
 
 ### `payroll.register.export`
 - **HTTP:** `POST /api/rpc/payroll/register/export` · **Code:** `backend/src/modules/payroll/register/`
@@ -4924,6 +4944,7 @@ company transfer. The register can be downloaded before the run is final, marked
   the title starts "DRAFT - not final" and the notes give when the pay was worked out.
 - **Does:** a held person's earnings are shown, their deductions and net are not (as on the run page).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST the pay is not worked out yet.
+- **Classification snapshots:** earning/deduction/employer classifications read saved kinds; CONFLICT for unverified lines, never a register inferred from current component kinds.
 
 ### `payroll.payslips.preview`
 - **HTTP:** `POST /api/rpc/payroll/payslips/preview` · **Code:** `backend/src/modules/payroll/payslips/`
@@ -4937,6 +4958,7 @@ company transfer. The register can be downloaded before the run is final, marked
   numbers) and their paid leave in the pay period (`leaveBalancesService.periodLeaveOf`).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST not an active payslip template; CONFLICT the run is not
   final.
+- **Classification snapshots:** rendered earning/deduction sections use saved line kinds; CONFLICT if the requested person has unverified lines.
 
 ### `payroll.payslips.release`
 - **HTTP:** `POST /api/rpc/payroll/payslips/release` · **Code:** `backend/src/modules/payroll/payslips/`
@@ -4949,6 +4971,7 @@ company transfer. The register can be downloaded before the run is final, marked
   after the release is still used for that run).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST not an active payslip template; CONFLICT not final, or
   already released.
+- **Classification snapshots:** CONFLICT for any unverified run line; background rendering also refuses such lines. Stored PDFs and their downloads are unchanged.
 
 ### `payroll.payslips.download`
 - **HTTP:** `POST /api/rpc/payroll/payslips/download` · **Code:** `backend/src/modules/payroll/payslips/`
@@ -5003,6 +5026,7 @@ scope (`wholeCompanyScopeOf`) - outside it NOT_FOUND or an empty list; changes n
   held, returned by the bank (the last payment), with no salary account, or to pay. `dueOn` = the pay period's end + the
   payroll setting `paymentDueDays`; `own` = the viewer's own pay (someone else pays it).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
+- **Classification snapshots:** owed amounts use saved earning/deduction kinds; CONFLICT when an otherwise included person has unverified lines (never silently omitted as zero).
 
 ### `payroll.payments.batches`
 - **HTTP:** `POST /api/rpc/payroll/payments/batches` · **Code:** `backend/src/modules/payroll/payments/`
@@ -5036,6 +5060,7 @@ scope (`wholeCompanyScopeOf`) - outside it NOT_FOUND or an empty list; changes n
   salary account). Refused for anyone of another company or a run not approved, held, already in a batch or paid, with
   nothing to pay, or (bank) without a salary account - CONFLICT listing who and why.
 - **Errors:** UNAUTHORIZED; FORBIDDEN one's own pay or View only; NOT_FOUND; CONFLICT.
+- **Classification snapshots:** checks every picked person belongs to the requested company before reading classification state/net. New payment amounts use saved kinds; CONFLICT for unverified lines. Existing payment snapshots remain readable.
 
 ### `payroll.payments.removePayment`
 - **HTTP:** `POST /api/rpc/payroll/payments/removePayment` · **Code:** `backend/src/modules/payroll/payments/`
@@ -5119,8 +5144,10 @@ scope (`wholeCompanyScopeOf`) - outside it NOT_FOUND or an empty list; changes n
 
 Approved by the user 2026-11-28: the "Statutory deposits" area (apart from preparing and paying the payroll); what each
 approved (FINALISED) run must deposit to PF (EPF, EPS, EDLI), ESIC, professional tax and LWF - per company, scheme and pay
-month, professional tax and LWF per State (the work location's State at the end of the period, as the run charged it) - is
-worked out from the runs' lines each time, never stored. HR records each return / challan (`StatutoryDeposit`: filed, then
+month, professional tax and LWF per State - is worked out from the runs' lines each time, never stored, by the statutory
+role and State each line SAVED when its pay was worked out (classification snapshots - never today's component or work
+location); an approved run with lines from before the snapshots is left out until it is reconciled (the list names it in
+`unverifiedMonths`; its month's APIs answer CONFLICT). HR records each return / challan (`StatutoryDeposit`: filed, then
 paid) with the contributions it carries (compared with the runs to the paisa) and the other charges on it (admin charges,
 interest, damages - the company's cost, typed from the challan); for PF and ESIC the people whose deduction could not go
 into the return are marked left out (`StatutoryDepositGap`, with why) until a later deposit takes them in. Due dates are
@@ -5146,7 +5173,8 @@ left out, not taken in yet), `FILED_NOT_PAID` (a return / challan filed and not 
   default 50) }`; strict.
 - **Returns:** `{ items: [{ company { id, code, name }, payMonth, scheme, stateCode, payslipsReleased, people, due, deposited,
   filedUnpaid, otherCharges, lastPaidOn, leftOut { count, amount }, takenIn, dueOn, state, expected, difference, daysOverdue,
-  daysLate }], total, counts { open, overdue, dueSoon, filedNotPaid, peopleLeftOut, noDueDate }, reminderDays, companies: [{
+  daysLate }], total, counts { open, overdue, dueSoon, filedNotPaid, peopleLeftOut, noDueDate }, reminderDays,
+  unverifiedMonths: [{ company, payMonth }] (approved before the classification snapshots - not added up), companies: [{
   id, code, name, canRecord }] }` - company totals only. OPEN: the most overdue first, then by due date; ALL: newest month first.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
 
@@ -5160,7 +5188,7 @@ left out, not taken in yet), `FILED_NOT_PAID` (a return / challan filed and not 
   scheme, stateCode, payMonth, reference, filedOn, contributions, otherCharges, paidOn, paymentReference, paidAt, note,
   createdAt, updatedAt, takesIn, recordedBy, paidBy }] }], canRecord, seesAmounts }` - totals per statutory role (company
   figures); `seesAmounts`: Salary View over the whole company too.
-- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT an approved run of the month from before the classification snapshots.
 
 ### `payroll.deposits.people`
 - **HTTP:** `POST /api/rpc/payroll/deposits/people` · **Code:** `backend/src/modules/payroll/deposits/`
@@ -5172,7 +5200,7 @@ left out, not taken in yet), `FILED_NOT_PAID` (a return / challan filed and not 
   by, takenIn { depositId, reference, paidOn, at, by } | null } | null, amounts { wages, employee, employer } | null }], total,
   counts { all, leftOut, takenIn, noNumber }, canMark, seesAmounts }`.
 - **Does:** everyone of the month's approved runs with an amount of the scheme, by employee code.
-- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT an approved run of the month from before the classification snapshots.
 
 ### `payroll.deposits.figures`
 - **HTTP:** `POST /api/rpc/payroll/deposits/figures` · **Code:** `backend/src/modules/payroll/deposits/`
@@ -5184,7 +5212,7 @@ left out, not taken in yet), `FILED_NOT_PAID` (a return / challan filed and not 
   shares, left out), Professional tax (State, gross, tax), LWF (State, shares) - only the schemes with people - and Totals.
 - **Does:** our own plain layout for preparing and checking the returns - not the ECR / ESIC upload file (that waits for a
   sample from finance).
-- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT an approved run of the month from before the classification snapshots.
 
 ### `payroll.deposits.record`
 - **HTTP:** `POST /api/rpc/payroll/deposits/record` · **Code:** `backend/src/modules/payroll/deposits/`
@@ -5318,3 +5346,48 @@ Who is marked is read with the Schedules list: `attendance.shifts.schedules` (`n
 - **What it does:** removes a marker set by mistake: all its days are worked out from the punches again (a working day
   without a punch becomes absent). The removal stays in the change history.
 - **Errors:** `403`; `404`; `409` a locked attendance month lies in its days.
+
+
+## Master Control (2026-11-28)
+
+This is an owner-only technical capability, independent of business roles, available at `/ess/master-control` and
+`/manage/master-control`. The user identified employee code `RML033903` as its owner. Configure the existing account's
+`user_accounts.id` as `MASTER_CONTROL_ACCOUNT_ID`; its current employee work email must be exactly
+`core_developers@rashmigroup.com` (case-insensitive). Missing pin, mismatched employee/account identity, disabled login,
+exited employee or changed email = no capability. An email edit on another account never transfers the pin. No new
+employee or login is provisioned by these APIs. Temporary-password sessions are refused before either handler runs.
+
+### `masterControl.overview`
+- **HTTP:** `POST /api/rpc/masterControl/overview` · **Code:** `backend/src/modules/master-controls/`
+- **Access:** authenticated pinned developer account with the exact owner work email; no role grants this capability.
+- **Scope:** not limited by company/plant/department data access - authorized owner-only technical metadata across the
+  installation. No employee/candidate records, recipients, subjects, message bodies or raw error text are returned.
+- **Input:** none.
+- **Returns:** `checkedAt`, `since` (24-hour start), `databaseMs`; `runtime` (environment, optional deployment-supplied
+  release, Node version, uptime seconds, RSS/heap bytes, mail configuration mode); `storage` (permission-probe result,
+  filesystem free/total bytes or null); `migrations` (applied/unresolved counts and latest applied time, or null);
+  `jobs` (OK/FAILED/RUNNING/total counts and exact hourly bins); `worker` (latest mail-retry job start/finish/status and
+  whether its start is within 3 minutes); `mail` (pending/failed counts, oldest pending time and oldest 12 retry records:
+  id, status, attempts, createdAt, nextAttemptAt).
+- **What it does:** read-only diagnostics. Worker evidence is not a dedicated heartbeat; SMTP configuration is not a
+  delivery check; filesystem permission checks are not file-integrity/restore tests; migration records are not a
+  comparison with the release's expected migration set. API uptime/memory belong to the serving process only.
+  Job counts and hourly bins cover starts in the last 24 hours, with partial edge hours. Missing migration metadata
+  is explicit. The UI refreshes every 15 seconds while visible, can pause/refresh, and labels stale cached snapshots
+  after refresh failures. Diagnostic copy/download is made locally from this redacted snapshot.
+- **Errors:** `401 UNAUTHORIZED` without a valid employee session; `403 FORBIDDEN` temporary password;
+  `404 NOT_FOUND` any account failing the exclusive identity gate; dependency failures use normal server errors.
+
+### `masterControl.runs`
+- **HTTP:** `POST /api/rpc/masterControl/runs` · **Code:** `backend/src/modules/master-controls/`
+- **Access:** same exclusive owner identity gate as `masterControl.overview`.
+- **Scope:** not limited by data access - owner-only installation job metadata, with no HR records or raw error text.
+- **Input:** strict object; `hours: 24 | 168` (default 24), `status: ALL | RUNNING | OK | FAILED` (default ALL),
+  `search: string` (trimmed, max 100; job-name substring, case-insensitive, default empty), `page: integer` (1–10000,
+  default 1). Other fields are refused.
+- **Returns:** `items`, `total`, `pageSize: 20`; each item has id, job, status, startedAt, finishedAt, durationMs (null
+  while unfinished) and `failure` (null or fixed category/next-step text). No raw error field.
+- **What it does:** reads retained job runs in the chosen rolling window, newest first (id breaks ties), with matching
+  filtered counts. The owner can expand a row for fixed troubleshooting guidance. It never starts/retries jobs,
+  decrypts mail, sends messages, changes business records or bypasses approvals.
+- **Errors:** same authentication/identity errors as overview; `400 BAD_REQUEST` invalid input.

@@ -187,4 +187,32 @@ describe('Payroll stage 6: salary payments', () => {
     expect((await paymentsService.listBatches(pay(a, 'READ'), { companyId: a, page: 1, pageSize: 50 })).items.map((b) => b.id)).toContain(id)
     expect((await paymentsService.listBatches(pay(b, 'READ'), { companyId: a, page: 1, pageSize: 50 })).items).toEqual([])
   })
+  it('a later component-kind change cannot change the owed amount or a new batch amount', async () => {
+    try {
+      await salaryComponentsService.updateSalaryComponent({ id: basic, kind: 'EMPLOYER_CONTRIBUTION' }, SYSTEM_ACTOR)
+      expect((await owedOf()).find((p) => p.personId === p2)).toMatchObject({ amount: 28000 })
+      const batch = await paymentsService.createBatch(pay(a), { companyId: a, method: 'CASH', personIds: [p2] })
+      expect((await paymentsService.getBatch(pay(a, 'READ'), batch)).payments[0]).toMatchObject({ amount: 28000 })
+      await paymentsService.cancelBatch(pay(a), batch)
+    } finally {
+      await salaryComponentsService.updateSalaryComponent({ id: basic, kind: 'EARNING' }, SYSTEM_ACTOR)
+    }
+  })
+
+  it('an approved run without saved classifications stays unchanged and cannot produce a new inferred payment', async () => {
+    const line = await prisma.payrollRunLine.findFirstOrThrow({ where: { payrollRunEmployeeId: p2, salaryComponentId: basic } })
+    try {
+      await prisma.payrollRunLine.update({ where: { id: line.id }, data: { kind: null, statutoryRole: null, stateCode: null } })
+      expect(await payrollService.getRun(admin, { id: runA })).toMatchObject({ status: 'FINALISED', classificationsVerified: false, netPay: null, payments: null })
+      expect(await owedOf(pay(b, 'READ'))).toEqual([])
+      await expect(owedOf()).rejects.toMatchObject({ code: 'CONFLICT' })
+      await expect(paymentsService.createBatch(pay(b), { companyId: b, method: 'CASH', personIds: [p2] })).rejects.toMatchObject({ code: 'NOT_FOUND' })
+      await expect(paymentsService.createBatch(pay(a), { companyId: a, method: 'CASH', personIds: [p2] })).rejects.toMatchObject({ code: 'CONFLICT' })
+      await expect(calculationService.compute(payroll(a), { runId: runA, expectedComputedAt: null })).rejects.toMatchObject({ code: 'CONFLICT' })
+      expect((await prisma.payrollRunLine.findUniqueOrThrow({ where: { id: line.id } })).kind).toBeNull()
+    } finally {
+      await prisma.payrollRunLine.update({ where: { id: line.id }, data: { kind: line.kind, statutoryRole: line.statutoryRole, stateCode: line.stateCode } })
+    }
+  })
+
 })

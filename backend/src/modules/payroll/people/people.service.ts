@@ -1,7 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { assertAccess } from '#core/auth/access'
 import { assertWholeSlice, levelOver, wholeCompanyScopeOf } from '#core/auth/scope'
-import { prisma, type ActorId, type DayStatus, type DbClient, type PayClass, type PayHold } from '#core/db/prisma'
+import { prisma, type ActorId, type DayStatus, type DbClient, type PayClass, type PayHold, type SalaryComponentKind } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService } from '#modules/employees'
 import { fromPaise, toPaise } from '#shared/utils/money'
@@ -129,6 +129,30 @@ export async function rebuildCopy(run: { id: number; companyId: number; attendan
   return { people: people.length }
 }
 
+// A missing kind identifies pre-snapshot lines. Never classify historical amounts from mutable master data.
+export const UNVERIFIED_CLASSIFICATIONS = 'Payroll classifications are unverified. Recalculate a draft with Work out pay. Final runs need historical reconciliation before new reports or payments can be prepared.'
+
+export async function classificationsVerified(runId: number, db?: DbClient) {
+  return !(await calculationRepository.hasUnclassifiedLines({ runId }, db))
+}
+
+// Call only after the owning service has found the run / every person within its whole-company access.
+export async function assertClassifiedRun(runId: number, db?: DbClient) {
+  if (!(await classificationsVerified(runId, db))) throw new ORPCError('CONFLICT', { message: UNVERIFIED_CLASSIFICATIONS })
+}
+export async function assertClassifiedPeople(personIds: number[], db?: DbClient) {
+  if (await calculationRepository.hasUnclassifiedLines({ personIds }, db)) throw new ORPCError('CONFLICT', { message: UNVERIFIED_CLASSIFICATIONS })
+}
+
+// Narrow the nullable historical kind at the service boundary, without a fallback to today's component.
+export function classifiedLines<T extends { component: { kind: SalaryComponentKind | null } }>(lines: T[]) {
+  return lines.map((line) => {
+    const kind = line.component.kind
+    if (kind === null) throw new ORPCError('CONFLICT', { message: UNVERIFIED_CLASSIFICATIONS })
+    return { ...line, component: { ...line.component, kind } }
+  })
+}
+
 // --- Reading, from the API ---
 
 const companySlice = (companyId: number) => ({ companyId, plantId: null, departmentId: null })
@@ -233,6 +257,7 @@ const stateOf = (heldFor: PayHold[], heldNote: string | null, totals: { lines: n
 
 // Every person's pay state in a worked-out run, from their stored reasons and their lines
 async function payStatesOf(runId: number, people: { id: number; heldFor: PayHold[]; heldNote: string | null }[], db?: DbClient) {
+  await assertClassifiedRun(runId, db)
   const totals = await calculationRepository.totalsByPerson(runId, db)
   return new Map<number, PayState>(people.map((p) => [p.id, stateOf(p.heldFor, p.heldNote, totals.get(p.id))]))
 }
@@ -348,11 +373,12 @@ export async function getPerson(viewer: CurrentUser, { runId, personId }: { runI
   const showSalary = seesSalaries(viewer, run.company.id)
   const row = await peopleRepository.findPerson(run.id, personId)
   if (!row) throw new ORPCError('NOT_FOUND', { message: 'This person is not in the payroll run' })
-  const [person, days, lines] = await Promise.all([
+  const [person, days, rawLines] = await Promise.all([
     employeesService.lookupPeople([row.employeeId]),
     run.computedAt ? daysRepository.listPersonDays(row.id) : null,
     run.computedAt ? calculationRepository.listPersonLines(row.id) : null,
   ])
+  const lines = rawLines === null ? null : classifiedLines(rawLines)
   const dayTotals = days ? totalsOf(days.map((d) => ({ ...d, days: 1 }))) : null
   // stages 3-4: the pay worked out for them - null until "Work out pay"; the amounts are salary figures (hidden without
   // Salary View over the whole company), whether it is worked out and why not is shown to every Payroll viewer

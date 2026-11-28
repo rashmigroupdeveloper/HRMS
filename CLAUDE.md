@@ -274,6 +274,15 @@ frontend/src/
   (`prisma/schema/access.prisma`) and its View / Edit text to `AREA_INFO` (`modules/accounts/roles/roles.service.ts`).
   Reading APIs use READ, changing APIs use WRITE. A rule that depends on the input (e.g. "own record, or EMPLOYEES
   READ") goes in the service with `assertAccess` from `#core/auth/access`.
+- **Master Control (the user, 2026-11-28):** a separate technical capability for the one account owned by employee
+  `RML033903`, with work email `core_developers@rashmigroup.com`. `MASTER_CONTROL_ACCOUNT_ID` pins the existing
+  `user_accounts.id`; absent pin means disabled. `accountsService.assertMasterControl` checks the pinned account,
+  employee identity, current email, enabled login and ACTIVE/ON_NOTICE status for every API. Temporary-password
+  sessions cannot use it. `accounts.me.canMasterControl` only controls discoverability; other Super Admins never
+  inherit it. It grants no business-area or data-access permissions. The same read-only workspace is in both portals
+  (`/ess/master-control`, `/manage/master-control`); business tool links still require the active role's access.
+  Operational responses exclude people records, mail recipients/content and raw errors. Jobs are inspected, never
+  arbitrarily rerun; backups, restore, maintenance writes and integration controls await their owning workflows.
 - **Data access - whose records (decided 2026-11-18, BACKLOG 3a).** Each role given to an employee has rows of company ->
   plant -> department ("all" at any level) at View / Edit, worked out only by `core/auth/scope.ts`; only the active role's
   rows count. Every API that
@@ -332,6 +341,15 @@ frontend/src/
   payslip needs Payroll + Salary View over the whole company; the period's leave comes from the leave module
   (`leaveBalancesService.periodLeaveOf`). Bank files, the SAP entry and the PF / ESIC upload files wait for real sample files
   from finance - never a layout from memory.
+  **Classification snapshots (approved 2026-11-28):** each worked-out `PayrollRunLine` saves its `kind`,
+  `statutoryRole` and `stateCode` (the State used by deductions at the period's end). Totals, statutory membership,
+  registers, new payslip renders and new salary payment amounts read the saved classifications. A null `kind` means
+  a pre-snapshot line, not a non-statutory line: never fill it from today's masters. The run header remains readable
+  with an unverified notice and null classified totals; a draft can be recalculated. Classified outputs and new
+  payment amounts refuse unverified lines; stored payslip downloads and existing payment records remain available.
+  Earlier-run TDS inputs and previous-net comparisons refuse unverified history too. Finalised runs are never
+  backfilled automatically; a historical reconciliation process needs separate agreement. These three fields do
+  not freeze component names, taxability/PF-wage flags or establishment registrations.
   **Stage 6, slice 2 - salary payments (built 2026-11-28, `payroll/payments/`, `/manage/salary-payments`):** decided by the
   user - paying has its own access area, **`PAYROLL_PAYMENTS`** ("Payroll payments", apart from preparing the payroll; whole
   company only, `wholeCompanyScopeOf` / `assertWholeSlice`); each person of a FINALISED run is paid the net the run worked
@@ -346,7 +364,8 @@ frontend/src/
   **Stage 6, slice 3 - statutory deposits (built 2026-11-28, `payroll/deposits/`, `/manage/statutory-deposits`):** decided by
   the user - its own access area, **`STATUTORY_DEPOSITS`** ("Statutory deposits", apart from preparing and paying; whole
   company only); what each FINALISED run must deposit to PF (EPF, EPS, EDLI), ESIC, professional tax and LWF (per State) is
-  worked out from the run's lines each time, never stored; HR records each return / challan (`StatutoryDeposit`: filed, then
+  worked out from the run's lines each time (by the role and State each line saved - the classification snapshots; a run from
+  before them stays out until reconciled), never stored; HR records each return / challan (`StatutoryDeposit`: filed, then
   paid) - its contributions compared with the run to the paisa, PF admin charges, interest and damages typed as "other
   charges" (the company's cost); for PF and ESIC a person whose deduction could not go into the return is marked left out
   with why (`StatutoryDepositGap`) until a later deposit takes them in. Due dates are dated rows on Statutory settings (Payroll
@@ -368,7 +387,8 @@ frontend/src/
   an employee never reviews their own submission. Family/nominee requests are approved in principle but wait for
   their proposed schema/process (BACKLOG item 32); this exception does not allow direct profile editing.
 - The frontend decides what to show with `useAccess().can(area, level)` and `useAccess().covers(area, level, where)` (from
-  `accounts.me`), never with role names; the backend checks the same access on every call.
+  `accounts.me`), never with role names; the backend checks the same access on every call. The exclusive technical
+  Master Control entry uses `accounts.me.canMasterControl` and its dedicated server identity check above.
 - Services throw `ORPCError` with a standard code for expected failures (`NOT_FOUND`, `CONFLICT`, `FORBIDDEN`, ...).
   Validation and Prisma errors (duplicate, not found, foreign key) are mapped centrally in `core/rpc/errors.ts`;
   don't re-map them in routers or services.

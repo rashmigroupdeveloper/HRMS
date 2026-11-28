@@ -2,6 +2,14 @@ import { createdBy, prisma, recordAuditEvent, updatedBy, type AccessLevel, type 
 
 // Database access for user_accounts, user_account_roles and sessions.
 
+// Single authenticated account identity; never an email or account id supplied by the browser.
+export function findMasterIdentity(accountId: number, db: DbClient = prisma) {
+  return db.userAccount.findUnique({
+    where: { id: accountId },
+    select: { employeeId: true, disabledAt: true, employee: { select: { workEmail: true, status: true } } },
+  })
+}
+
 // The roles of a login, with what each role allows and its data access - whose records it covers (2026-11-18)
 const rolesSelect = {
   roles: {

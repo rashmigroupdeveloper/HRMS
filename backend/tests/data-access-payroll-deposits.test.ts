@@ -282,5 +282,15 @@ describe('Payroll stage 6: statutory deposits', () => {
     expect(mail?.text).toContain('Professional tax (ZK)')
     expect(mail?.text).not.toContain('Professional tax (ZL)')
     expect(mail?.text).not.toContain('· PF ·')
+
+    // a run with a line saved before the classification snapshots: never added up from today's masters - left out of the
+    // list (and said so), its month's pages refused
+    const line = await prisma.payrollRunLine.findFirstOrThrow({ where: { runEmployee: { payrollRunId: runA } }, select: { id: true } })
+    await prisma.payrollRunLine.update({ where: { id: line.id }, data: { kind: null } })
+    const list = await depositsService.listDeposits(deposits(a, 'READ'), { companyId: a, show: 'ALL', page: 1, pageSize: 50 })
+    expect(list.items).toEqual([])
+    expect(list.unverifiedMonths).toEqual([{ company: expect.objectContaining({ id: a }), payMonth }])
+    await expect(depositsService.getMonth(deposits(a, 'READ'), { companyId: a, payMonth })).rejects.toMatchObject({ code: 'CONFLICT' })
+    await expect(depositsService.record(deposits(a), { companyId: a, payMonth, scheme: 'ESIC', stateCode: null, reference: 'x', filedOn: yesterday, contributions: 1, otherCharges: 0 })).rejects.toMatchObject({ code: 'CONFLICT' })
   })
 })

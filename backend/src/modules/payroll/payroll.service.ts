@@ -27,7 +27,11 @@ const monthName = (date: Date) => new Intl.DateTimeFormat('en-IN', { month: 'lon
 // the final decision. A request that is no longer the run's current one changes nothing (the run was sent again).
 approvalsService.registerFeature('PAYROLL', {
   label: 'Pay run',
-  onApproved: async (requestId, actorId, tx) => void (await payrollRepository.finalise(requestId, actorId, tx)),
+  onApproved: async (requestId, actorId, tx) => {
+    const run = await payrollRepository.findByRequest(requestId, tx)
+    if (run) await peopleService.assertClassifiedRun(run.id, tx)
+    await payrollRepository.finalise(requestId, actorId, tx)
+  },
   onRejected: async (requestId, actorId, tx) => void (await payrollRepository.backToDraft(requestId, actorId, tx)),
   onCancelled: async (requestId, actorId, tx) => void (await payrollRepository.backToDraft(requestId, actorId, tx)),
   // (never about one employee)
@@ -67,20 +71,21 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
   if (!run) throw new ORPCError('NOT_FOUND', { message: 'No payroll run found' })
   const showSalary = peopleService.seesSalaries(viewer, run.company.id)
   const draft = run.status === 'DRAFT'
+  const classificationsVerified = await peopleService.classificationsVerified(run.id)
   const [counts, inputs, lock, pay, approval, openWarnings, payslips, payments] = await Promise.all([
     peopleRepository.countPeople(run.id),
     inputsService.countInputs(run.id),
     daysService.lockStateOf(run),
     // stage 3: unpaid days, people to look at, pay held or to work out again, the earned gross - null until worked out
-    peopleService.runCountsOf(run, showSalary),
+    classificationsVerified ? peopleService.runCountsOf(run, showSalary) : null,
     // stage 5: where its approval request stands
     run.approvalRequestId ? approvalsService.statusOf([run.approvalRequestId]).then((m) => m.get(run.approvalRequestId!) ?? null) : null,
     // stage 5: warnings not acknowledged yet - worked out while it is a draft only
-    draft && run.computedAt ? checksService.openWarningsCount({ id: run.id, companyId: run.company.id, payMonth: run.payMonth, attendanceFrom: run.attendanceFrom, attendanceTo: run.attendanceTo }) : 0,
+    draft && run.computedAt && classificationsVerified ? checksService.openWarningsCount({ id: run.id, companyId: run.company.id, payMonth: run.payMonth, attendanceFrom: run.attendanceFrom, attendanceTo: run.attendanceTo }) : 0,
     // stage 6: where its payslips stand (a final run)
     payslipsService.statusOf(viewer, run),
     // stage 6 slice 2: where its payments stand (a final run, for a viewer with Payroll payments over the company)
-    paymentsService.runSummaryOf(viewer, run),
+    classificationsVerified ? paymentsService.runSummaryOf(viewer, run) : null,
   ])
   const person = await employeesService.lookupPeople([run.createdById, run.updatedById, run.peopleRefreshedById, run.computedById, run.finalisedById, run.payslipsReleasedById, approval?.requestedById])
   const { createdById, updatedById, peopleRefreshedById, computedById, finalisedById, payslipsReleasedById, payslipsReleasedAt: _releasedAt, payslipTemplate: _template, ...safe } = run
@@ -90,6 +95,7 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
   const blockers = draft
     ? [
         !run.computedAt ? 'Work out the pay first' : '',
+        !classificationsVerified ? 'Recalculate to capture the payroll classifications' : '',
         !lock.attendanceLocked ? 'The attendance month is not locked' : '',
         pay && pay.held ? `${pay.held} ${pay.held === 1 ? 'person is' : 'people are'} held` : '',
         pay && pay.again ? `${pay.again} to work out again` : '',
@@ -98,6 +104,8 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
     : []
   return {
     ...safe,
+    classificationsVerified,
+    classificationNotice: classificationsVerified ? null : peopleService.UNVERIFIED_CLASSIFICATIONS,
     payFrom: period.from,
     payTo: period.to,
     createdBy: person(createdById),

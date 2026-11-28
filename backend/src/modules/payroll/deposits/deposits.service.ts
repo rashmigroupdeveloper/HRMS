@@ -18,8 +18,9 @@ import { byState, type DepositState, type LeaveOutInput, type ListInput, type Ma
 
 // Payroll stage 6 slice 3 (approved by the user 2026-11-28): statutory deposits. What each FINALISED run deducted from its
 // people and owes on top for PF (EPF, EPS, EDLI), ESIC, professional tax and LWF must reach the scheme - per company,
-// scheme and pay month, professional tax and LWF per State (the work location's State at the end of the period, as the run
-// charged them). What is due is never stored: it is added up from the runs' lines each time. HR records each return /
+// scheme and pay month, professional tax and LWF per State (the State the run charged them by). What is due is never
+// stored: it is added up from the runs' lines each time, by the role and State each line saved when its pay was worked
+// out (classification snapshots); an approved run with lines from before the snapshots stays out until it is reconciled. HR records each return /
 // challan (filed, then paid) with the contributions it carries - compared with the runs to the paisa - and the other
 // charges on it (admin charges, interest, damages - the company's cost, typed from the challan). For PF and ESIC, a person
 // whose deduction could not go into the return (no UAN, details not matching...) is marked left out until a later deposit
@@ -197,7 +198,8 @@ export async function listDeposits(viewer: CurrentUser, input: ListInput) {
     statutoryService.runSettings(),
   ])
   const now = today()
-  const lines = await linesOf(runs, deposits, now)
+  const unverified = await depositsRepository.listUnverifiedRuns(runs.map((r) => r.id))
+  const lines = await linesOf(runs.filter((r) => !unverified.has(r.id)), deposits, now)
   const open = lines.filter((l) => l.state !== 'DEPOSITED')
   const shown = input.show === 'OPEN' ? [...open].sort(URGENT) : [...lines].sort(ORDER)
   const soon = now.getTime() + settings.depositReminderDays * DAY
@@ -213,14 +215,18 @@ export async function listDeposits(viewer: CurrentUser, input: ListInput) {
       noDueDate: open.filter((l) => !l.dueOn).length,
     },
     reminderDays: settings.depositReminderDays,
+    // approved months worked out before the classification snapshots - left out until reconciled
+    unverifiedMonths: runs.filter((r) => unverified.has(r.id)).map((r) => ({ company: r.company, payMonth: r.payMonth })),
     companies,
   }
 }
 
-// The month's approved runs of a company in the viewer's scope - NOT_FOUND when there is none (or the company is not seen)
+// The month's approved runs of a company in the viewer's scope - NOT_FOUND when there is none (or the company is not seen);
+// CONFLICT when one was worked out before the classification snapshots (never added up from today's masters)
 async function monthRunsFor(viewer: CurrentUser, { companyId, payMonth }: MonthInput) {
   const runs = await depositsRepository.listFinalRuns(wholeCompanyScopeOf(viewer, 'STATUTORY_DEPOSITS'), { companyId, payMonth })
   if (!runs.length) throw new ORPCError('NOT_FOUND', { message: 'No approved pay run of this company for that month' })
+  if ((await depositsRepository.listUnverifiedRuns(runs.map((r) => r.id))).size) throw new ORPCError('CONFLICT', { message: peopleService.UNVERIFIED_CLASSIFICATIONS })
   return runs
 }
 
@@ -654,7 +660,10 @@ export async function remindDue(only?: { companyIds: number[] }, now: Date = tod
   const settings = await statutoryService.runSettings()
   const of = <T extends { companyId: number }>(rows: T[]) => (only ? rows.filter((r) => only.companyIds.includes(r.companyId)) : rows)
   // data access: a background job over every company - each person is e-mailed only about the companies they cover in full
-  const runs = of((await depositsRepository.listFinalRuns(SYSTEM_SCOPE, {})).map((r) => ({ ...r, companyId: r.company.id })))
+  const all = of((await depositsRepository.listFinalRuns(SYSTEM_SCOPE, {})).map((r) => ({ ...r, companyId: r.company.id })))
+  // (a run from before the classification snapshots is not added up - it waits for its reconciliation)
+  const unverified = await depositsRepository.listUnverifiedRuns(all.map((r) => r.id))
+  const runs = all.filter((r) => !unverified.has(r.id))
   const deposits = of(await depositsRepository.listDeposits(SYSTEM_SCOPE, {}))
   const due = (await linesOf(runs, deposits, now)).filter(
     (l) => (l.state === 'NOT_DEPOSITED' || l.state === 'FILED_NOT_PAID' || l.state === 'SHORT') && l.dueOn && now.getTime() >= l.dueOn.getTime() - settings.depositReminderDays * DAY,
