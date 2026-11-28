@@ -6,6 +6,8 @@
 // Legal entity of the group (JF header "Company Name")
 model Company {
   payrollRuns PayrollRun[]
+  // the salary payment batches (payroll stage 6 slice 2)
+  paymentBatches PayrollPaymentBatch[]
   id                  Int      @id @default(autoincrement())
   // Short unique code, stored in UPPER CASE (e.g. RML)
   code                String   @unique

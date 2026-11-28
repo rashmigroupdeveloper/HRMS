@@ -128,7 +128,7 @@ model PayrollRun {
 
 // Where a run stands (stage 5, approved 2026-11-27): a DRAFT is worked on; "Send for approval" works its pay out once more
 // and sends it (IN_APPROVAL - nothing changes); rejected or withdrawn it is a DRAFT again; on the last approval it is
-// FINALISED and never changes. Payment states come with stage 6.
+// FINALISED and never changes. Paying it is tracked per person (PayrollPayment - stage 6 slice 2), not as a run status.
 enum PayrollRunStatus {
   DRAFT
   IN_APPROVAL
@@ -175,6 +175,9 @@ model PayrollRunEmployee {
   acknowledgements PayrollRunAcknowledgement[]
   // their payslip, once the run's payslips are released and the job has made it (stage 6)
   payslip  Payslip?
+  // each attempt to pay them, and each time their pay was held (stage 6 slice 2)
+  payments PayrollPayment[]
+  paymentHolds PayrollPaymentHold[]
 
   @@unique([payrollRunId, employeeId])
   @@index([employeeId])
@@ -601,6 +604,9 @@ model PayrollSetting {
   bigChangePercent   Int      @default(20) @map("big_change_percent") @db.SmallInt
   // the EPS_AGE_SOON warning: reaches the EPS age limit within this many months
   epsAgeSoonMonths   Int      @default(2) @map("eps_age_soon_months") @db.SmallInt
+  // stage 6 slice 2 (approved by the user 2026-11-28): wages are due within this many days of the pay period's end - for
+  // the days overdue on the owed list (the Code on Wages' limit as researched - to verify with counsel)
+  paymentDueDays     Int      @default(7) @map("payment_due_days") @db.SmallInt
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById        Int      @map("created_by_id")
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -628,4 +634,128 @@ model Payslip {
   runEmployee PayrollRunEmployee @relation(fields: [payrollRunEmployeeId], references: [id], onDelete: Restrict)
 
   @@map("payslips")
+}
+
+// --- Stage 6 slice 2 (approved by the user 2026-11-28): paying an approved run ---
+// Each person of a FINALISED run is paid their net pay as the run worked it out (nothing is worked out again), in batches
+// (a bank transfer, cheques or cash). What is not paid yet - to pay, held, returned, no salary account - is owed, worked
+// out from these rows (the owed list). Payments are reached through their batch's company: Payroll payments over the whole
+// company; nobody acts on their own payment.
+
+enum PaymentMethod {
+  BANK
+  CHEQUE
+  CASH
+
+  @@map("payment_method")
+}
+
+// OPEN: being made up (people added or removed); SENT: uploaded to the bank / cheques or cash handed over; CLOSED: every
+// payment in it is paid, returned or removed (or an open batch given up)
+enum PaymentBatchStatus {
+  OPEN
+  SENT
+  CLOSED
+
+  @@map("payment_batch_status")
+}
+
+// IN_BATCH: in an open or sent batch; PAID: the bank (or the cheque / cash) paid it; RETURNED: the bank sent it back or took
+// it back after paying - the amount is owed again; REMOVED: taken out of an open batch before it was sent
+enum PaymentStatus {
+  IN_BATCH
+  PAID
+  RETURNED
+  REMOVED
+
+  @@map("payment_status")
+}
+
+// Payments made together: one bank upload, one set of cheques, one cash payout - of one company; the payments may be of
+// several of its runs (e.g. October's returned payments with November's).
+model PayrollPaymentBatch {
+  id          Int                @id @default(autoincrement())
+  companyId   Int                @map("company_id")
+  method      PaymentMethod
+  status      PaymentBatchStatus @default(OPEN)
+  note        String?
+  // when and by whom it was sent (uploaded / handed over) and closed
+  sentAt      DateTime?          @map("sent_at") @db.Timestamptz(3)
+  sentById    Int?               @map("sent_by_id")
+  closedAt    DateTime?          @map("closed_at") @db.Timestamptz(3)
+  closedById  Int?               @map("closed_by_id")
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int                @map("created_by_id")
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int                @map("updated_by_id")
+
+  company  Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  payments PayrollPayment[]
+
+  @@index([companyId, status])
+  @@map("payroll_payment_batches")
+}
+
+// One attempt to pay one person of a run their net pay. At most one payment of a person is in a batch or paid at a time
+// (a partial unique index in the migration); a returned or removed one stays as the record. The salary account is COPIED
+// when the payment is made (a later change of account does not rewrite where the money went); the number is stored
+// encrypted, as on the profile.
+model PayrollPayment {
+  id                     Int           @id @default(autoincrement())
+  payrollRunEmployeeId   Int           @map("payroll_run_employee_id")
+  batchId                Int           @map("batch_id")
+  // the person's net pay in the run, to the paisa
+  amount                 Decimal       @db.Decimal(12, 2)
+  status                 PaymentStatus @default(IN_BATCH)
+  // a bank transfer: the salary account copied when it was added to the batch
+  bankName               String?       @map("bank_name")
+  accountNumberEncrypted String?       @map("account_number_encrypted")
+  accountNumberLast4     String?       @map("account_number_last4") @db.VarChar(4)
+  ifsc                   String?
+  // a cheque: its number (given when it is marked paid)
+  chequeNumber           String?       @map("cheque_number")
+  // the day it was paid, the bank's reference (UTR / batch reference), and who recorded it when
+  paidOn                 DateTime?     @map("paid_on") @db.Date
+  bankReference          String?       @map("bank_reference")
+  paidAt                 DateTime?     @map("paid_at") @db.Timestamptz(3)
+  paidById               Int?          @map("paid_by_id")
+  // returned (or taken back after paying): the bank's reason, who recorded it when
+  returnReason           String?       @map("return_reason")
+  returnedAt             DateTime?     @map("returned_at") @db.Timestamptz(3)
+  returnedById           Int?          @map("returned_by_id")
+  // taken out of an open batch
+  removedAt              DateTime?     @map("removed_at") @db.Timestamptz(3)
+  removedById            Int?          @map("removed_by_id")
+  createdAt              DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById            Int           @map("created_by_id")
+  updatedAt              DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById            Int           @map("updated_by_id")
+
+  runEmployee PayrollRunEmployee  @relation(fields: [payrollRunEmployeeId], references: [id], onDelete: Restrict)
+  batch       PayrollPaymentBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  @@index([payrollRunEmployeeId])
+  @@index([batchId])
+  @@map("payroll_payments")
+}
+
+// A person's pay of a run held back (left out of batches) with a reason, until it is released. At most one open hold per
+// person (a partial unique index in the migration); released holds stay as the record.
+model PayrollPaymentHold {
+  id                   Int       @id @default(autoincrement())
+  payrollRunEmployeeId Int       @map("payroll_run_employee_id")
+  reason               String
+  // createdAt / createdById: when and by whom it was held
+  releasedAt           DateTime? @map("released_at") @db.Timestamptz(3)
+  releasedById         Int?      @map("released_by_id")
+  releaseNote          String?   @map("release_note")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          Int       @map("created_by_id")
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById          Int       @map("updated_by_id")
+
+  runEmployee PayrollRunEmployee @relation(fields: [payrollRunEmployeeId], references: [id], onDelete: Restrict)
+
+  @@index([payrollRunEmployeeId])
+  @@map("payroll_payment_holds")
 }

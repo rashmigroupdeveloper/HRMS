@@ -995,6 +995,12 @@ export function listPayrollFacts(employeeIds: number[], to: Date, db?: DbClient)
 }
 export type PayrollFacts = Awaited<ReturnType<typeof listPayrollFacts>>[number]
 
+// Each person's salary account now, to copy onto a payment (payroll stage 6 slice 2) - the number stays encrypted. No
+// viewer check: the payroll service checked Payroll payments over the whole company first.
+export async function listSalaryAccounts(employeeIds: number[], db?: DbClient) {
+  return new Map((await employeesRepository.listSalaryAccounts(employeeIds, db)).map(({ employeeId, ...account }) => [employeeId, account]))
+}
+
 // What each person's payslip prints (payroll stage 6, approved by the user 2026-11-27), with the salary account number and
 // the PAN decrypted IN FULL - the user chose full numbers on the payslip. No viewer check: the payroll service found the
 // run with Payroll and Salary View covering the whole company (or makes the payslips as System after the release).

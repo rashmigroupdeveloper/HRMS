@@ -125,6 +125,14 @@ export function PayrollRunPage() {
             </p>
           )}
           {r.payslips && <PayslipsLine runId={id} payslips={r.payslips} />}
+          {/* stage 6 slice 2: how far its payment has got (for those with Payroll payments over the company) */}
+          {r.payments && (
+            <p role="status" className="rounded-xl bg-surface-2/60 px-3 py-2 text-xs">
+              <span className="font-medium">Payments: </span>
+              {[`${r.payments.paid} of ${r.payments.total} paid`, r.payments.inBatch ? `${r.payments.inBatch} in a batch` : '', r.payments.toPay ? `${r.payments.toPay} to pay` : '', r.payments.held ? `${r.payments.held} held` : '', r.payments.returned ? `${r.payments.returned} returned` : ''].filter(Boolean).join(' · ')}.{' '}
+              <Link to={`/manage/salary-payments?company=${r.company.id}&run=${id}`} className="underline underline-offset-4">Open salary payments</Link>
+            </p>
+          )}
           {r.status === 'DRAFT' && r.canChange && r.blockers.length > 0 && r.computedAt && <p className="text-xs text-muted-foreground">Before sending: {r.blockers.join(' · ')}.</p>}
           {r.daysOutdated ? <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">{OUTDATED_NOTE}</p> : !r.attendanceLocked && !r.computedAt && <p className="text-xs text-muted-foreground">{NOT_LOCKED_NOTE}</p>}
           {notWorkedOut > 0 && (

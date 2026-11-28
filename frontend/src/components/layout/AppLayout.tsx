@@ -111,6 +111,8 @@ export function AppLayout() {
           ...(can('JOINING_TASKS') || can('ONBOARDING') || can('JOINING_TASK_TYPES') ? [{ to: '/manage/joining-tasks', label: 'Joining checklist', short: 'Checklist' }] : []),
           ...(can('ORGANIZATION') || can('HOD_APPOINTMENTS') ? [{ to: '/manage/organization', label: 'Organization' }] : []),
           ...(can('PAYROLL') ? [{ to: '/manage/payroll', label: 'Payroll' }] : []),
+          // paying the approved runs (payroll stage 6 slice 2) - often finance's, apart from payroll
+          ...(can('PAYROLL_PAYMENTS') ? [{ to: '/manage/salary-payments', label: 'Salary payments', short: 'Payments' }] : []),
           ...(can('LETTER_TEMPLATES') ? [{ to: '/manage/letter-templates', label: 'Letter templates' }] : []),
           ...(can('ACCESS') ? [{ to: '/manage/access', label: 'Roles & access' }] : []),
           ...(can('ATTENDANCE_SETUP') ? [{ to: '/manage/attendance-setup', label: 'Attendance setup', short: 'Setup' }] : []),

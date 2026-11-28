@@ -15,6 +15,7 @@ import * as inputsService from './inputs/inputs.service.js'
 import * as peopleService from './people/people.service.js'
 import * as peopleRepository from './people/people.repository.js'
 import * as payslipsService from './payslips/payslips.service.js'
+import * as paymentsService from './payments/payments.service.js'
 import type { CreateInput, ListInput, SendInput } from './payroll.schema.js'
 
 const companySlice = (companyId: number) => ({ companyId, plantId: null, departmentId: null })
@@ -66,7 +67,7 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
   if (!run) throw new ORPCError('NOT_FOUND', { message: 'No payroll run found' })
   const showSalary = peopleService.seesSalaries(viewer, run.company.id)
   const draft = run.status === 'DRAFT'
-  const [counts, inputs, lock, pay, approval, openWarnings, payslips] = await Promise.all([
+  const [counts, inputs, lock, pay, approval, openWarnings, payslips, payments] = await Promise.all([
     peopleRepository.countPeople(run.id),
     inputsService.countInputs(run.id),
     daysService.lockStateOf(run),
@@ -78,6 +79,8 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
     draft && run.computedAt ? checksService.openWarningsCount({ id: run.id, companyId: run.company.id, payMonth: run.payMonth, attendanceFrom: run.attendanceFrom, attendanceTo: run.attendanceTo }) : 0,
     // stage 6: where its payslips stand (a final run)
     payslipsService.statusOf(viewer, run),
+    // stage 6 slice 2: where its payments stand (a final run, for a viewer with Payroll payments over the company)
+    paymentsService.runSummaryOf(viewer, run),
   ])
   const person = await employeesService.lookupPeople([run.createdById, run.updatedById, run.peopleRefreshedById, run.computedById, run.finalisedById, run.payslipsReleasedById, approval?.requestedById])
   const { createdById, updatedById, peopleRefreshedById, computedById, finalisedById, payslipsReleasedById, payslipsReleasedAt: _releasedAt, payslipTemplate: _template, ...safe } = run
@@ -131,6 +134,9 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
     // stage 6: the payslips of a final run - released when, by whom, with which template; how many are made; the
     // templates to release them with (for someone who may) - null until the run is final
     payslips: payslips ? { ...payslips, releasedBy: person(payslipsReleasedById) } : null,
+    // stage 6 slice 2: how many of its people are paid, in a batch, held, returned, to pay - counts only, null until final
+    // or without Payroll payments View over the company
+    payments,
   }
 }
 

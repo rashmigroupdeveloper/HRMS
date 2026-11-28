@@ -16,6 +16,8 @@ export const SETTING_LABELS = {
   tdsCountsDraftRuns: ['Earlier months for TDS', 'Which runs of earlier months the monthly TDS counts'],
   bigChangePercent: ['Big change from last month', 'Net pay more than this % above or below last month is a warning'],
   epsAgeSoonMonths: ['EPS age limit soon', 'Warn this many months before a member reaches the EPS age limit'],
+  // stage 6 slice 2: the owed list's days overdue
+  paymentDueDays: ['Wages due', 'Wages are due this many days after the pay period ends - the owed list counts days overdue from then (to verify with counsel)'],
 } as const
 export type StatutoryTab = (typeof STATUTORY_TABS)[number]['value']
 export const CHANGE_NOTE = 'Changing them needs Payroll Edit for every company.'

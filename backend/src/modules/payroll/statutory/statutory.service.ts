@@ -24,11 +24,11 @@ const PERCENT = new Set<StatutoryParameter>(['PF_EMPLOYEE_RATE', 'PF_EMPLOYER_RA
 
 // Until the row is saved these apply: TDS counts finalised runs only, a 20% change of net pay is a warning, the EPS age
 // limit is warned of 2 months ahead
-export const DEFAULT_SETTINGS = { tdsCountsDraftRuns: false, bigChangePercent: 20, epsAgeSoonMonths: 2 }
+export const DEFAULT_SETTINGS = { tdsCountsDraftRuns: false, bigChangePercent: 20, epsAgeSoonMonths: 2, paymentDueDays: 7 }
 
 export async function runSettings(db?: DbClient) {
   const row = await statutoryRepository.findPayrollSetting(db)
-  return row ? { tdsCountsDraftRuns: row.tdsCountsDraftRuns, bigChangePercent: row.bigChangePercent, epsAgeSoonMonths: row.epsAgeSoonMonths } : DEFAULT_SETTINGS
+  return row ? { tdsCountsDraftRuns: row.tdsCountsDraftRuns, bigChangePercent: row.bigChangePercent, epsAgeSoonMonths: row.epsAgeSoonMonths, paymentDueDays: row.paymentDueDays } : DEFAULT_SETTINGS
 }
 
 export async function saveSettings(viewer: CurrentUser, input: z.infer<typeof saveSettingsInput>) {
@@ -68,7 +68,7 @@ export async function listSettings(viewer: CurrentUser) {
     taxSets: [...taxSets.values()],
     // the payroll settings (stage 5): saved, or the defaults
     settings: setting
-      ? { tdsCountsDraftRuns: setting.tdsCountsDraftRuns, bigChangePercent: setting.bigChangePercent, epsAgeSoonMonths: setting.epsAgeSoonMonths, saved: true, updatedAt: setting.updatedAt, updatedBy: person(setting.updatedById) }
+      ? { tdsCountsDraftRuns: setting.tdsCountsDraftRuns, bigChangePercent: setting.bigChangePercent, epsAgeSoonMonths: setting.epsAgeSoonMonths, paymentDueDays: setting.paymentDueDays, saved: true, updatedAt: setting.updatedAt, updatedBy: person(setting.updatedById) }
       : { ...DEFAULT_SETTINGS, saved: false, updatedAt: null, updatedBy: null },
     canChange: levelOver(viewer, 'PAYROLL', ALL_OF_GROUP) === 'WRITE',
   }

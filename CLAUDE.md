@@ -332,6 +332,17 @@ frontend/src/
   payslip needs Payroll + Salary View over the whole company; the period's leave comes from the leave module
   (`leaveBalancesService.periodLeaveOf`). Bank files, the SAP entry and the PF / ESIC upload files wait for real sample files
   from finance - never a layout from memory.
+  **Stage 6, slice 2 - salary payments (built 2026-11-28, `payroll/payments/`, `/manage/salary-payments`):** decided by the
+  user - paying has its own access area, **`PAYROLL_PAYMENTS`** ("Payroll payments", apart from preparing the payroll; whole
+  company only, `wholeCompanyScopeOf` / `assertWholeSlice`); each person of a FINALISED run is paid the net the run worked
+  out, in batches of one company (bank transfer, cheques, cash): OPEN -> SENT -> each payment PAID (day + bank reference;
+  a cheque with its number) or RETURNED (the bank's reason - owed again) -> CLOSED when nothing waits; pay can be held and
+  released; the owed list is worked out from these rows, with days overdue from `PayrollSetting.paymentDueDays`. At most one
+  payment of a person in a batch or paid (a partial unique index); the salary account is copied onto the payment (number
+  encrypted); a plain Excel payment list with full account numbers stands in for the bank's upload file until finance gives
+  it. Nobody acts on their own payment (adding, taking out, holding, releasing, marking it paid or returned on its own);
+  a batch-wide step (sent, paid, given up) covers everyone in the batch, the actor's own payment too - chosen while
+  building (BACKLOG item 31), not yet confirmed by the user.
   **Decided for stage 2 (the user, 2026-11-26):** monthly inputs are entered and changed only by someone with Payroll
   Edit covering the whole company - a plant-level HR person sends their figures to them; salary amounts inside a run
   (the salary copy and its lines) are shown only to a viewer who also has `SALARY` View covering the whole company

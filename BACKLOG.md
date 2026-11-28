@@ -21,8 +21,9 @@ one at a time, each planned with the user before it is built (the old HRMS is in
    is left is item 29
 4. **Payroll** - the month-end salary from attendance and leave - **in progress: stages 1 (draft runs) and 2 (people,
    salary copy, inputs) built 2026-11-26; stages 3 (the days and the earnings), 4 (deductions and net pay) and 5
-   (approval and finalising) built 2026-11-27; stage 6 slice 1 (salary register, payslips) built 2026-11-27; next
-   slice 2 (payment tracking) - the bank file, SAP entry and PF / ESIC files wait for finance's sample files**
+   (approval and finalising) built 2026-11-27; stage 6 slice 1 (salary register, payslips) built 2026-11-27, slice 2
+   (salary payments) 2026-11-28; next slice 3 (statutory figures and deposits) - the bank file, SAP entry and PF / ESIC
+   files wait for finance's sample files**
 5. **Probation / confirmation** - intern -> probation, probation -> confirmed, with or without a salary hike
 6. **Promotion and increments** - a promotion with a hike, or a hike alone (salary revisions) - **done through job
    changes and the approval service (2026-11-20)**; what is left is item 24
@@ -947,8 +948,6 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
   the whole company; the e-mail carries a link, never the PDF; the leave table is on the payslip; the register can be
   downloaded as a DRAFT.
   **Still open:**
-  - [ ] Slice 2 - payment tracking: batches, each person's payment (to pay, paid with the bank's reference, returned,
-    held, cash / cheque) and money still owed - propose the tables first. Then the "mark paid" step and books checks.
   - [ ] Slice 3 - statutory figures and deposits: PF / ESIC / PT / LWF totals per company and month, challan references
     and dates, a due-date calendar - propose first.
   - [ ] Waiting for finance's real sample files (never a layout from memory): the bank's salary upload and result file,
@@ -959,8 +958,34 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
     job's run notes (job_runs), not yet on the run page.
   - [ ] No "download every payslip" (a zip) - it needs a library; ask first if HR wants it.
   - [ ] A leave spanning the pay period's end counts on its first day on the payslip's leave table (as in the ledger).
-- [ ] Remaining pay-run lifecycle: lock inputs before the month's cut-off, mark paid, reconciliation (stage 6, slices
-  2-3).
+- **Stage 6, slice 2 - salary payments - built 2026-11-28** (the user approved: the access area `PAYROLL_PAYMENTS`;
+  `PayrollPaymentBatch`, `PayrollPayment`, `PayrollPaymentHold`; `PayrollSetting.paymentDueDays`). Salary payments
+  (`/manage/salary-payments`): "To pay & owed" (everyone of the approved runs not paid yet, days overdue, hold / release,
+  pick people -> a batch) and "Batches" (open one: plain payment list, mark sent, paid with the day and reference,
+  returned with the bank's reason, take out / give up while open); a payments line on the run page. **Decided by the user
+  2026-11-28:** the flow above; a plain Excel payment list with full account numbers until the bank's format comes;
+  paying is its own access area (finance, HR or both); the tables as approved.
+  **Still open:**
+  - [ ] The bank's own upload file and loading its result file (each payment marked paid / returned from it) - when
+    finance gives the formats; the payment list then carries the account holder's name from the account (it uses the
+    employee's name now).
+  - [ ] Books checks before a month counts as paid: net pay = paid + in batches + held + owed, to the rupee (the owed list
+    shows the figures; no "month paid" step yet); the late-payment report (days late of each paid payment).
+  - [ ] Part payments (wages paid in parts) and an approved write-off of an owed amount (death, unclaimed after three
+    years in West Bengal) - need the user's and counsel's rules (plan, decisions 1 and 38).
+  - [ ] A salary account changed shortly before a batch, the first payment to a new account, the same account on two
+    employees - flags on the batch (the last needs a hash column - propose).
+  - [ ] Payslips are released apart from payment (the plan had "released after payment") - HR decides when; a check
+    could warn when payslips are released before the money is sent.
+  - [ ] `paymentDueDays` (default 7 days after the pay period ends) is the researched reading of the Code on Wages -
+    counsel to confirm for the 26th-25th cycle.
+  - [ ] Chosen while building, for the user to confirm: a batch-wide step (sent, paid, given up) covers the actor's own
+    payment too (only individual steps on one's own payment are refused); a payment taken out of an open batch is kept
+    as REMOVED with who and when (`removedAt / ById`, beyond the approved preview); a hold's "held at / by" are its
+    created columns.
+  - [ ] Months finalised in the HRMS but paid outside it (go-live, the parallel run) show as owed until a batch is
+    marked paid for them - a way to record such payments may be needed at cut-over.
+- [ ] Remaining pay-run lifecycle: lock inputs before the month's cut-off, reconciliation (stage 6, slice 3).
 - [ ] Employee run inputs: uploads, calculated items and backdated salary arrears (typed one-off earnings / deductions
   and component codes: stage 2; payable and unpaid days, component proration and the earned gross: stage 3, built
   2026-11-27 - to be checked against a register).
@@ -979,7 +1004,8 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
 snapshots and monthly inputs; (3) locked attendance, payable days/LOP and gross earnings; (4) statutory/other deductions,
 net and rounding; (5) review/approval/reconciliation/finalization; (6) registers/payslips/bank/payment; (7) arrears, loans,
 F&F, annual/tax outputs and parallel-run cutover. Propose each later model/field before adding it. Stages 1-5 are built
-(2026-11-27) and stage 6 slice 1 (register, payslips); slice 2 (payment tracking) is next.
+(2026-11-27), stage 6 slice 1 (register, payslips, 2026-11-27) and slice 2 (salary payments, 2026-11-28); slice 3
+(statutory figures and deposits) is next.
 
 **Important differences from main:** new has group-wide attendance locks and two-half attendance facts. Main's
 company locks, SQL triggers, separate approval lifecycle, rupee rounding and post-cutoff assumed-presence policy are

@@ -519,6 +519,16 @@ export function listPayslipFacts(employeeIds: number[], to: Date, db: DbClient =
   })
 }
 
+// Each of these employees' salary account as it is now - the bank, the ENCRYPTED number (copied as it is onto a payment,
+// never decrypted here), its last 4 digits and IFSC (payroll stage 6 slice 2, approved by the user 2026-11-28)
+// data access: the people of a payment batch - the payroll service checked Payroll payments over their whole company first
+export function listSalaryAccounts(employeeIds: number[], db: DbClient = prisma) {
+  return db.employeeBankAccount.findMany({
+    where: { employeeId: { in: employeeIds }, isSalaryAccount: true },
+    select: { employeeId: true, bankName: true, accountNumberEncrypted: true, accountNumberLast4: true, ifsc: true },
+  })
+}
+
 // The salary that applies today (the newest one already in effect), with its monthly breakup in the components'
 // order, or null - confidential: only for the employee and SALARY READ (checked in the service)
 export async function findCurrentSalary(employeeId: number, db: DbClient = prisma) {

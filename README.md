@@ -114,7 +114,8 @@ HRMS_NEW/
 │     │  │                      statutory/ (dated rates and slabs, run settings), tax-openings/ (opening tax
 │     │  │                      figures), checks/ (warnings to acknowledge before sending for approval),
 │     │  │                      register/ (the salary register, Excel), payslips/ (release, make, download;
-│     │  │                      one's own) + payroll.jobs.ts (makes the released payslips)
+│     │  │                      one's own) + payroll.jobs.ts (makes the released payslips), payments/ (batches,
+│     │  │                      holds, what is owed)
 │     │  ├─ daily-movement-reports/ group-wide email schedule and HR Head role settings; delivery follows later
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
@@ -427,8 +428,17 @@ template (open a person and **Preview payslip** to check first): the worker make
 full bank account number and PAN, so they are never attached to e-mails. The background worker must be running (`npm run
 worker -w backend`; `npm run dev` starts it).
 
-The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). Payment tracking,
-the bank file and statutory files follow the staged plan in BACKLOG.md, with each new model/field agreed before
+**Stage 6, salary payments (2026-11-28):** give the new **Payroll payments** area (Roles & access) to whoever pays - finance,
+HR or both; it is apart from Payroll. **Salary payments** (`/manage/salary-payments`) lists everyone of the approved runs
+not paid yet (to pay, no salary account, returned, held, in a batch) with the days overdue; pick people of one company and
+**Make a batch** (bank transfer, cheques or cash). In the batch: download the plain **Payment list** (full account numbers -
+until finance gives the bank's own format), pay it at the bank, **Mark sent**, then **Mark paid** with the day and the bank's
+reference (each cheque with its number); a payment the bank sends back is **Returned** with its reason and paid again in a
+later batch. Pay can be held with a reason and released. "Wages due" on Run settings (default 7 days after the pay
+period) sets the days overdue. Nobody pays themselves.
+
+The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). The bank file and
+statutory files follow the staged plan in BACKLOG.md, with each new model/field agreed before
 migration. Apply the migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3:
 `payroll_stage3_days`, `payroll_stage3_amounts`; stage 4: `payroll_stage4_deductions`; stage 5: `payroll_stage5_approval`;
-stage 6: `payroll_stage6_payslips`).
+stage 6: `payroll_stage6_payslips`, `payroll_stage6_payments`).

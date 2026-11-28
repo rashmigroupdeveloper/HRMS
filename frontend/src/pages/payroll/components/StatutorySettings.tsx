@@ -489,7 +489,13 @@ function TaxDrawer({ existing, close }: { existing?: TaxSet; close: () => void }
 // --- Run settings (stage 5, the user 2026-11-27: "nothing should be hardcoded") ---
 
 const settingValue = (key: keyof typeof SETTING_LABELS, s: RunSettings) =>
-  key === 'tdsCountsDraftRuns' ? (s.tdsCountsDraftRuns ? 'Finalised and draft runs' : 'Finalised runs only') : key === 'bigChangePercent' ? `More than ${s.bigChangePercent}%` : `${s.epsAgeSoonMonths} ${s.epsAgeSoonMonths === 1 ? 'month' : 'months'} ahead`
+  key === 'tdsCountsDraftRuns'
+    ? (s.tdsCountsDraftRuns ? 'Finalised and draft runs' : 'Finalised runs only')
+    : key === 'bigChangePercent'
+      ? `More than ${s.bigChangePercent}%`
+      : key === 'paymentDueDays'
+        ? `${s.paymentDueDays} ${s.paymentDueDays === 1 ? 'day' : 'days'} after the period`
+        : `${s.epsAgeSoonMonths} ${s.epsAgeSoonMonths === 1 ? 'month' : 'months'} ahead`
 
 export function RunSettingsTab({ data, pending, canChange }: { data: Settings | undefined; pending: boolean; canChange: boolean }) {
   const [editing, setEditing] = useState(false)
@@ -500,7 +506,7 @@ export function RunSettingsTab({ data, pending, canChange }: { data: Settings | 
         <p className="text-xs text-muted-foreground">{s ? (s.saved ? `Saved${s.updatedBy ? ` by ${s.updatedBy.name}` : ''}.` : 'Not saved yet - these defaults apply.') : ''} Changes count from the next “Work out pay”.</p>
         {canChange && <Button className="min-h-9 gap-1.5 rounded-full" disabled={pending} onClick={() => setEditing(true)}><Pencil className="size-4" aria-hidden />Change</Button>}
       </div>
-      <dl className="grid gap-2 sm:grid-cols-3">
+      <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {(Object.keys(SETTING_LABELS) as (keyof typeof SETTING_LABELS)[]).map((key) => (
           <div key={key} className="rounded-xl bg-surface-2/40 px-3 py-2">
             <dt className="text-xs text-muted-foreground">{SETTING_LABELS[key][0]}</dt>
@@ -518,10 +524,11 @@ function RunSettingsDialog({ current, close }: { current: RunSettings; close: ()
   const [drafts, setDrafts] = useState(current.tdsCountsDraftRuns ? 'yes' : 'no')
   const [percent, setPercent] = useState(String(current.bigChangePercent))
   const [months, setMonths] = useState(String(current.epsAgeSoonMonths))
+  const [dueDays, setDueDays] = useState(String(current.paymentDueDays))
   const reload = useReload()
   const save = useMutation({ ...orpc.payroll.statutory.saveSettings.mutationOptions(), onSuccess: () => { reload(); close() } })
-  const valid = /^\d{1,4}$/.test(percent) && Number(percent) >= 1 && Number(percent) <= 1000 && /^\d{1,2}$/.test(months) && Number(months) <= 24
-  const dirty = drafts !== (current.tdsCountsDraftRuns ? 'yes' : 'no') || percent !== String(current.bigChangePercent) || months !== String(current.epsAgeSoonMonths)
+  const valid = /^\d{1,4}$/.test(percent) && Number(percent) >= 1 && Number(percent) <= 1000 && /^\d{1,2}$/.test(months) && Number(months) <= 24 && /^\d{1,2}$/.test(dueDays) && Number(dueDays) <= 60
+  const dirty = drafts !== (current.tdsCountsDraftRuns ? 'yes' : 'no') || percent !== String(current.bigChangePercent) || months !== String(current.epsAgeSoonMonths) || dueDays !== String(current.paymentDueDays)
   return (
     <FormDrawer
       onClose={close}
@@ -529,7 +536,7 @@ function RunSettingsDialog({ current, close }: { current: RunSettings; close: ()
       dirty={dirty && !save.isSuccess}
       title="Run settings"
       description="For every company. Draft runs follow them the next time their pay is worked out."
-      footer={<><DrawerCancel /><Button disabled={!valid || save.isPending} onClick={() => valid && save.mutate({ tdsCountsDraftRuns: drafts === 'yes', bigChangePercent: Number(percent), epsAgeSoonMonths: Number(months) })}>{save.isPending ? 'Saving…' : 'Save'}</Button></>}
+      footer={<><DrawerCancel /><Button disabled={!valid || save.isPending} onClick={() => valid && save.mutate({ tdsCountsDraftRuns: drafts === 'yes', bigChangePercent: Number(percent), epsAgeSoonMonths: Number(months), paymentDueDays: Number(dueDays) })}>{save.isPending ? 'Saving…' : 'Save'}</Button></>}
     >
       <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
         <fieldset disabled={save.isPending} className="space-y-4">
@@ -544,6 +551,9 @@ function RunSettingsDialog({ current, close }: { current: RunSettings; close: ()
           </Field>
           <Field id="rs-months" label={`${SETTING_LABELS.epsAgeSoonMonths[0]} (months)`} hint={SETTING_LABELS.epsAgeSoonMonths[1]}>
             <Input id="rs-months" className="h-9 tabular-nums" inputMode="numeric" value={months} onChange={(e) => setMonths(e.target.value)} />
+          </Field>
+          <Field id="rs-due" label={`${SETTING_LABELS.paymentDueDays[0]} (days after the pay period)`} hint={SETTING_LABELS.paymentDueDays[1]}>
+            <Input id="rs-due" className="h-9 tabular-nums" inputMode="numeric" value={dueDays} onChange={(e) => setDueDays(e.target.value)} />
           </Field>
         </fieldset>
         <FormError error={save.error} />

@@ -1,5 +1,7 @@
 import { PayrollPage } from '@/pages/payroll/PayrollPage'
 import { PayrollRunPage } from '@/pages/payroll/PayrollRunPage'
+import { PaymentBatchPage } from '@/pages/payroll/PaymentBatchPage'
+import { PaymentsPage } from '@/pages/payroll/PaymentsPage'
 import { StatutoryPage } from '@/pages/payroll/StatutoryPage'
 import { AttendanceReportsPage } from '@/pages/attendance/AttendanceReportsPage'
 import { createBrowserRouter, Navigate } from 'react-router'
@@ -71,6 +73,8 @@ import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 //                                    salary figures also need Salary: View over the whole company)
 //     /manage/payroll/statutory    - the statutory rates and slabs (Payroll: View; changes Payroll Edit for every company)
 //                                    and opening tax figures (whole-company Payroll scope)
+//     /manage/salary-payments[/:id] - paying the approved runs: to pay & owed, batches, one batch (Payroll payments: View;
+//                                    changes Edit - over the whole company; payroll stage 6 slice 2)
 //     /manage/pay-career           - raising job / salary changes, the change register
 //     /manage/approvals            - the role's steps and the requests raised for others
 //     /manage/organization         - Organization: View, or HOD appointments: View (the Department heads tab only)
@@ -119,6 +123,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <ManageHomePage /> },
               { element: <RequireAccess area="PAYROLL" />, children: [{ path: 'payroll', element: <PayrollPage /> }, { path: 'payroll/statutory', element: <StatutoryPage /> }, { path: 'payroll/:id', element: <PayrollRunPage /> }] },
+              { element: <RequireAccess area="PAYROLL_PAYMENTS" />, children: [{ path: 'salary-payments', element: <PaymentsPage /> }, { path: 'salary-payments/:id', element: <PaymentBatchPage /> }] },
               { path: 'employees', element: <PeoplePage /> },
               { path: 'employees/:employeeCode', element: <EmployeeProfilePage /> },
               { path: 'joining-tasks', element: <JoiningTasksPage /> },

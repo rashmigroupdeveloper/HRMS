@@ -202,6 +202,10 @@ model UserAccountRoleScope {
 enum AccessArea {
   // Regular payroll runs; separate from viewing an employee's agreed salary.
   PAYROLL
+  // "Payroll payments" (payroll stage 6 slice 2, approved by the user 2026-11-28 - apart from preparing the payroll, as
+  // paying is often finance's job): View sees each person's payment of the approved runs, the amounts and what is still
+  // owed; Edit makes payment batches, marks them sent / paid / returned and holds or releases pay. Whole company only.
+  PAYROLL_PAYMENTS
   // Candidates: offers, joining forms, documents, background checks, medical, joining confirmation
   ONBOARDING
   // "Employee · Directory & job": find employees and open their profile - job, placement, managers, the job timeline and

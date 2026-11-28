@@ -30,7 +30,9 @@ change - includes View). Written below as e.g. "Onboarding: Edit".
   only, 2026-11-16), `JOINING_TASKS` "Joining tasks" (2026-11-16 - View sees the joining tasks given to you, Edit marks
   them done; only people with Edit can be given a task), `ATTENDANCE` "Attendance" (2026-11-16 - View sees everyone's
   attendance, Edit sets it up, corrects days and gives HR's approval of shift changes), `LEAVE` "Leave" (2026-11-22 - View sees everyone's
-  leave applications, balances and the leave types; Edit adjusts balances and changes the leave types), `HOD_APPOINTMENTS` "HOD appointments"
+  leave applications, balances and the leave types; Edit adjusts balances and changes the leave types), `PAYROLL` "Payroll"
+  (2026-11-26 - pay runs of companies covered in full), `PAYROLL_PAYMENTS` "Payroll payments" (2026-11-28 - paying the
+  approved runs, apart from Payroll), `HOD_APPOINTMENTS` "HOD appointments"
   (2026-11-18, changed 2026-11-19 - View sees the HODs, the places they head and the gap list; Edit appoints and ends HODs,
   only for places inside the caller's data access; a place = a department at a plant), and the **employee areas** (split 2026-11-16): `EMPLOYEES` "Employee · Directory & job" (the
   directory, job, record - the way into anyone else's profile), `EMPLOYEE_PERSONAL_DETAILS` "Employee · Personal"
@@ -83,7 +85,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 327**
+**Total APIs: 339**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -414,6 +416,18 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 325 | `payroll.payslips.download` | Payroll + Salary: View covering whole company | A person's payslip as it was made (PDF) |
 | 326 | `payroll.payslips.mine` | Own record | One's own payslips, every released month |
 | 327 | `payroll.payslips.downloadMine` | Own record | One of one's own payslips (PDF) |
+| 328 | `payroll.payments.owed` | Payroll payments: View covering whole company | Everyone of the approved runs not paid yet - to pay, no account, returned, held, in a batch - with days overdue |
+| 329 | `payroll.payments.batches` | Payroll payments: View covering whole company | The payment batches, newest first |
+| 330 | `payroll.payments.batch` | Payroll payments: View covering whole company | One payment batch with its payments |
+| 331 | `payroll.payments.createBatch` | Payroll payments: Edit covering whole company | Make a batch (bank / cheque / cash) of people of one company's approved runs |
+| 332 | `payroll.payments.removePayment` | Payroll payments: Edit covering whole company | Take a payment out of a batch not sent yet |
+| 333 | `payroll.payments.sendBatch` | Payroll payments: Edit covering whole company | Mark a batch sent (uploaded / handed over) |
+| 334 | `payroll.payments.markPaid` | Payroll payments: Edit covering whole company | Mark payments paid with the day and the bank's reference (a cheque with its number) |
+| 335 | `payroll.payments.markReturned` | Payroll payments: Edit covering whole company | Mark a payment returned (or taken back) with the bank's reason |
+| 336 | `payroll.payments.cancelBatch` | Payroll payments: Edit covering whole company | Give up a batch not sent yet |
+| 337 | `payroll.payments.paymentList` | Payroll payments: Edit covering whole company | The plain payment list of a bank batch as Excel (full account numbers) |
+| 338 | `payroll.payments.hold` | Payroll payments: Edit covering whole company | Hold a person's pay of an approved run, with a reason |
+| 339 | `payroll.payments.releaseHold` | Payroll payments: Edit covering whole company | Release a held pay |
 
 ---
 
@@ -4456,6 +4470,8 @@ and can include two events per employee. No existing API provides that contract.
   payslips made by the job; `canRelease` = not released yet and Payroll Edit over the whole company; `templates` (the
   active payslip templates, to release or preview with) until the payslips are released, for a viewer who may release
   them or sees the salaries (Salary View over the whole company - e.g. an approver checking a payslip first).
+  Stage 6 slice 2 (2026-11-28): `payments { paid, inBatch, held, returned, toPay, total } | null` - counts of the people
+  with pay worked out, for a FINALISED run and a viewer with Payroll payments View over the whole company (no amounts).
 - **Does:** read-only run header detail for `/manage/payroll/:id`.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
@@ -4656,7 +4672,8 @@ The deductions themselves are worked out by `payroll.calculation.compute` and re
   effectiveFrom, reference, updatedAt, slabs: [{ gender, wagesFrom, wagesTo, amount, specialMonth, specialAmount }] }], lwf:
   [{ id, stateCode, effectiveFrom, employeeAmount, employerAmount, months, reference, updatedAt, updatedBy }], taxSets: [{
   regime, taxYearFrom, reference, updatedAt, slabs: [{ incomeFrom, incomeTo, ratePercent }] }], settings: { tdsCountsDraftRuns,
-  bigChangePercent, epsAgeSoonMonths, saved, updatedAt, updatedBy } (stage 5 - the defaults until saved), canChange }` -
+  bigChangePercent, epsAgeSoonMonths, paymentDueDays (stage 6 slice 2), saved, updatedAt, updatedBy } (stage 5 - the defaults
+  until saved), canChange }` -
   `canChange`: Payroll Edit for every company.
 - **Does:** the statutory settings page (`/manage/payroll/statutory`).
 - **Errors:** UNAUTHORIZED, FORBIDDEN.
@@ -4787,11 +4804,13 @@ The deductions themselves are worked out by `payroll.calculation.compute` and re
 - **HTTP:** `POST /api/rpc/payroll/statutory/saveSettings` · **Code:** `backend/src/modules/payroll/statutory/`
 - **Access:** as `payroll.statutory.saveRate`.
 - **Scope:** as `payroll.statutory.saveRate` (one row for the group).
-- **Input:** `{ tdsCountsDraftRuns: boolean, bigChangePercent: 1-1000, epsAgeSoonMonths: 0-24 }`; strict.
+- **Input:** `{ tdsCountsDraftRuns: boolean, bigChangePercent: 1-1000, epsAgeSoonMonths: 0-24, paymentDueDays: 0-60 }`; strict.
 - **Returns:** the settings now in force.
 - **Does:** saves the payroll settings (stage 5, approved 2026-11-27 - "nothing should be hardcoded"): whether earlier months'
   TDS counts draft runs too (default: finalised only), the BIG_CHANGE warning's % (default 20), how many months ahead the
-  EPS age limit is warned of (default 2). They count from the next "Work out pay". Recorded in the change history.
+  EPS age limit is warned of (default 2), and (stage 6 slice 2, 2026-11-28) how many days after the pay period's end wages
+  are due - the owed list's days overdue (default 7; to verify with counsel). They count from the next "Work out pay".
+  Recorded in the change history.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
 
 ## Payroll — Stage 5, approval and finalising (2026-11-27)
@@ -4916,6 +4935,144 @@ company transfer. The register can be downloaded before the run is final, marked
 - **Input:** `{ id: positive int }` (the payslip); strict.
 - **Returns:** the stored PDF `Payslip <Mon yyyy> <code>.pdf`.
 - **Errors:** UNAUTHORIZED; NOT_FOUND.
+
+## Payroll stage 6 slice 2 — salary payments (2026-11-28)
+
+Approved by the user 2026-11-28: the "Payroll payments" area (apart from preparing the payroll); batches of one company
+(bank transfer, cheques, cash) of people of its approved (FINALISED) runs - made up (OPEN), sent, each payment paid with the
+day and the bank's reference or returned with its reason, closed once nothing waits; holds; the owed list worked out from
+these rows. Each person's net pay as the run worked it out; at most one payment of a person in a batch or paid at a time
+(a partial unique index); the salary account copied onto the payment (number encrypted). Nobody acts on their own payment
+(adding, taking out, holding, releasing, marking it paid or returned on its own); a batch-wide step (sent, paid, given up)
+covers everyone in it. Every API: the batch / run / person is found through its company with whole-company Payroll payments
+scope (`wholeCompanyScopeOf`) - outside it NOT_FOUND or an empty list; changes need Edit over that whole company.
+
+### `payroll.payments.owed`
+- **HTTP:** `POST /api/rpc/payroll/payments/owed` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: View.
+- **Scope:** the approved runs of the companies the viewer covers in full (`wholeCompanyScopeOf`); another company or a
+  plant-level row: nothing.
+- **Input:** `{ companyId?, runId?, state?: TO_PAY | NO_ACCOUNT | HELD | IN_BATCH | RETURNED, search? (code / name, max
+  100), page (default 1), pageSize (1-200, default 50) }`; strict.
+- **Returns:** `{ items: [{ personId, employeeCode, name, run { id, payMonth }, company { id, code, name }, amount (net pay),
+  state, batchId (in a batch), returned { reason, at } | null, hold { reason, at, by } | null, account { bankName, last4 } |
+  null, dueOn, daysOverdue, own }], total, counts: { <state>: { count, amount } }, owed { count, amount }, paymentDueDays,
+  companies: [{ id, code, name, canPay }], runs: [{ id, payMonth, company }] }`.
+- **Does:** everyone of the approved runs whose pay is worked out, with a net above nil and no paid payment: in a batch,
+  held, returned by the bank (the last payment), with no salary account, or to pay. `dueOn` = the pay period's end + the
+  payroll setting `paymentDueDays`; `own` = the viewer's own pay (someone else pays it).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
+
+### `payroll.payments.batches`
+- **HTTP:** `POST /api/rpc/payroll/payments/batches` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: View.
+- **Scope:** batches of the companies covered in full (else an empty list).
+- **Input:** `{ companyId?, status?: OPEN | SENT | CLOSED, page, pageSize }`; strict.
+- **Returns:** `{ items: [{ id, method, status, note, sentAt, closedAt, createdAt, createdBy, company, payments (not
+  taken out), amount, paid { count, amount }, inBatch { count, amount }, returned { count, amount } }], total, companies }`,
+  newest first.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
+
+### `payroll.payments.batch`
+- **HTTP:** `POST /api/rpc/payroll/payments/batch` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: View.
+- **Scope:** the batch's company covered in full (else NOT_FOUND).
+- **Input:** `{ id }`; strict.
+- **Returns:** `{ id, method, status, note, company, createdAt, createdBy, sentAt, sentBy, closedAt, closedBy, canChange,
+  totals { payments, amount, paid, paidCount, inBatchCount, returnedCount }, payments: [{ id, personId, employeeCode, name,
+  run { id, payMonth }, amount, status, account { bankName, last4, ifsc } | null, chequeNumber, paidOn, bankReference,
+  paidAt, paidBy, returnReason, returnedAt, returnedBy, removedAt, removedBy, own }] }` - never the full account number.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
+
+### `payroll.payments.createBatch`
+- **HTTP:** `POST /api/rpc/payroll/payments/createBatch` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit.
+- **Scope:** Edit over the batch's whole company (not seen: NOT_FOUND; View only: FORBIDDEN); every person must be of an
+  approved run of that company.
+- **Input:** `{ companyId, method: BANK | CHEQUE | CASH, personIds: 1-5000 (ids in their runs), note? (max 500) }`; strict.
+- **Returns:** `{ id }` - the new batch (OPEN).
+- **Does:** checks everyone first, then saves the batch and one payment each (amount = net pay; a bank transfer copies the
+  salary account). Refused for anyone of another company or a run not approved, held, already in a batch or paid, with
+  nothing to pay, or (bank) without a salary account - CONFLICT listing who and why.
+- **Errors:** UNAUTHORIZED; FORBIDDEN one's own pay or View only; NOT_FOUND; CONFLICT.
+
+### `payroll.payments.removePayment`
+- **HTTP:** `POST /api/rpc/payroll/payments/removePayment` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit.
+- **Scope:** as `createBatch`, by the payment's batch; never one's own payment.
+- **Input:** `{ paymentId }`; strict.
+- **Returns:** `{ removed: true }`.
+- **Does:** an OPEN batch only: the payment becomes REMOVED (kept), the person is to pay again.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT the batch is sent, or it changed meanwhile.
+
+### `payroll.payments.sendBatch`
+- **HTTP:** `POST /api/rpc/payroll/payments/sendBatch` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit.
+- **Scope:** as `createBatch`, by the batch.
+- **Input:** `{ id }`; strict.
+- **Returns:** `{ sent: true }`.
+- **Does:** OPEN -> SENT (records who and when); from then on its payments are paid or returned, never taken out.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST nobody in it; CONFLICT already sent.
+
+### `payroll.payments.markPaid`
+- **HTTP:** `POST /api/rpc/payroll/payments/markPaid` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit.
+- **Scope:** as `createBatch`, by the batch; the payments listed must not include one's own (a batch-wide "every one still
+  waiting" covers everyone in it).
+- **Input:** `{ batchId, paidOn: date (not in the future), reference? (max 100), paymentIds? (1-5000), chequeNumber? (max
+  30) }`; strict - a cheque batch: exactly one payment with its cheque number; otherwise no cheque number.
+- **Returns:** `{ paid }` - how many.
+- **Does:** a SENT batch: the payments listed (or every one still IN_BATCH) become PAID with the day, the reference and who
+  recorded it; the batch closes when nothing in it waits.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT not sent / closed, or a payment no longer waiting.
+
+### `payroll.payments.markReturned`
+- **HTTP:** `POST /api/rpc/payroll/payments/markReturned` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit.
+- **Scope:** as `createBatch`, by the payment's batch; never one's own payment.
+- **Input:** `{ paymentId, reason: 3-300 }`; strict.
+- **Returns:** `{ returned: true }`.
+- **Does:** a payment waiting in a SENT batch, or PAID (the bank took it back), becomes RETURNED with the bank's reason -
+  the person is owed it again and can be put in a later batch; the batch closes when nothing in it waits.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT not sent or paid (take it out instead), or changed meanwhile.
+
+### `payroll.payments.cancelBatch`
+- **HTTP:** `POST /api/rpc/payroll/payments/cancelBatch` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit.
+- **Scope:** as `createBatch`, by the batch.
+- **Input:** `{ id }`; strict.
+- **Returns:** `{ cancelled: true }`.
+- **Does:** an OPEN batch: every payment in it becomes REMOVED and the batch CLOSED.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT already sent.
+
+### `payroll.payments.paymentList`
+- **HTTP:** `POST /api/rpc/payroll/payments/paymentList` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit (it holds full account numbers).
+- **Scope:** as `createBatch`, by the batch.
+- **Input:** `{ id }`; strict.
+- **Returns:** an Excel file `payment-list-<company>-batch-<id>.xlsx`: employee code, name, bank, account number IN FULL
+  (decrypted from the payment's copy), IFSC, amount, narration ("Salary <Mon yyyy>") of the payments still waiting, and the
+  review notes - a plain list made by the HRMS, not the bank's upload format (the user approved it until finance gives one).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST not a bank batch, or nothing waits.
+
+### `payroll.payments.hold`
+- **HTTP:** `POST /api/rpc/payroll/payments/hold` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit.
+- **Scope:** the person's run company covered in full (else NOT_FOUND), Edit over it (FORBIDDEN); never one's own pay.
+- **Input:** `{ personId, reason: 3-300 }`; strict.
+- **Returns:** `{ held: true }`.
+- **Does:** an approved run's person with no payment in a batch or paid: an open hold (left out of batches), recorded in
+  the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT not approved, in a batch / paid, or already held.
+
+### `payroll.payments.releaseHold`
+- **HTTP:** `POST /api/rpc/payroll/payments/releaseHold` · **Code:** `backend/src/modules/payroll/payments/`
+- **Access:** Payroll payments: Edit.
+- **Scope:** as `hold`.
+- **Input:** `{ personId, note? (max 300) }`; strict.
+- **Returns:** `{ released: true }`.
+- **Does:** closes the open hold (who, when, note); the person is to pay again.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; CONFLICT not held.
 
 ## Attendance — "attendance not tracked" (2026-11-27)
 

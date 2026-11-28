@@ -9,6 +9,7 @@ import { statutoryRouter } from './statutory/statutory.router.js'
 import { taxOpeningsRouter } from './tax-openings/tax-openings.router.js'
 import { payslipsRouter } from './payslips/payslips.router.js'
 import { registerRouter } from './register/register.router.js'
+import { paymentsRouter } from './payments/payments.router.js'
 
 export const payrollRouter = {
   setup: accessProcedure('PAYROLL', 'READ').input(setupInput).handler(({ context, input }) => payrollService.getSetup(context.user, input)),
@@ -30,4 +31,6 @@ export const payrollRouter = {
   // stage 6: payslips (released on a final run; one's own in self-service) and the salary register
   payslips: payslipsRouter,
   register: registerRouter,
+  // stage 6 slice 2: paying the approved runs - batches, holds and what is owed ("Payroll payments" area)
+  payments: paymentsRouter,
 }

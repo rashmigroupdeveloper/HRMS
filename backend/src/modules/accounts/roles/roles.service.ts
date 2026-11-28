@@ -19,6 +19,11 @@ export const AREA_INFO: Record<AccessArea, { label: string; read: string; write:
     read: 'See the pay runs of companies covered in full - people, days, inputs, warnings and approval; with Employee · Salary View over the whole company also the amounts, the salary register and payslips (payslips show the full bank account number and PAN)',
     write: 'Also create runs, enter inputs, work out pay, acknowledge warnings, send runs for approval and release the payslips of an approved run (companies covered in full); and change the statutory rates and settings (all companies)',
   },
+  PAYROLL_PAYMENTS: {
+    label: 'Payroll payments',
+    read: "See each person's payment of the approved pay runs - the amounts, the batches and what is still owed (companies covered in full)",
+    write: 'Also make payment batches (bank transfer, cheque or cash), download the payment list with full account numbers, mark batches sent, paid or returned, and hold or release pay - never one\'s own',
+  },
   ONBOARDING: {
     label: 'Onboarding',
     read: 'See candidates, offers, joining forms, documents, background checks and medical results',
