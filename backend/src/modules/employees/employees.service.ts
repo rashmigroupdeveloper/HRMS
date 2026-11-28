@@ -10,6 +10,7 @@ import { formatDate, today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as hodsService from './hods/hods.service.js'
+import { boardFile, boardForViewer, installationOrganisationBoard } from './organisation/organisation.service.js'
 import * as employeesRepository from './employees.repository.js'
 import * as jobHistoryRepository from './job-history/job-history.repository.js'
 import { JOB_FIELDS, type JobField, jobDetailsOf } from './job-history/job-history.repository.js'
@@ -28,6 +29,7 @@ import {
   type directoryInput,
   type exportDirectoryInput,
   type orgChartInput,
+  type organisationBoardInput,
   familyMemberSchema,
   identityDocumentSchema,
   type listEmployeesInput,
@@ -360,8 +362,10 @@ function directoryFilter(input: z.infer<typeof listEmployeesInput> | z.infer<typ
     workLocationIds: input?.workLocationIds,
     departmentIds: input?.departmentIds,
     designationIds: input?.designationIds,
+    gradeIds: input?.gradeIds,
     employmentTypes: input?.employmentTypes,
     workforceCategories: input?.workforceCategories,
+    joiningTypes: input?.joiningTypes,
     reportingManagerCode: input?.reportingManagerCode,
     status: input?.status,
     numbersPending: seesNumbers ? input?.numbersPending : undefined,
@@ -1147,4 +1151,27 @@ export async function exportDirectory(viewer:CurrentUser,input:z.infer<typeof ex
     filters:[{label:'Group',value:input?.group??'Everyone'},{label:'Search',value:input?.search??'All'},
       {label:'Placement filters',value:JSON.stringify({companyIds:input?.companyIds,plantIds:input?.plantIds,departmentIds:input?.departmentIds})}],
   },'people-directory')
+}
+
+// Organisation board for the active role, plus the places the caller heads (2026-11-28).
+export async function organisationBoard(viewer: CurrentUser, input: z.infer<typeof organisationBoardInput>) {
+  return boardForViewer(viewer, input, await hodsService.listHeldPostIds(viewer.employeeId))
+}
+
+// The same board as an Excel file - exactly what organisationBoard shows this caller
+export async function exportOrganisationBoard(viewer: CurrentUser, input: z.infer<typeof organisationBoardInput>) {
+  const board = await organisationBoard(viewer, input)
+  if (board.level === 'NONE') throw new ORPCError('FORBIDDEN', { message: 'This role covers no company or department, and you head none' })
+  return boardFile(board, {
+    preparedBy: `${viewer.name} (${viewer.employeeCode})`,
+    coverage: 'People working now (active and on notice) in the companies or departments your active role covers, and the departments you head. Counts only.',
+  })
+}
+
+// Counts for every company. Only master-controls calls this, after assertMasterControl.
+export { installationOrganisationBoard }
+
+// Every company's board as an Excel file. Only master-controls calls this, after assertMasterControl.
+export async function exportInstallationOrganisationBoard(input: z.infer<typeof organisationBoardInput>, preparedBy: string) {
+  return boardFile(await installationOrganisationBoard(input), { preparedBy, coverage: 'Every company of the installation, people working now (active and on notice). Counts only.' })
 }

@@ -52,6 +52,16 @@ describe('Master Control: pinned account boundary and honest operational data', 
     expect(overview.jobs.total).toBe(overview.jobs.ok + overview.jobs.failed + overview.jobs.running)
     expect(overview.jobs.timeline.reduce((n, bin) => n + bin.count, 0)).toBe(overview.jobs.total)
     expect(JSON.stringify(overview)).not.toMatch(/synthetic@example|Private one-time|not-selected|DATABASE_URL|DATA_ENCRYPTION_KEY/)
+    const board = await call(masterControlsRouter.organisation, {}, { context: contextOf(owner) })
+    expect(board.level).toBe('COMPANY')
+    expect(board.slices.length).toBeGreaterThan(0)
+    expect(JSON.stringify(board)).not.toMatch(/employeeCode|firstName|workEmail/)
+    const departments = await call(masterControlsRouter.organisation, { companyId: board.slices[0]!.companyId }, { context: contextOf(owner) })
+    expect(departments.level).toBe('DEPARTMENT')
+    expect(departments.company?.id).toBe(board.slices[0]!.companyId)
+    const file = await call(masterControlsRouter.exportOrganisation, {}, { context: contextOf(owner) })
+    expect(file.name).toBe('organisation.xlsx')
+    expect(file.size).toBeGreaterThan(0)
   })
 
   it('refuses unauthenticated, temporary-password and other Super Admin callers on both APIs', async () => {
@@ -60,6 +70,13 @@ describe('Master Control: pinned account boundary and honest operational data', 
       await expect(call(proc as never, input as never, { context: contextOf(other) })).rejects.toMatchObject({ code: 'NOT_FOUND' })
       await expect(call(proc as never, input as never, { context: contextOf({ ...owner, mustChangePassword: true }) })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     }
+    for (const proc of [masterControlsRouter.organisation, masterControlsRouter.exportOrganisation]) {
+      await expect(call(proc as never, {} as never, { context: contextOf(other) })).rejects.toMatchObject({ code: 'NOT_FOUND' })
+      await expect(call(proc as never, {} as never, { context: contextOf({ ...owner, mustChangePassword: true }) })).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    }
+    await expect(call(masterControlsRouter.organisation, {}, { context: contextOf(null) })).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+    await expect(call(masterControlsRouter.organisation, {}, { context: contextOf(other) })).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(call(masterControlsRouter.organisation, {}, { context: contextOf({ ...owner, mustChangePassword: true }) })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     expect((await accountsService.me(other)).canMasterControl).toBe(false)
   })
 
@@ -85,6 +102,7 @@ describe('Master Control: pinned account boundary and honest operational data', 
       expect(await accountsService.canUseMasterControl(other)).toBe(false)
       await expect(masterControlsService.getOverview(owner)).rejects.toMatchObject({ code: 'NOT_FOUND' })
       await expect(masterControlsService.listRuns(owner, input)).rejects.toMatchObject({ code: 'NOT_FOUND' })
+      await expect(masterControlsService.getOrganisation(owner, {})).rejects.toMatchObject({ code: 'NOT_FOUND' })
     } finally {
       await prisma.employee.update({ where: { id: other.employeeId }, data: { workEmail: null, ...by } })
       await prisma.employee.update({ where: { id: owner.employeeId }, data: { workEmail: ownerMail, ...by } })

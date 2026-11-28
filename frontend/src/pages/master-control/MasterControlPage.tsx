@@ -3,10 +3,13 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CirclePause, Radio, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { orpc } from '@/lib/orpc'
+import { usePortal } from '@/hooks/usePortal'
+import { client, orpc } from '@/lib/orpc'
 import { FormError } from '@/components/FormError'
 import { NotFoundPage } from '@/pages/not-found/NotFoundPage'
 import { MasterControlSkeleton } from '@/components/skeletons/master-control/MasterControlSkeleton'
+import { OrganisationBoardSkeleton } from '@/components/skeletons/organisation/OrganisationBoardSkeleton'
+import { OrganisationBoard } from '@/pages/organisation/components/OrganisationBoard'
 import { CONTROL_TABS } from './components/labels'
 import { ExecutionDesk } from './components/ExecutionDesk'
 import { ServiceMap } from './components/ServiceMap'
@@ -18,6 +21,7 @@ import './master-control.css'
 
 export function MasterControlPage() {
   const me = useCurrentUser()
+  const { to } = usePortal()
   const [params, setParams] = useSearchParams()
   const view = CONTROL_TABS.find(tab => tab === params.get('view')) ?? 'Overview'
   const status = ['ALL', 'OK', 'RUNNING', 'FAILED'].find(value => value === params.get('status')) as 'ALL' | 'OK' | 'RUNNING' | 'FAILED' | undefined ?? 'ALL'
@@ -27,7 +31,10 @@ export function MasterControlPage() {
   const deferredSearch = useDeferredValue(search)
   const [live, setLive] = useState(true)
   const allowed = me.data?.canMasterControl === true
+  const rawCompany = Number(params.get('company'))
+  const companyId = Number.isInteger(rawCompany) && rawCompany > 0 ? rawCompany : undefined
   const overview = useQuery({ ...orpc.masterControl.overview.queryOptions(), enabled: allowed, retry: false, gcTime: 0, refetchOnWindowFocus: live, refetchOnReconnect: live, refetchInterval: allowed && live ? 15_000 : false })
+  const organisation = useQuery({ ...orpc.masterControl.organisation.queryOptions({ input: { companyId } }), enabled: allowed && view === 'Organisation', retry: false, gcTime: 0 })
   const runs = useQuery({ ...orpc.masterControl.runs.queryOptions({ input: { status, search: deferredSearch, hours, page } }), enabled: allowed && view === 'Job explorer', retry: false, gcTime: 0, refetchOnWindowFocus: live, refetchOnReconnect: live, refetchInterval: allowed && live && view === 'Job explorer' ? 15_000 : false })
   const update = (values: Record<string, string>) => setParams(previous => { const next = new URLSearchParams(previous); for (const [key, value] of Object.entries(values)) next.set(key, value); return next }, { replace: true })
   const switchView = (tab: string) => update({ view: tab })
@@ -41,9 +48,9 @@ export function MasterControlPage() {
   return <div className="mc-workspace">
     <div className="mc-title-row"><div><h1>Master Control<span className="mc-title-mark" aria-hidden="true"><span /><span /><span /></span></h1><p>The system, in focus.</p></div><div className="mc-owner"><ShieldCheck aria-hidden="true" /><span>Private workspace<span>RML033903</span></span></div></div>
     <div className="mc-toolbar"><nav aria-label="Master Control sections">{CONTROL_TABS.map(tab => <button type="button" key={tab} aria-current={view === tab ? 'page' : undefined} onClick={() => switchView(tab)}>{tab}</button>)}</nav><div className="mc-refresh-controls"><button type="button" className="mc-live" aria-pressed={live} onClick={() => setLive(!live)}>{live ? <Radio aria-hidden="true" /> : <CirclePause aria-hidden="true" />}{live ? 'Live · 15s' : 'Paused'}</button><button type="button" className="mc-refresh" disabled={busy || !allowed} onClick={refresh}><RefreshCw aria-hidden="true" className={busy ? 'mc-refreshing' : ''} />{busy ? 'Checking…' : 'Refresh'}</button></div></div>
-    <div className="mc-freshness" aria-live="polite">{data ? `${overview.isError ? 'Refresh failed · last successful check' : 'Last successful check'} ${stamp(data.checkedAt)}` : 'Connecting to system diagnostics'}<span>Account-bound access · operational data only</span></div>
+    <div className="mc-freshness" aria-live="polite">{view === 'Organisation' ? 'Headcount of people working now' : data ? `${overview.isError ? 'Refresh failed · last successful check' : 'Last successful check'} ${stamp(data.checkedAt)}` : 'Connecting to system diagnostics'}<span>{view === 'Organisation' ? 'Counts only · no names' : 'Account-bound access · operational data only'}</span></div>
     <FormError error={overview.error} />
-    {view === 'Job explorer' ? <div className="mc-dashboard"><FormError error={runs.error} /><RunExplorer data={runs.data} pending={runs.isPending} error={runs.isError} status={status} setStatus={value => update({ status: value, page: '1' })} hours={hours} setHours={value => update({ hours: value, page: '1' })} page={page} setPage={value => update({ page: String(value) })} search={search} setSearch={value => {setSearch(value);update({ search: value, page: '1' })}} /></div> : !data ? overview.isError ? <div className="mc-panel mc-empty">Diagnostics are unavailable. Check your connection and try Refresh.</div> : <MasterControlSkeleton view={view} /> : <div className="mc-dashboard">
+    {view === 'Organisation' ? <div className="mc-dashboard"><FormError error={organisation.error} />{organisation.isPending ? <OrganisationBoardSkeleton kind={companyId ? 'drill' : 'companies'} exports /> : organisation.data && organisation.data.level !== 'NONE' ? <OrganisationBoard board={organisation.data} onExport={() => client.masterControl.exportOrganisation({ companyId })} companyHref={organisation.data.level === 'COMPANY' ? (id) => `${to('/master-control')}?view=Organisation&company=${id}` : undefined} onBack={organisation.data.company ? () => update({ view: 'Organisation', company: '' }) : undefined} /> : organisation.isError ? null : <div className="mc-panel mc-empty">No companies to show.</div>}</div> : view === 'Job explorer' ? <div className="mc-dashboard"><FormError error={runs.error} /><RunExplorer data={runs.data} pending={runs.isPending} error={runs.isError} status={status} setStatus={value => update({ status: value, page: '1' })} hours={hours} setHours={value => update({ hours: value, page: '1' })} page={page} setPage={value => update({ page: String(value) })} search={search} setSearch={value => {setSearch(value);update({ search: value, page: '1' })}} /></div> : !data ? overview.isError ? <div className="mc-panel mc-empty">Diagnostics are unavailable. Check your connection and try Refresh.</div> : <MasterControlSkeleton view={view} /> : <div className="mc-dashboard">
       {view === 'Overview' && <>
         <ExecutionDesk data={data} />
         <div className="mc-top-grid"><ServiceMap data={data} /><section className="mc-panel mc-attention" aria-labelledby="attention-title"><div className="mc-section-head"><h2 id="attention-title">Needs attention</h2><span className="mc-count">{Number(data.jobs.failed > 0) + Number(data.mail.failed + data.mail.pending > 0) + Number(!data.worker.recent) + Number(!data.storage.available) + Number((data.migrations?.unresolved ?? 0) > 0) + 1}</span></div>

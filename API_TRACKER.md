@@ -86,7 +86,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 355**
+**Total APIs: 359**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -445,6 +445,10 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 353 | `payroll.deposits.mine` | Own record | Whether one's own PF / ESIC / PT / LWF deductions were deposited, each released month |
 | 354 | `masterControl.overview` | Pinned developer account only | Private operational health, execution rhythm, mail retry counts and runtime diagnostics |
 | 355 | `masterControl.runs` | Pinned developer account only | Filtered, paged job history with fixed failure guidance |
+| 356 | `employees.organisationBoard` | Logged in | Headcount by company or department, classified by employment, workforce and joining type |
+| 357 | `masterControl.organisation` | Pinned developer account only | The same headcount for every company — counts only, no names |
+| 358 | `employees.exportOrganisationBoard` | Logged in | The organisation board as Excel - the same counts the caller sees |
+| 359 | `masterControl.exportOrganisation` | Pinned developer account only | The whole-installation headcount as Excel |
 
 ---
 
@@ -470,11 +474,12 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
   | Field | Type | Required | Rules |
   |---|---|---|---|
   | `search` | string | no | up to 100 chars; every word must match the code or a part of the name |
-  | `companyIds`, `plantIds`, `workLocationIds`, `departmentIds`, `designationIds` | number[] | no | any of these (several values per filter - 2026-11-16; plants 2026-11-18) |
+  | `companyIds`, `plantIds`, `workLocationIds`, `departmentIds`, `designationIds`, `gradeIds` | number[] | no | any of these (several values per filter - 2026-11-16; plants 2026-11-18; grades 2026-11-28, the organisation board's grade counts open these people) |
   | `employmentTypes` | EmploymentType[] | no | any of these |
   | `workforceCategories` | (`WHITE_COLLAR` \| `BLUE_COLLAR`)[] | no | any of these |
+  | `joiningTypes` | (`REGULAR` \| `CONSULTANT_INTERN` \| `OVERSEAS`)[] | no | any of these (2026-11-28 - the organisation board's counts open these people) |
   | `reportingManagerCode` | string | no | only the employees who report to this employee (2026-11-16) |
-  | `status` | `ACTIVE` \| `ON_NOTICE` \| `EXITED` | no | |
+  | `status` | `ACTIVE` \| `ON_NOTICE` \| `EXITED` \| `WORKING` | no | `WORKING` = active and on notice, the people the organisation board counts (2026-11-28) |
   | `numbersPending` | boolean | no | `true`: only those with PF / ESIC numbers still to record (2026-11-15) |
   | `joinedFrom` | Date | no | only those who joined on or after this date (2026-11-15) |
   | `sort` | `code` \| `name` \| `joined` \| `designation` \| `department` \| `company` | no | default `code` |
@@ -486,7 +491,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
   department {id, name}, designation {id, name}, position {name} | null, costCenter {code, name} | null, reportingManager {employeeCode, name} | null,
   functionalManager {employeeCode, name} | null, pendingNumbers }], total, page, pageSize, summary, facets }`,
   in the chosen order. `facets` (2026-11-16): for `companyId`, `plantId`, `workLocationId`, `departmentId`, `designationId`,
-  `employmentType`, `workforceCategory` - `[{ value, count }]` how many employees each value would show with the other
+  `gradeId`, `employmentType`, `workforceCategory`, `joiningType` (2026-11-28) - `[{ value, count }]` how many employees each value would show with the other
   filters applied (a filter's own ticks do not shrink its counts; `value: null` = not set, e.g. no department). `summary` (the employees inside the caller's data access, whatever the filters - the page's stat tiles, 2026-11-15): `{ active, onNotice,
   exited, joinedThisMonth, numbersPending }` (`numbersPending`: active employees with PF / ESIC numbers to record).
   `pendingNumbers`: the PF / ESIC numbers still to record - `UAN` and `PF member number` where PF applies, `ESIC IP
@@ -553,7 +558,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 - **Access:** Employees: View.
 - **Scope:** only employees inside the caller's Employee · Directory & job View data access; PF / ESIC numbers only where Employee · IDs, bank & statutory View covers.
 - **Input (optional):** the filters and order of `employees.list` (`search`, `companyIds`, `plantIds`, `workLocationIds`, `departmentIds`,
-  `designationIds`, `employmentTypes`, `workforceCategories`, `reportingManagerCode`, `status`, `numbersPending`, `joinedFrom`,
+  `designationIds`, `gradeIds`, `employmentTypes`, `workforceCategories`, `joiningTypes`, `reportingManagerCode`, `status` (incl. `WORKING`), `numbersPending`, `joinedFrom`,
   `sort`, `direction`) - no paging.
 - **Returns:** a file `employees-YYYY-MM-DD.xlsx` - one row per matching employee (up to 20 000): code, name, status,
   company, plant, work location, department, designation, position, employment type, workforce, date of joining, reporting manager (code and name),
@@ -1093,6 +1098,24 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 - **What it does:** "My department" (H2): the HOD's read-only view of their employees' directory & job details (their
   attendance: `attendance.days.board` / `muster` with scope `DEPARTMENT`). Approvals come with the leave module.
 - **Errors:** `401`.
+
+### `employees.organisationBoard`
+- **HTTP:** `POST /api/rpc/employees/organisationBoard` · **Code:** `backend/src/modules/employees/organisation/`
+- **Access:** any logged-in employee. What comes back follows the active role: Employee · Directory & job View, Payroll View (whole companies only), a Super Admin, or the places the caller heads now. A role with none of these gets an empty board.
+- **Scope:** company cards when `scopeOf` Employee directory & job View, or `wholeCompanyScopeOf` Payroll View, covers at least one whole company (a Super Admin: every company). Opening a company (`companyId`) returns that company's departments inside the same access; a company outside it is not found. With no whole company, department cards for the places those rows cover. An HOD with no such rows gets the places they head now, excluding themselves (the HOD relationship, section 8 rule 7). `level: NONE` reveals no company. Gender counts only where the active role's Employee · Personal details View covers every person of the row as well as Employee directory View (seesPart's rule, by place); otherwise that row's `gender` is `null` - never a partial count - and with no Personal details View anywhere there is no gender breakdown at all; the HOD relationship alone gives none. Counts only — no names, codes or salary.
+- **Input:** `{ companyId?: number }` — omit it for companies (or the caller's departments); set it to open one company. Unknown fields are refused.
+- **Returns:** `{ level: 'COMPANY' | 'DEPARTMENT' | 'NONE', company: { id, code, name } | null, slices: [{ companyId, plantId, departmentId, code, name, place, headcount, active, onNotice, joined, left, employmentType, workforceCategory, joiningType, gender, grade, designation }], totals, period: { from, to }, breakdowns: [{ key: 'gender' | 'grade' | 'designation', label, values: [{ key, label }] }] }` of the same counts. Headcount and classifications count people working now only (active and on notice); `joined` / `left` count joining / leaving dates from the first of this month to today (India), whatever the status now, by current placement - the Joiners & leavers report's rule. A department row with no one working but a joiner or leaver this month is still listed. Every employment / workforce / joining key is present, including zeros. `gender`: `{ MALE, FEMALE, TRANSGENDER, NONE }` or `null` (not shown, see Scope); `grade` / `designation`: counts by id, `NONE` = not recorded. `breakdowns` lists the extra groups with their labels: gender (only when shown), grades by seniority and designations biggest first, only those someone holds, then "Not recorded". The page can group a company's department rows by plant (added up in the browser, no extra call).
+- **What it does:** the organisation board (2026-11-28). Payroll Admin and HR Head, and a Super Admin, see a company and open its departments. An HOD sees departments. A plant or department row never becomes a company total. Payroll partial rows are not stitched into a company.
+- **Errors:** `401`; `404` when `companyId` is outside the caller's access or does not exist; `400` for a bad id.
+
+### `employees.exportOrganisationBoard`
+- **HTTP:** `POST /api/rpc/employees/exportOrganisationBoard` · **Code:** `backend/src/modules/employees/organisation/`
+- **Access:** as `employees.organisationBoard` (any logged-in employee; what it holds follows the active role and the places headed).
+- **Scope:** exactly the board `employees.organisationBoard` returns this caller for the same input - built from it, so the same data access, the same `404` for a company outside it. Counts only — no names, codes or salary.
+- **Input:** `{ companyId?: number }` — as `employees.organisationBoard`.
+- **Returns:** a file `organisation.xlsx` (companies) or `organisation-<company code>.xlsx` (one company's departments): one row per company / department (code, name, plant for departments), working now, active, on notice, joined and left this month (the period in the heading), then one column per employment type, workforce and joining type value, then one per value of each of the board's `breakdowns` (gender "not shown" on a row the role does not cover for personal details), and a Total row.
+- **What it does:** the organisation board as Excel (2026-11-28), for review and printing.
+- **Errors:** `401`; `403` when the role covers no company or department and the caller heads none; `404` / `400` as `employees.organisationBoard`.
 
 ## accounts
 
@@ -5391,3 +5414,21 @@ employee or login is provisioned by these APIs. Temporary-password sessions are 
   filtered counts. The owner can expand a row for fixed troubleshooting guidance. It never starts/retries jobs,
   decrypts mail, sends messages, changes business records or bypasses approvals.
 - **Errors:** same authentication/identity errors as overview; `400 BAD_REQUEST` invalid input.
+
+### `masterControl.organisation`
+- **HTTP:** `POST /api/rpc/masterControl/organisation` · **Code:** `backend/src/modules/master-controls/`
+- **Access:** same exclusive owner identity gate as `masterControl.overview`.
+- **Scope:** not limited by data access — the pinned owner sees every company. Counts only (company, department, employment type, workforce, joining type, active and on notice). No employee names, codes, records, mail or salary.
+- **Input:** strict object; `companyId` optional positive integer. Omit it for companies; set it to open that company's departments. Other fields are refused.
+- **Returns:** the same shape as `employees.organisationBoard`, with no `breakdowns` (no gender, grade or designation - Master Control keeps its decided classifications) and empty `gender` / `grade` / `designation`.
+- **What it does:** the organisation board on Master Control (2026-11-28), for the whole installation. Opening a company lists its departments. It does not grant Payroll, Employees or any other area.
+- **Errors:** same authentication/identity errors as overview; `404` when `companyId` does not exist; `400` for a bad id.
+
+### `masterControl.exportOrganisation`
+- **HTTP:** `POST /api/rpc/masterControl/exportOrganisation` · **Code:** `backend/src/modules/master-controls/`
+- **Access:** same exclusive owner identity gate as `masterControl.overview`.
+- **Scope:** not limited by data access — as `masterControl.organisation`, every company. Counts only.
+- **Input:** as `masterControl.organisation`.
+- **Returns:** the Excel file of `employees.exportOrganisationBoard`, for the whole installation.
+- **What it does:** the Master Control organisation board as Excel (2026-11-28).
+- **Errors:** as `masterControl.organisation`.

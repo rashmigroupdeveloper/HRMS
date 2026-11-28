@@ -1,3 +1,4 @@
+import { idSchema } from '#shared/schemas/common.schema'
 import { z } from 'zod'
 
 export const runsInput = z.object({
@@ -7,3 +8,6 @@ export const runsInput = z.object({
   page: z.number().int().min(1).max(10000).default(1),
 }).strict()
 export type RunsInput = z.infer<typeof runsInput>
+
+export const organisationInput = z.object({ companyId: idSchema.optional() }).strict()
+export type OrganisationInput = z.infer<typeof organisationInput>

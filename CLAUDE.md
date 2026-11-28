@@ -281,7 +281,9 @@ frontend/src/
   sessions cannot use it. `accounts.me.canMasterControl` only controls discoverability; other Super Admins never
   inherit it. It grants no business-area or data-access permissions. The same read-only workspace is in both portals
   (`/ess/master-control`, `/manage/master-control`); business tool links still require the active role's access.
-  Operational responses exclude people records, mail recipients/content and raw errors. Jobs are inspected, never
+  Operational responses exclude people records, mail recipients/content and raw errors. The Organisation tab
+  (2026-11-28) is headcount only: companies, their departments, and employment / workforce / joining classifications
+  for people working now — counts, never names or records. Jobs are inspected, never
   arbitrarily rerun; backups, restore, maintenance writes and integration controls await their owning workflows.
 - **Data access - whose records (decided 2026-11-18, BACKLOG 3a).** Each role given to an employee has rows of company ->
   plant -> department ("all" at any level) at View / Edit, worked out only by `core/auth/scope.ts`; only the active role's

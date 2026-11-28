@@ -1,8 +1,9 @@
 import { accountsService } from '#modules/accounts'
+import { employeesService } from '#modules/employees'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { runtimeStatus, storageStatus } from '#core/diagnostics/runtime'
 import * as controlsRepository from './master-controls.repository.js'
-import type { RunsInput } from './master-controls.schema.js'
+import type { OrganisationInput, RunsInput } from './master-controls.schema.js'
 
 // Error text can contain employee details or credentials. Return only a fixed diagnosis; raw errors stay server-side.
 export function failureAdvice(error: string | null) {
@@ -47,4 +48,16 @@ export async function listRuns(viewer: CurrentUser, input: RunsInput) {
     ...run, durationMs: run.finishedAt ? Math.max(0, run.finishedAt.getTime() - run.startedAt.getTime()) : null,
     failure: run.status === 'FAILED' ? failureAdvice(error) : null,
   })) }
+}
+
+// Headcount for every company. Counts only — the organisation board, not people records.
+export async function getOrganisation(viewer: CurrentUser, input: OrganisationInput) {
+  await accountsService.assertMasterControl(viewer)
+  return employeesService.installationOrganisationBoard(input)
+}
+
+// The same headcount as an Excel file
+export async function exportOrganisation(viewer: CurrentUser, input: OrganisationInput) {
+  await accountsService.assertMasterControl(viewer)
+  return employeesService.exportInstallationOrganisationBoard(input, `${viewer.name} (${viewer.employeeCode}) - Master Control`)
 }

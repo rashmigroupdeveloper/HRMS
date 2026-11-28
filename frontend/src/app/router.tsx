@@ -38,6 +38,7 @@ import { OfferResponsePage } from '@/pages/offer-response/OfferResponsePage'
 import { CandidatePage } from '@/pages/onboarding/CandidatePage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { OrganizationPage } from '@/pages/organization/OrganizationPage'
+import { OrganisationDashboardPage } from '@/pages/organisation/OrganisationDashboardPage'
 import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 
 // Every page of the app is registered here.
@@ -129,6 +130,7 @@ export const router = createBrowserRouter([
             element: <RequirePortal portal="manage" />,
             children: [
               { index: true, element: <ManageHomePage /> },
+              { path: 'organisation-dashboard', element: <OrganisationDashboardPage /> },
               { path: 'master-control', element: <MasterControlPage /> },
               { element: <RequireAccess area="PAYROLL" />, children: [{ path: 'payroll', element: <PayrollPage /> }, { path: 'payroll/statutory', element: <StatutoryPage /> }, { path: 'payroll/:id', element: <PayrollRunPage /> }] },
               { element: <RequireAccess area="PAYROLL_PAYMENTS" />, children: [{ path: 'salary-payments', element: <PaymentsPage /> }, { path: 'salary-payments/:id', element: <PaymentBatchPage /> }] },

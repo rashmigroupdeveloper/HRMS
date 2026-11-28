@@ -1,4 +1,5 @@
 import { ExportButton } from '@/components/ExportButton'
+import { breakdownsFor } from '@/pages/organisation/labels'
 import { useQuery } from '@tanstack/react-query'
 import { CalendarCheck, Search } from 'lucide-react'
 import { useState } from 'react'
@@ -6,6 +7,8 @@ import { Link } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
 import { FormError } from '@/components/FormError'
 import { DepartmentTableSkeleton } from '@/components/skeletons/my-department/DepartmentTableSkeleton'
+import { OrganisationBoardSkeleton } from '@/components/skeletons/organisation/OrganisationBoardSkeleton'
+import { OrganisationBoard } from '@/pages/organisation/components/OrganisationBoard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -19,6 +22,7 @@ const HEADINGS = ['Employee', 'Designation', 'Department · plant', 'Joined', 'R
 // with the leave module. Names are not links: an HOD may have no access to profiles.
 export function MyDepartmentPage() {
   const department = useQuery(orpc.employees.hods.myDepartment.queryOptions())
+  const board = useQuery(orpc.employees.organisationBoard.queryOptions({ input: {} }))
   const [search, setSearch] = useState('')
   // one post's employees (when the viewer heads several), null = all
   const [postId, setPostId] = useState<number | null>(null)
@@ -53,11 +57,26 @@ export function MyDepartmentPage() {
       </header>
 
       <FormError error={department.error} />
+      <FormError error={board.error} />
       {department.isPending ? (
-        <DepartmentTableSkeleton headings={HEADINGS} search={searchBox} label="Loading your department" />
+        <div className="space-y-6">
+          <OrganisationBoardSkeleton kind="departments" exports breakdowns={breakdownsFor(false)} />
+          <DepartmentTableSkeleton headings={HEADINGS} search={searchBox} label="Loading your department" />
+        </div>
       ) : !data?.posts.length ? (
         <EmptyState title="You are not an HOD" hint="HR appoints HODs on the Organization page (Department heads)." />
       ) : (
+        <>
+        {board.isPending ? <OrganisationBoardSkeleton kind="departments" exports breakdowns={breakdownsFor(false)} /> : board.data && board.data.level !== 'NONE' && (
+          <OrganisationBoard
+            board={board.data}
+            onExport={() => client.employees.exportOrganisationBoard({})}
+            onSelect={(slice) => {
+              const post = data.posts.find((item) => item.department.id === slice.departmentId && item.plant.id === slice.plantId)
+              if (post) setPostId(post.id)
+            }}
+          />
+        )}
         <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
           <div className="flex flex-wrap items-center gap-2">
             {/* the posts the viewer holds - a filter when there are several */}
@@ -119,6 +138,7 @@ export function MyDepartmentPage() {
             </Table>
           )}
         </section>
+        </>
       )}
     </div>
   )

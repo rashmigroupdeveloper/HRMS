@@ -6,6 +6,7 @@ import {
   directoryInput,
   exportDirectoryInput,
   orgChartInput,
+  organisationBoardInput,
   exportEmployeesInput,
   getEmployeeByCodeInput,
   listEmployeesInput,
@@ -38,6 +39,10 @@ export const employeesRouter = {
   directory: authedProcedure.input(directoryInput).handler(({ input, context }) => employeesService.listDirectory(context.user, input)),
   // The org chart around one employee (default: oneself): managers up, the employee, direct reports - basic fields only.
   orgChart: authedProcedure.input(orgChartInput).handler(({ input, context }) => employeesService.orgChart(context.user, input)),
+  // Company cards, or one company's departments, for the active role; an HOD without that access gets their departments.
+  organisationBoard: authedProcedure.input(organisationBoardInput).handler(({ input, context }) => employeesService.organisationBoard(context.user, input)),
+  // The same board as an Excel file.
+  exportOrganisationBoard: authedProcedure.input(organisationBoardInput).handler(({ input, context }) => employeesService.exportOrganisationBoard(context.user, input)),
   // The directory (same filters) as an Excel file.
   export: accessProcedure('EMPLOYEES', 'READ')
     .input(exportEmployeesInput)

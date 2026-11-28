@@ -19,7 +19,7 @@ import { client, orpc } from '@/lib/orpc'
 import { cn, errorMessage, formatDate, toDateInput } from '@/lib/utils'
 import { EmployeeDetailsDrawer } from './EmployeeDetailsDrawer'
 import { ImportEmployeesDrawer } from './ImportEmployeesDrawer'
-import { EMPLOYMENT_TYPE, type EmployeeRow, type EmployeeStatus, STATUS_LABEL, STATUS_TONE, WORKFORCE } from './labels'
+import { EMPLOYMENT_TYPE, type EmployeeRow, type EmployeeStatus, JOINING_TYPE, STATUS_LABEL, STATUS_TONE, WORKFORCE } from './labels'
 import { SavedViews } from './SavedViews'
 
 const PAGE_SIZE = 25
@@ -32,6 +32,8 @@ type SortKey = NonNullable<ListInput['sort']>
 const STATUS_SEGMENTS = [
   { value: 'ACTIVE' as const, label: 'Active' },
   { value: 'ON_NOTICE' as const, label: 'On notice' },
+  // active and on notice together - what the organisation board counts
+  { value: 'WORKING' as const, label: 'Working now' },
   { value: 'EXITED' as const, label: 'Left' },
   { value: 'ALL' as const, label: 'All' },
 ]
@@ -44,8 +46,10 @@ const FILTERS = [
   { param: 'location', label: 'Work location', facet: 'workLocationId', input: 'workLocationIds', numeric: true },
   { param: 'department', label: 'Department', facet: 'departmentId', input: 'departmentIds', numeric: true },
   { param: 'designation', label: 'Designation', facet: 'designationId', input: 'designationIds', numeric: true },
+  { param: 'grade', label: 'Grade', facet: 'gradeId', input: 'gradeIds', numeric: true },
   { param: 'type', label: 'Employment type', facet: 'employmentType', input: 'employmentTypes', numeric: false },
   { param: 'workforce', label: 'Workforce', facet: 'workforceCategory', input: 'workforceCategories', numeric: false },
+  { param: 'joining', label: 'Joining type', facet: 'joiningType', input: 'joiningTypes', numeric: false },
 ] as const
 type FilterParam = (typeof FILTERS)[number]['param']
 type Selection = Record<FilterParam, string[]>
@@ -87,7 +91,7 @@ export function EmployeeRecordsView() {
   const [importing, setImporting] = useState(false)
 
   // the list's state, from the address
-  const status = (params.get('status') ?? 'ACTIVE') as EmployeeStatus | 'ALL'
+  const status = (params.get('status') ?? 'ACTIVE') as EmployeeStatus | 'WORKING' | 'ALL'
   const numbersPending = params.get('pending') === '1'
   const joinedThisMonth = params.get('joined') === 'month'
   const page = Math.max(1, Number(params.get('page')) || 1)
@@ -126,6 +130,7 @@ export function EmployeeRecordsView() {
   const locations = useQuery(orpc.organization.workLocations.list.queryOptions())
   const departments = useQuery(orpc.organization.departments.list.queryOptions())
   const designations = useQuery(orpc.organization.designations.list.queryOptions())
+  const grades = useQuery(orpc.organization.grades.list.queryOptions())
   // a value's name (masters by id; the fixed kinds by their label)
   const names: Record<FilterParam, Map<string, string>> = {
     company: new Map((companies.data ?? []).map((c) => [String(c.id), `${c.code} · ${c.name}`])),
@@ -133,8 +138,10 @@ export function EmployeeRecordsView() {
     location: new Map((locations.data ?? []).map((l) => [String(l.id), l.name])),
     department: new Map((departments.data ?? []).map((d) => [String(d.id), d.name])),
     designation: new Map((designations.data ?? []).map((d) => [String(d.id), d.name])),
+    grade: new Map((grades.data ?? []).map((g) => [String(g.id), `${g.code} · ${g.name}`])),
     type: new Map(Object.entries(EMPLOYMENT_TYPE)),
     workforce: new Map(Object.entries(WORKFORCE)),
+    joining: new Map(Object.entries(JOINING_TYPE)),
   }
 
   // the list's filters - also what the Excel export takes
@@ -445,7 +452,7 @@ export function EmployeeRecordsView() {
 const emptySelection = () => Object.fromEntries(FILTERS.map((f) => [f.param, []])) as unknown as Selection
 
 // The list input of a selection of filter values, with the other inputs
-function toInput(selection: Selection, rest: Omit<ListInput, 'companyIds' | 'plantIds' | 'workLocationIds' | 'departmentIds' | 'designationIds' | 'employmentTypes' | 'workforceCategories'>): ListInput {
+function toInput(selection: Selection, rest: Omit<ListInput, 'companyIds' | 'plantIds' | 'workLocationIds' | 'departmentIds' | 'designationIds' | 'gradeIds' | 'employmentTypes' | 'workforceCategories'>): ListInput {
   const input: Record<string, unknown> = { ...rest }
   for (const f of FILTERS) {
     const values = selection[f.param]

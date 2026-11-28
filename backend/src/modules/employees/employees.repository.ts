@@ -9,6 +9,7 @@ import {
   type EmployeeStatus,
   type EmploymentType,
   type IdentityDocumentType,
+  type JoiningType,
   type MedicalResult,
   type NewRow,
   type Prisma,
@@ -591,11 +592,14 @@ export type DirectoryFilter = {
   workLocationIds?: number[] | undefined
   departmentIds?: number[] | undefined
   designationIds?: number[] | undefined
+  gradeIds?: number[] | undefined
   employmentTypes?: EmploymentType[] | undefined
   workforceCategories?: WorkforceCategory[] | undefined
+  joiningTypes?: JoiningType[] | undefined
   // the employees who report to the employee with this (upper-case) code
   reportingManagerCode?: string | undefined
-  status?: EmployeeStatus | undefined
+  // WORKING: active and on notice
+  status?: EmployeeStatus | 'WORKING' | undefined
   numbersPending?: boolean | undefined
   joinedFrom?: Date | undefined
 }
@@ -636,10 +640,12 @@ function directoryWhere(filter: DirectoryFilter, except?: DirectoryFacet): Prism
     ...(except !== 'workLocationId' && filter.workLocationIds?.length && { workLocationId: any(filter.workLocationIds) }),
     ...(except !== 'departmentId' && filter.departmentIds?.length && { departmentId: any(filter.departmentIds) }),
     ...(except !== 'designationId' && filter.designationIds?.length && { designationId: any(filter.designationIds) }),
+    ...(except !== 'gradeId' && filter.gradeIds?.length && { gradeId: any(filter.gradeIds) }),
     ...(except !== 'employmentType' && filter.employmentTypes?.length && { employmentType: any(filter.employmentTypes) }),
     ...(except !== 'workforceCategory' && filter.workforceCategories?.length && { workforceCategory: any(filter.workforceCategories) }),
     ...(filter.reportingManagerCode !== undefined && { reportingManager: { employeeCode: filter.reportingManagerCode } }),
-    ...(filter.status !== undefined && { status: filter.status }),
+    ...(except !== 'joiningType' && filter.joiningTypes?.length && { joiningType: any(filter.joiningTypes) }),
+    ...(filter.status !== undefined && { status: filter.status === 'WORKING' ? { in: ['ACTIVE', 'ON_NOTICE'] } : filter.status }),
     ...(filter.joinedFrom !== undefined && { dateOfJoining: { gte: filter.joinedFrom } }),
     AND: [
       scopeWhere(filter.scope),
@@ -716,8 +722,8 @@ export async function list(
 
 // How many employees each value of a filter would show, with the other filters applied (a value's count does not
 // shrink when another value of the same filter is ticked). Null = not set (e.g. no department).
-export type DirectoryFacet = 'companyId' | 'plantId' | 'workLocationId' | 'departmentId' | 'designationId' | 'employmentType' | 'workforceCategory'
-const FACETS: DirectoryFacet[] = ['companyId', 'plantId', 'workLocationId', 'departmentId', 'designationId', 'employmentType', 'workforceCategory']
+export type DirectoryFacet = 'companyId' | 'plantId' | 'workLocationId' | 'departmentId' | 'designationId' | 'gradeId' | 'employmentType' | 'workforceCategory' | 'joiningType'
+const FACETS: DirectoryFacet[] = ['companyId', 'plantId', 'workLocationId', 'departmentId', 'designationId', 'gradeId', 'employmentType', 'workforceCategory', 'joiningType']
 export async function facets(filter: DirectoryFilter, db: DbClient = prisma) {
   const counts = await Promise.all(
     FACETS.map(async (facet) => {
@@ -1122,6 +1128,51 @@ export async function listDirectory(filter: ColleagueFilter, paging: { skip: num
 // data access: the company directory / org chart - basic fields of anyone working now (the user, 2026-11-21)
 export function findDirectoryEntry(where: { employeeCode: string } | { id: number }, db: DbClient = prisma) {
   return db.employee.findFirst({ where: { ...where, status: { not: 'EXITED' } }, select: colleagueSelect })
+}
+
+// Headcount of people working now, by place and classification (gender, grade and designation too - the service shows
+// gender only where the viewer sees personal details).
+// data access: `scope` is required (scopeWhere). `postIds`, when set, also includes employees on those HOD posts —
+// the service passes only the caller's own current posts (the HOD relationship, section 8 rule 7). `exceptId` drops
+// the HOD from that posts-only count, matching My department.
+export type OrganisationCountFilter = { scope: DataScope; companyId?: number | undefined; postIds?: number[] | undefined; exceptId?: number | undefined }
+export function countOrganisation(filter: OrganisationCountFilter, db: DbClient = prisma) {
+  const posts = filter.postIds?.length ? { hodPostId: { in: filter.postIds } } : null
+  const coverage = !posts || filter.scope.slices === 'ALL' ? scopeWhere(filter.scope) : { OR: [scopeWhere(filter.scope), posts] }
+  return db.employee.groupBy({
+    by: ['companyId', 'plantId', 'departmentId', 'status', 'employmentType', 'workforceCategory', 'joiningType', 'gender', 'gradeId', 'designationId'],
+    where: {
+      AND: [
+        coverage,
+        { status: { in: ['ACTIVE', 'ON_NOTICE'] } },
+        ...(filter.companyId !== undefined ? [{ companyId: filter.companyId }] : []),
+        ...(filter.exceptId !== undefined ? [{ id: { not: filter.exceptId } }] : []),
+      ],
+    },
+    _count: { _all: true },
+  })
+}
+
+// Joining and leaving dates from `from` to `to` (both included), by place - whatever the status now, as the joiners &
+// leavers report counts them (current placement).
+// data access: as countOrganisation - the same required `scope`, the caller's own posts and `exceptId`.
+export async function countOrganisationMovements(filter: OrganisationCountFilter & { from: Date; to: Date }, db: DbClient = prisma) {
+  const posts = filter.postIds?.length ? { hodPostId: { in: filter.postIds } } : null
+  const coverage = !posts || filter.scope.slices === 'ALL' ? scopeWhere(filter.scope) : { OR: [scopeWhere(filter.scope), posts] }
+  const where = (date: Prisma.EmployeeWhereInput): Prisma.EmployeeWhereInput => ({
+    AND: [
+      coverage,
+      date,
+      ...(filter.companyId !== undefined ? [{ companyId: filter.companyId }] : []),
+      ...(filter.exceptId !== undefined ? [{ id: { not: filter.exceptId } }] : []),
+    ],
+  })
+  const by = ['companyId', 'plantId', 'departmentId'] as const
+  const [joined, left] = await Promise.all([
+    db.employee.groupBy({ by: [...by], where: where({ dateOfJoining: { gte: filter.from, lte: filter.to } }), _count: { _all: true } }),
+    db.employee.groupBy({ by: [...by], where: where({ dateOfLeaving: { gte: filter.from, lte: filter.to } }), _count: { _all: true } }),
+  ])
+  return { joined, left }
 }
 
 // Who reports to this employee now, by name

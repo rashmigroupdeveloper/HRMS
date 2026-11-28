@@ -44,11 +44,14 @@ export const listEmployeesInput = z
     workLocationIds: z.array(idSchema).max(100).optional(),
     departmentIds: z.array(idSchema).max(100).optional(),
     designationIds: z.array(idSchema).max(200).optional(),
+    gradeIds: z.array(idSchema).max(100).optional(),
     employmentTypes: z.array(z.enum(EmploymentType)).max(10).optional(),
     workforceCategories: z.array(z.enum(WorkforceCategory)).max(2).optional(),
+    joiningTypes: z.array(z.enum(JoiningType)).max(3).optional(),
     // only those who report to this employee
     reportingManagerCode: employeeCodeSchema.optional(),
-    status: z.enum(EmployeeStatus).optional(),
+    // WORKING = active and on notice (the people the organisation board counts)
+    status: z.union([z.enum(EmployeeStatus), z.literal('WORKING')]).optional(),
     // only those with PF / ESIC numbers still to record (HR's to-do after joining)
     numbersPending: z.boolean().optional(),
     // only those who joined on or after this date (e.g. this month's joiners)
@@ -602,6 +605,9 @@ export const directoryInput = z
 
 // The org chart around one employee (default: oneself)
 export const orgChartInput = z.object({ employeeCode: employeeCodeSchema.optional() }).optional()
+
+// Organisation board (2026-11-28): no company = the companies or departments this role covers; a company = its departments
+export const organisationBoardInput = z.object({ companyId: idSchema.optional() }).strict()
 
 // An employee's salary history (2026-11-20)
 export const salaryHistoryInput = z.object({ employeeCode: employeeCodeSchema })

@@ -448,6 +448,11 @@ export function countHeldPosts(employeeId: number) {
   return hodsRepository.countHeldAt(employeeId, new Date())
 }
 
+// The posts the employee heads now - the organisation board's department cards
+export function listHeldPostIds(employeeId: number) {
+  return hodsRepository.listPostIdsHeldAt(employeeId, new Date())
+}
+
 // The ids of the employees whose HOD the employee is now, whatever their status - attendance's "My department" view
 export async function listDepartmentIds(employeeId: number) {
   const postIds = await hodsRepository.listPostIdsHeldAt(employeeId, new Date())

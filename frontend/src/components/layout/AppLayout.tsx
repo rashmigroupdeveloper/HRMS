@@ -93,6 +93,7 @@ export function AppLayout() {
           { to: home, label: 'Home', end: true },
           // HR's employee records and joiners & leavers (the directory and org chart are self-service's People - 2026-11-25)
           ...(can('EMPLOYEES') ? [{ to: '/manage/employees', label: 'Employees' }] : []),
+          ...(can('EMPLOYEES') || can('PAYROLL') || (me.data?.hodPosts ?? 0) > 0 || me.data?.isSuperAdmin ? [{ to: '/manage/organisation-dashboard', label: 'Workforce', short: 'Workforce' }] : []),
           ...(can('ONBOARDING') ? [{ to: '/manage/onboarding', label: 'Onboarding' }] : []),
           // the role's records plus one's own team (the user, 2026-11-25)
           ...(can('ATTENDANCE') || team ? [{ to: '/manage/team-attendance', label: 'Attendance' }] : []),

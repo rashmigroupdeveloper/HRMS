@@ -181,7 +181,16 @@ Edit for every company), payroll runs (Payroll View, no amounts), joiners & leav
 has the same headline numbers as `/ess`, from the role's access. Who is in today is read once, on the attendance
 cycle under that header (Attendance setup's start day; on leave includes on duty, and absent stays separate). Below it,
 one regular tile grid, most urgent first: decisions waiting, a month over and not locked, open joining tasks, a pay
-month without a run; what needs nothing gets a check in the calm line; the role's pages complete the last row. Motion on the homes
+month without a run; what needs nothing gets a check in the calm line; the role's pages complete the last row.
+**Organisation (2026-11-28):** a role whose Payroll or Employee directory & job access covers a whole company (a Super
+Admin: every company) sees company cards on `/manage` and under Workforce (`/manage/organisation-dashboard`); opening a
+company lists its departments. An HOD without that access sees the departments they head (also on My department). It
+counts people working now by employment type, workforce, joining type, grade and designation - and gender, only where the role also has
+Employee · Personal details View for everyone in the row - an overview (a bar per row, split by one
+classification) or a table (every value a column, with totals) - and exports to Excel. With Employee directory & job
+View every count opens those people on Employee records ("Working now" status and the same filters). A company's
+departments can be grouped by plant, and every row shows joiners and leavers this month (opening the Joiners & leavers
+report). No salary figures. Motion on the homes
 only tells something (a changed number glows once, bars grow to their value, the "now" marker slides) and stops under
 reduced motion. The cream/charcoal/gold tiles follow Crextio's composition, in one grid of equal height.
 Business priorities come from main. Both reuse existing typed APIs, without schema changes, role-name
@@ -473,6 +482,7 @@ of them until it is reconciled.
 ## Master Control — private developer workspace (2026-11-28)
 
 The developer workspace at `/ess/master-control` or `/manage/master-control` shows a selectable service map,
+an Organisation tab (headcount by company and department, counts only, with an Excel export),
 open outcome numerals, proportional execution mix, selectable 24-hour execution rhythm, job search/result/time filters and paging, mail retry metadata, runtime/storage/migration
 observations and a redacted diagnostic copy/download. Automatic refresh can be paused. Unknown recovery status is
 shown explicitly; there is no simulated backup/heartbeat/delivery status and no web-based arbitrary job rerun.

@@ -3,6 +3,10 @@ import { Building2, CalendarCog, CircleAlert, FileText, Fingerprint, HandCoins, 
 import { type ReactNode, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
+import { OrganisationBoardSkeleton } from '@/components/skeletons/organisation/OrganisationBoardSkeleton'
+import { OrganisationBoard } from '@/pages/organisation/components/OrganisationBoard'
+import { breakdownsFor } from '@/pages/organisation/labels'
+import { movementLink, peopleLink } from '@/pages/organisation/people-link'
 import { CycleDeskSkeleton, HomeAttendanceSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
 import { ManageWorkspaceSkeleton } from '@/components/skeletons/home/ManageWorkspaceSkeleton'
 import { useAccess } from '@/hooks/useAccess'
@@ -44,6 +48,8 @@ export function ManageHomePage() {
   const joining = can('JOINING_TASKS') || can('ONBOARDING')
   const locks = coversGroup('ATTENDANCE_SETUP')
   const canPayroll = can('PAYROLL')
+  const maySeeOrg = can('EMPLOYEES') || canPayroll || (me?.hodPosts ?? 0) > 0 || !!me?.isSuperAdmin
+  const org = useQuery({ ...orpc.employees.organisationBoard.queryOptions({ input: {} }), enabled: ready && maySeeOrg })
   // the readers behind the numbers and the order - the same queries the tiles read (shared, so nothing loads twice)
   const toDecide = useQuery({ ...orpc.approvals.listToDecide.queryOptions(), enabled: ready })
   const raised = useQuery({ ...orpc.approvals.listMine.queryOptions(), enabled: ready })
@@ -131,6 +137,11 @@ export function ManageHomePage() {
       {can('ATTENDANCE') && overview.isPending && <CycleDeskSkeleton />}
       {can('ATTENDANCE') && hasPeople && o && <CycleDesk overview={o} date={date} />}
       <FormError error={overview.error} />
+      <FormError error={org.error} />
+      {maySeeOrg && org.isPending && <OrganisationBoardSkeleton light={can('ATTENDANCE')} people={can('EMPLOYEES')} breakdowns={breakdownsFor(can('EMPLOYEE_PERSONAL_DETAILS'))} kind={can('EMPLOYEES') || canPayroll || me?.isSuperAdmin ? 'companies' : 'departments'} />}
+      {org.data && org.data.level !== 'NONE' && (
+        <OrganisationBoard light={can('ATTENDANCE')} board={org.data} limit={5} peopleHref={can('EMPLOYEES') ? peopleLink(org.data.company) : undefined} movementHref={can('EMPLOYEES') ? movementLink(org.data.company, org.data.period) : undefined} moreHref="/manage/organisation-dashboard" companyHref={org.data.level === 'COMPANY' ? (id) => `/manage/organisation-dashboard?company=${id}` : undefined} />
+      )}
       {!ready ? <ManageWorkspaceSkeleton label="Loading your role's pages" /> : (
         <div className="grid min-w-0 grid-flow-row-dense gap-4 md:grid-cols-2 xl:grid-cols-4">
           {tiles.map((t) => <div key={t.key} className={cn('home-tile min-w-0', t.span === 2 && 'md:col-span-2')}>{t.node}</div>)}

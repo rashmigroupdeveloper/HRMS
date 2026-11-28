@@ -91,6 +91,19 @@ const makeScope = (slices: readonly Slice[] | 'ALL') => ({ slices }) as DataScop
 // Everything - ONLY for scripts, background jobs and system steps with no logged-in person (never from a request)
 export const SYSTEM_SCOPE: DataScope = makeScope('ALL')
 
+// One scope covering every record any of these scopes covers (a person read through more than one area, e.g. the
+// organisation board's Employee directory rows and its whole-company Payroll rows). An empty list covers nobody.
+export function combineScopes(scopes: readonly DataScope[]): DataScope {
+  const slices: Slice[] = []
+  for (const scope of scopes) {
+    if (scope.slices === 'ALL') return SYSTEM_SCOPE
+    slices.push(...scope.slices)
+  }
+  if (slices.some((slice) => sliceContains(slice, ALL_OF_GROUP))) return SYSTEM_SCOPE
+  const kept = slices.filter((slice, i) => !slices.some((other, j) => j !== i && sliceContains(other, slice) && (!sliceContains(slice, other) || j < i)))
+  return makeScope(kept.map(({ companyId, plantId, departmentId }) => ({ companyId, plantId, departmentId })))
+}
+
 // The records the viewer may see (READ) or change (WRITE) in an area
 export function scopeOf(viewer: ScopedViewer, area: AccessArea, level: AccessLevel = 'READ'): DataScope {
   if (viewer.isSuperAdmin) return SYSTEM_SCOPE

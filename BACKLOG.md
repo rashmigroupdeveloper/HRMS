@@ -344,6 +344,17 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   self-service home shows only direct reports - a `DIRECT` scope on the attendance and leave people filters. Then one
   regular tile grid (one tile height, packed four to a row, details completing the last row) with a calm line of checks
   for what needs nothing (the user: "irregular", then "too compact" - settled on 316px tiles); /manage the same grid.
+  **Organisation board (2026-11-28, the user):** company cards when the active role's Payroll or Employee directory & job
+  access covers a whole company (Super Admin: every company); opening a company shows its departments. An HOD without
+  that access sees the departments they head. Counts are people working now, classified by employment type, workforce
+  and joining type, as an overview or a full table, exported to Excel; each count opens those people on Employee records
+  (with directory access). A company's departments can be grouped by plant; every row shows joiners and leavers this
+  month (opening the Joiners & leavers report). Master Control shows the same board for every company, counts only. No
+  salary figures. Grade and designation splits too (2026-11-28, the user), and gender only where the role also has
+  Employee · Personal details View over everyone in the row (gender counts open nobody - Employee records has no gender
+  filter; Master Control has none of the three). Not yet: attrition rates and month-on-month trends (need agreed metric
+  definitions, item below). An HOD-only viewer's counts open nothing in the role portal (their people are on My
+  department in self-service).
 - **Still deferred:** broader HR workload trends, executive trends and device-health panels (they need the Kent
   machines' automatic feed, item 19); a team attendance dot grid over several days (needs a bounded multi-day board read, not the whole
   muster for an Attendance View scope).
@@ -1219,6 +1230,8 @@ See items 3, 15 and 18.
 **Reference:** `backend/src/modules/reports/`, `audit/`, `feedback/`; home/executive/report screens.
 **Needs:** scoped source data and agreed metrics/recipients; avoid counting the same capability twice.
 
+- **PRESENT (2026-11-28):** organisation headcount by company and department, classified by employment type, workforce
+  and joining type (`employees.organisationBoard`, Master Control counts for every company). Historical trends stay deferred.
 - **PRESENT (2026-11-24, selected by the user):** daily-work Home with decisions/request drill-down, own leave and
   attendance, recent requests, manager/HOD/Attendance View People today, scope selector and Reports & Excel links (item 16).
   Home separates employee, manager, HR joining-work/pre-joining and administration priorities using active capabilities.
