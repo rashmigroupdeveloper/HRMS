@@ -157,6 +157,7 @@ export async function currentWarnings(run: Run, db?: DbClient) {
 
 // Last month's net of each employee in the run of the month before (its worked-out people only)
 async function previousNetsOf(runId: number, db?: DbClient) {
+  await peopleService.assertClassifiedRun(runId, db)
   const [members, totals] = await Promise.all([checksRepository.listMembers(runId, db), calculationRepository.totalsByPerson(runId, db)])
   const nets = new Map<number, number>()
   for (const m of members) {

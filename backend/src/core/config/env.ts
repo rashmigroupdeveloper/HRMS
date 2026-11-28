@@ -9,6 +9,10 @@ if (existsSync('.env') && process.env.NODE_ENV !== 'test') process.loadEnvFile('
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(5200),
+  // The one account permitted to use Master Control. Unset = disabled; the account's current work email must also
+  // be core_developers@rashmigroup.com. Pinning the id prevents an editable email from granting this capability.
+  MASTER_CONTROL_ACCOUNT_ID: z.coerce.number().int().positive().optional(),
+  APP_RELEASE: z.string().trim().min(1).max(100).optional(),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   // Only for the automated tests (vitest.config.ts runs them with DATABASE_URL set to this) - never read by the app.
   // Its database name must end in _test: the tests add their own data to it on every run.

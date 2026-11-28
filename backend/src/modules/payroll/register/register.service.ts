@@ -38,7 +38,8 @@ export async function exportRegister(viewer: CurrentUser, { runId }: RegisterInp
     throw new ORPCError('FORBIDDEN', { message: 'The salary register shows salaries - it needs Salary View covering the whole company as well as Payroll' })
   }
   if (!run.computedAt) throw new ORPCError('BAD_REQUEST', { message: 'Work out the pay first - the register is made from it' })
-  const [people, lines, days] = await Promise.all([registerRepository.listPeople(run.id), payslipsRepository.listLines(run.id, undefined), peopleService.dayTotalsOf(run.id)])
+  const [people, rawLines, days] = await Promise.all([registerRepository.listPeople(run.id), payslipsRepository.listLines(run.id, undefined), peopleService.dayTotalsOf(run.id)])
+  const lines = peopleService.classifiedLines(rawLines)
   const person = await employeesService.lookupPeople(people.map((p) => p.employeeId))
 
   // the components worked out, earnings first, then deductions and what the company pays on top - each in the payslip's order

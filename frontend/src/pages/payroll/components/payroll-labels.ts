@@ -1,11 +1,14 @@
 // Texts shared by the payroll pages and their skeletons - change both together.
-export const PAYROLL_NOTE = 'Monthly runs per company. A run lists its people with the salary in force on each day, takes the month\'s inputs, and works out each person\'s pay: the paid and unpaid days from the locked attendance, what they earned, the deductions (PF, ESIC, professional tax, LWF, income tax) and the net; its warnings are acknowledged and it is sent for approval - once approved it is final. Payslips and payment follow in later stages.'
+export const PAYROLL_NOTE = 'Prepare, review and approve monthly pay, one company at a time.'
 export const PAYROLL_DESK_TITLE = 'This pay period'
+export const PAYROLL_STATE_LABELS = ['Final', 'In approval', 'Draft'] as const
 
 // The run page's header facts and tiles
 // 'Pay period': the attendance cycle of the pay month, captured on the run (26th to 25th with a start day of 26)
 export const RUN_FACT_LABELS = ['Pay period', 'People copied', 'Pay worked out'] as const
-export const RUN_TILE_LABELS = ['People', 'Without a salary', 'Inputs', 'With unpaid days', 'To check', 'Earned gross', 'Net pay'] as const
+export const RUN_OVERVIEW_METRICS = ['People', 'Monthly inputs', 'To check'] as const
+export const RUN_MONEY_LABELS = ['Earned gross', 'Deductions', 'Employer contributions'] as const
+export const RUN_PREPARATION_STEPS = ['People copied', 'Pay worked out', 'Approval'] as const
 export const RUN_TABS = [{ value: 'people', label: 'People' }, { value: 'inputs', label: 'Inputs' }, { value: 'checks', label: 'Checks' }] as const
 
 // Stage 5: where a run stands (backend PayrollRunStatus - change both together)

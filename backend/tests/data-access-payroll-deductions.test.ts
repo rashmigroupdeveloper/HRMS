@@ -4,6 +4,9 @@ import { attendanceService } from '#modules/attendance'
 import { employeesSchemas, employeesService } from '#modules/employees'
 import { companiesService, salaryComponentsService } from '#modules/organization'
 import { payrollService } from '#modules/payroll'
+import * as calculationRepository from '../src/modules/payroll/calculation/calculation.repository.js'
+import * as deductionsRepository from '../src/modules/payroll/deductions/deductions.repository.js'
+import * as registerService from '../src/modules/payroll/register/register.service.js'
 import * as calculationService from '../src/modules/payroll/calculation/calculation.service.js'
 import * as inputsService from '../src/modules/payroll/inputs/inputs.service.js'
 import * as peopleService from '../src/modules/payroll/people/people.service.js'
@@ -201,4 +204,45 @@ describe('Payroll stage 4: deductions and net pay', () => {
     // the settings are people's decisions: recorded
     expect(await prisma.auditLog.count({ where: { model: 'StatutoryRate' } })).toBeGreaterThan(0)
   })
+  it('captures all three classifications, including typed amounts and held earnings; later master edits do not reclassify them', async () => {
+    const personId = personOf.get(pf)!
+    const lines = await prisma.payrollRunLine.findMany({ where: { payrollRunEmployeeId: personId } })
+    expect(lines.find((l) => l.salaryComponentId === basic)).toMatchObject({ kind: 'EARNING', statutoryRole: null, stateCode: 'ZD' })
+    expect(lines.find((l) => l.salaryComponentId === roles.get('PF_EMPLOYEE'))).toMatchObject({ kind: 'DEDUCTION', statutoryRole: 'PF_EMPLOYEE', stateCode: 'ZD' })
+    expect(lines.find((l) => l.salaryComponentId === roles.get('EPS'))).toMatchObject({ kind: 'EMPLOYER_CONTRIBUTION', statutoryRole: 'EPS', stateCode: 'ZD' })
+    expect(await prisma.payrollRunLine.findFirst({ where: { payrollRunEmployeeId: personOf.get(oldRegime), statutoryRole: 'INCOME_TAX' } })).toMatchObject({ kind: 'DEDUCTION', stateCode: 'ZD' })
+    expect(await prisma.payrollRunLine.findFirst({ where: { payrollRunEmployeeId: personOf.get(noPlace) } })).toMatchObject({ kind: 'EARNING', stateCode: null })
+    const location = await prisma.employeeJobRecord.findFirstOrThrow({ where: { employeeId: pf }, select: { workLocationId: true } })
+    try {
+      await salaryComponentsService.updateSalaryComponent({ id: basic, kind: 'EMPLOYER_CONTRIBUTION' }, SYSTEM_ACTOR)
+      await salaryComponentsService.updateSalaryComponent({ id: roles.get('PF_EMPLOYEE')!, statutoryRole: null }, SYSTEM_ACTOR)
+      await prisma.workLocation.update({ where: { id: location.workLocationId! }, data: { stateCode: 'ZX' } })
+      expect((await person(pf)).pay).toMatchObject({ earnedGross: 20000, deductions: 1410, netPay: 18590 })
+      expect((await person(pf)).pay!.lines!.find((l) => l.component.id === roles.get('PF_EMPLOYEE'))).toMatchObject({ component: { statutoryRole: 'PF_EMPLOYEE' }, stateCode: 'ZD' })
+      expect(await calculationRepository.peopleWithRole(runA, 'PF_EMPLOYEE')).toContain(personId)
+      const earlier = await deductionsRepository.listEarlierTaxLines([pf], new Date(Date.UTC(2097, 3, 1)), new Date(Date.UTC(2098, 3, 1)), -1, false)
+      expect(earlier.find((l) => l.amount === 1000)).toMatchObject({ kind: 'DEDUCTION', statutoryRole: 'PF_EMPLOYEE' })
+      expect(earlier.find((l) => l.amount === 15000)).toMatchObject({ kind: 'EARNING' })
+    } finally {
+      await salaryComponentsService.updateSalaryComponent({ id: basic, kind: 'EARNING' }, SYSTEM_ACTOR)
+      await salaryComponentsService.updateSalaryComponent({ id: roles.get('PF_EMPLOYEE')!, statutoryRole: 'PF_EMPLOYEE' }, SYSTEM_ACTOR)
+      await prisma.workLocation.update({ where: { id: location.workLocationId! }, data: { stateCode: 'ZD' } })
+    }
+  })
+
+  it('leaves historical classifications unknown, refuses inferred outputs after checking scope, and lets a draft recalculate', async () => {
+    const line = await prisma.payrollRunLine.findFirstOrThrow({ where: { payrollRunEmployeeId: personOf.get(pf), salaryComponentId: basic } })
+    await prisma.payrollRunLine.update({ where: { id: line.id }, data: { kind: null, statutoryRole: null, stateCode: null } })
+    const run = await payrollService.getRun(salaryViewer(), { id: runA })
+    expect(run).toMatchObject({ classificationsVerified: false, netPay: null, canSend: false })
+    expect(run.classificationNotice).toContain('unverified')
+    await expect(peopleService.listPeople(payroll(b), { runId: runA, page: 1, pageSize: 50 })).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(person(pf)).rejects.toMatchObject({ code: 'CONFLICT' })
+    await expect(registerService.exportRegister(salaryViewer(), { runId: runA })).rejects.toMatchObject({ code: 'CONFLICT' })
+    expect((await prisma.payrollRunLine.findUniqueOrThrow({ where: { id: line.id } })).kind).toBeNull()
+    locked()
+    await workOut()
+    expect(await payrollService.getRun(salaryViewer(), { id: runA })).toMatchObject({ classificationsVerified: true, classificationNotice: null })
+  })
+
 })

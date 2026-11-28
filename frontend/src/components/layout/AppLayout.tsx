@@ -104,7 +104,7 @@ export function AppLayout() {
   // the set-up pages - under "More" on wide screens
   const moreItems: NavItem[] =
     portal === 'ess'
-      ? [...(team ? [{ to: '/ess/attendance-reports', label: 'Attendance reports', short: 'Reports' }] : [])]
+      ? [...(team ? [{ to: '/ess/attendance-reports', label: 'Attendance reports', short: 'Reports' }] : []), ...(me.data?.canMasterControl ? [{ to: '/ess/master-control', label: 'Master Control' }] : [])]
       : [
           ...(can('ATTENDANCE') || team ? [{ to: '/manage/attendance-reports', label: 'Attendance reports', short: 'Reports' }] : []),
           // the tasks given to me (Joining tasks), or all of them (Onboarding)
@@ -118,6 +118,7 @@ export function AppLayout() {
           ...(can('ATTENDANCE_SETUP') ? [{ to: '/manage/attendance-setup', label: 'Attendance setup', short: 'Setup' }] : []),
           ...(can('APPROVAL_CHAINS') ? [{ to: '/manage/approval-chains', label: 'Approval rules' }] : []),
           ...(can('CHANGE_HISTORY') ? [{ to: '/manage/change-history', label: 'History' }] : []),
+          ...(me.data?.canMasterControl ? [{ to: '/manage/master-control', label: 'Master Control' }] : []),
         ]
   // a single set-up page needs no menu
   const pillItems = moreItems.length === 1 ? [...mainItems, ...moreItems] : mainItems

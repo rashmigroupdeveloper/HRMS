@@ -4,7 +4,7 @@ import { prisma, createdBy, updatedBy, type ActorId, type DbClient } from '#core
 // through a run the service has found with whole-company Payroll scope - or, for the background job, a released run.
 
 // a person with pay worked out has at least one earning line
-const workedOut = { lines: { some: { salaryComponent: { kind: 'EARNING' as const } } } }
+const workedOut = { lines: { some: { OR: [{ kind: 'EARNING' as const }, { kind: null }] } } }
 
 // What a payslip needs from the run's own copy, for each person (or only those asked for): their code in the run, and the
 // stretch at the period's end - its department, plant, work location and the monthly amount of each salary component
@@ -37,9 +37,9 @@ export async function listLines(payrollRunId: number, personIds: number[] | unde
   const rows = await db.payrollRunLine.findMany({
     where: { runEmployee: { payrollRunId, ...(personIds && { id: { in: personIds } }) } },
     orderBy: [{ salaryComponent: { displayOrder: 'asc' } }, { salaryComponent: { name: 'asc' } }],
-    select: { payrollRunEmployeeId: true, amount: true, salaryComponent: { select: { id: true, name: true, kind: true } } },
+    select: { payrollRunEmployeeId: true, amount: true, kind: true, salaryComponent: { select: { id: true, name: true } } },
   })
-  return rows.map((r) => ({ personId: r.payrollRunEmployeeId, amount: r.amount.toNumber(), component: r.salaryComponent }))
+  return rows.map((r) => ({ personId: r.payrollRunEmployeeId, amount: r.amount.toNumber(), component: { ...r.salaryComponent, kind: r.kind } }))
 }
 
 // Releases the run's payslips with this template - only a final run not released yet: false when someone released it a

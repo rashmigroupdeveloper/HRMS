@@ -206,4 +206,18 @@ describe('Payroll stage 6: register and payslips', () => {
     expect(stored.storageKey).toMatch(new RegExp(`^employees/${newCode}/PAYSLIP-2102-03/`))
     expect(await pdfBytes(await payslipsService.downloadMine(self(e1, e1Code), { id: stored.id }))).toBe('%PDF-')
   })
+  it('historical missing classifications refuse new renders but never invalidate an already stored payslip', async () => {
+    const line = await prisma.payrollRunLine.findFirstOrThrow({ where: { payrollRunEmployeeId: p1, kind: 'EARNING' } })
+    try {
+      await prisma.payrollRunLine.update({ where: { id: line.id }, data: { kind: null } })
+      expect(await payrollService.getRun(payroll(a, 'READ'), { id: runA })).toMatchObject({ status: 'FINALISED', classificationsVerified: false })
+      await expect(registerService.exportRegister(payroll(a, 'READ'), { runId: runA })).rejects.toMatchObject({ code: 'CONFLICT' })
+      await expect(payslipsService.payslipsOf({ id: runA, companyId: a, payMonth, attendanceFrom: from, attendanceTo: to }, [p1])).rejects.toMatchObject({ code: 'CONFLICT' })
+      const mine = (await payslipsService.listMine(self(e1, e1Code)))[0]!
+      expect(await pdfBytes(await payslipsService.downloadMine(self(e1, e1Code), { id: mine.id! }))).toBe('%PDF-')
+    } finally {
+      await prisma.payrollRunLine.update({ where: { id: line.id }, data: { kind: line.kind } })
+    }
+  })
+
 })

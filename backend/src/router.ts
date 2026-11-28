@@ -1,3 +1,4 @@
+import { masterControlsRouter } from '#modules/master-controls'
 import { dailyMovementReportsRouter } from '#modules/daily-movement-reports'
 import { payrollRouter } from '#modules/payroll'
 import { accountsRouter } from '#modules/accounts'
@@ -17,6 +18,7 @@ import { organizationRouter } from '#modules/organization'
 // The whole API. Every module's router is added here.
 // The frontend imports the *type* of this object, so it always knows every input and output.
 export const router = {
+  masterControl: masterControlsRouter,
   health: healthRouter,
   accounts: accountsRouter,
   payroll: payrollRouter,

@@ -39,7 +39,7 @@ export function deleteAcksOf(payrollRunEmployeeIds: number[], db: DbClient) {
 export async function pfWagesByPerson(payrollRunId: number, db: DbClient = prisma) {
   const groups = await db.payrollRunLine.groupBy({
     by: ['payrollRunEmployeeId'],
-    where: { runEmployee: { payrollRunId }, salaryComponent: { kind: 'EARNING', pfWage: true } },
+    where: { runEmployee: { payrollRunId }, kind: 'EARNING', salaryComponent: { pfWage: true } },
     _sum: { amount: true },
   })
   return new Map(groups.map((g) => [g.payrollRunEmployeeId, g._sum.amount?.toNumber() ?? 0]))

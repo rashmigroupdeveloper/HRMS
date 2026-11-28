@@ -11,12 +11,13 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
-import { formatDate, formatDateTime, formatDoneBy, formatMoney } from '@/lib/utils'
+import { formatDate, formatDateTime, formatDoneBy } from '@/lib/utils'
+import { RunOverview } from './components/RunOverview'
 import { RunChecks } from './components/RunChecks'
 import { RunInputs } from './components/RunInputs'
 import { RunPeople } from './components/RunPeople'
 import { PayslipsLine, RegisterButton } from './components/RunPayslips'
-import { COMPUTE_LABEL, FINAL_NOTE, NOT_LOCKED_NOTE, NO_PF_NOTE, OUTDATED_NOTE, PAY_RULE_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_STATUS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, SEND_LABEL, SEND_NOTE, monthLabel } from './components/payroll-labels'
+import { COMPUTE_LABEL, FINAL_NOTE, NOT_LOCKED_NOTE, NO_PF_NOTE, OUTDATED_NOTE, PAY_RULE_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_STATUS, RUN_TABS, SALARY_HIDDEN_NOTE, SEND_LABEL, SEND_NOTE, monthLabel } from './components/payroll-labels'
 
 // One pay run: its people with the salary in force on each day of the pay period (a copy, refreshed from the employee
 // records while it is a draft), the month's inputs (stage 2), and "Work out pay" (stage 3): each person's paid and unpaid
@@ -51,15 +52,10 @@ export function PayrollRunPage() {
   const withdraw = useMutation({ ...orpc.approvals.cancel.mutationOptions(), onSuccess: () => setWithdrawing(false), onSettled: () => { reload(); void queryClient.invalidateQueries({ queryKey: orpc.approvals.key() }) } })
   const r = run.data
   const facts = r ? [`${formatDate(r.payFrom)} – ${formatDate(r.payTo)}`, formatDoneBy(r.peopleRefreshedAt, r.peopleRefreshedBy), r.computedAt ? formatDoneBy(r.computedAt, r.computedBy) : 'Not yet'] : []
-  const gross = r ? (r.salaryHidden ? 'Hidden' : r.earnedGross === null ? '—' : formatMoney(r.earnedGross, 'INR')) : ''
-  const net = r ? (r.salaryHidden ? 'Hidden' : r.netPay === null ? '—' : formatMoney(r.netPay, 'INR')) : ''
-  const tiles = r ? [r.people, r.peopleWithoutSalary, r.inputs, r.peopleWithUnpaidDays ?? '—', r.peopleToCheck ?? '—', gross, net] : []
-  // which tiles turn amber when they are not zero: people without a salary, people to check
-  const warns = [false, true, false, false, true, false, false]
   const notWorkedOut = r ? (r.peopleHeld ?? 0) + (r.peopleToWorkOutAgain ?? 0) : 0
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Link to="/manage/payroll" className="inline-flex min-h-9 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden />Payroll runs
       </Link>
@@ -67,16 +63,16 @@ export function PayrollRunPage() {
       <FormError error={run.error} />
       {valid && run.isPending && <PayrollRunHeaderSkeleton actions={ready && can('PAYROLL', 'WRITE')} />}
       {r && (
-        <header className="space-y-3">
+        <header className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-light tracking-tight">{monthLabel(r.payMonth)} · {r.company.code}</h1>
+              <h1 className="text-[28px] font-light tracking-[-0.03em] sm:text-[40px]">{monthLabel(r.payMonth)} · {r.company.code}</h1>
               <Pill tone={r.status === 'FINALISED' ? 'positive' : r.status === 'IN_APPROVAL' ? 'gold' : 'neutral'}>{RUN_STATUS[r.status]}</Pill>
             </div>
             <div className="flex flex-wrap items-start gap-2">
               {r.canChange && (
                 <>
-                  <Button className="min-h-9 gap-1.5 rounded-full" disabled={!r.attendanceLocked || compute.isPending} onClick={() => compute.mutate({ runId: id, expectedComputedAt: r.computedAt })}>
+                  <Button variant="gold" className="min-h-10 gap-1.5 rounded-full" disabled={!r.attendanceLocked || compute.isPending} onClick={() => compute.mutate({ runId: id, expectedComputedAt: r.computedAt })}>
                     <CalendarCheck className="size-4" aria-hidden />{compute.isPending ? 'Working out…' : COMPUTE_LABEL}
                   </Button>
                   <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" disabled={!r.canSend} title={r.blockers.join(' · ') || undefined} onClick={() => setSending(true)}>
@@ -93,27 +89,13 @@ export function PayrollRunPage() {
                 </Button>
               )}
               {/* stage 6: the register - once the pay is worked out, for those who see the salaries */}
-              {r.computedAt && !r.salaryHidden && <RegisterButton runId={id} final={r.status === 'FINALISED'} />}
+              {r.computedAt && r.classificationsVerified && !r.salaryHidden && <RegisterButton runId={id} final={r.status === 'FINALISED'} />}
             </div>
           </div>
           <p className="text-sm text-muted-foreground">{r.company.name}</p>
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
-            {RUN_FACT_LABELS.map((label, i) => (
-              <div key={label} className="min-w-0">
-                <dt className="text-xs text-muted-foreground">{label}</dt>
-                <dd className="break-words tabular-nums">{facts[i]}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-            {RUN_TILE_LABELS.map((label, i) => (
-              // (the net pay, last, takes the whole row on a phone - two tiles a row leave it alone)
-              <div key={label} className={`min-w-0 rounded-2xl bg-card px-3 py-2 shadow-card ${i === RUN_TILE_LABELS.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className={`truncate text-lg font-medium tabular-nums ${warns[i] && typeof tiles[i] === 'number' && tiles[i] > 0 ? 'text-warning-ink' : ''} ${tiles[i] === 'Hidden' ? 'text-sm font-normal text-muted-foreground' : ''}`}>{tiles[i]}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-muted-foreground">Pay period <span className="ml-2 font-medium tabular-nums text-foreground">{facts[0]}</span></p>
+          {r.classificationNotice && <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-sm text-warning-ink">{r.classificationNotice}</p>}
+          <RunOverview run={r} />
           {r.approval && (
             <p role="status" className={`rounded-xl px-3 py-2 text-xs ${r.status === 'FINALISED' ? 'bg-positive/10 text-positive-ink' : r.approval.held ? 'bg-warning/10 text-warning-ink' : 'bg-surface-2/60'}`}>
               {r.status === 'FINALISED'
@@ -124,7 +106,7 @@ export function PayrollRunPage() {
               <Link to={`/manage/approvals?request=${r.approval.requestId}`} className="underline underline-offset-4">Open the approval</Link>
             </p>
           )}
-          {r.payslips && <PayslipsLine runId={id} payslips={r.payslips} />}
+          {r.classificationsVerified && r.payslips && <PayslipsLine runId={id} payslips={r.payslips} />}
           {/* stage 6 slice 2: how far its payment has got (for those with Payroll payments over the company) */}
           {r.payments && (
             <p role="status" className="rounded-xl bg-surface-2/60 px-3 py-2 text-xs">
@@ -141,8 +123,21 @@ export function PayrollRunPage() {
             </p>
           )}
           {!!r.peopleWithoutPf && <p className="text-xs text-muted-foreground">{r.peopleWithoutPf} {r.peopleWithoutPf === 1 ? 'person' : 'people'} {NO_PF_NOTE}</p>}
-          {r.computedAt && <p className="text-xs text-muted-foreground">{PAY_RULE_NOTE}</p>}
-          {r.salaryHidden && <p className="text-xs text-muted-foreground">{SALARY_HIDDEN_NOTE}</p>}
+          <details className="rounded-2xl bg-card/60 px-4 py-3 text-sm">
+            <summary className="cursor-pointer text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">Run details</summary>
+            <div className="mt-3 space-y-3">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+            {RUN_FACT_LABELS.map((label, i) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-xs text-muted-foreground">{label}</dt>
+                <dd className="break-words tabular-nums">{facts[i]}</dd>
+              </div>
+            ))}
+          </dl>
+              {r.computedAt && <p className="text-xs text-muted-foreground">{PAY_RULE_NOTE}</p>}
+              {r.salaryHidden && <p className="text-xs text-muted-foreground">{SALARY_HIDDEN_NOTE}</p>}
+            </div>
+          </details>
         </header>
       )}
       <FormError error={compute.error} />
@@ -151,7 +146,7 @@ export function PayrollRunPage() {
           <PillTabsList aria-label="Payroll run sections">
             {RUN_TABS.map((t) => <PillTabsTrigger key={t.value} value={t.value}>{t.label}</PillTabsTrigger>)}
           </PillTabsList>
-          <TabsContent value="people" className="mt-3"><RunPeople runId={id} canChange={r ? r.canChange : ready && can('PAYROLL', 'WRITE')} /></TabsContent>
+          <TabsContent value="people" className="mt-3">{r?.classificationsVerified !== false && <RunPeople runId={id} canChange={r ? r.canChange : ready && can('PAYROLL', 'WRITE')} />}</TabsContent>
           <TabsContent value="inputs" className="mt-3"><RunInputs runId={id} canChange={r ? r.canChange : ready && can('PAYROLL', 'WRITE')} /></TabsContent>
           <TabsContent value="checks" className="mt-3"><RunChecks runId={id} mayChange={r ? r.canChange : ready && can('PAYROLL', 'WRITE')} /></TabsContent>
         </Tabs>

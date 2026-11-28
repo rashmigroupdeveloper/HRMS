@@ -948,6 +948,14 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
   the whole company; the e-mail carries a link, never the PDF; the leave table is on the payslip; the register can be
   downloaded as a DRAFT.
   **Still open:**
+  - **Foundation built 2026-11-28 (three fields approved):** `PayrollRunLine.kind / statutoryRole / stateCode`
+    are captured on calculation. Classified totals, membership, registers, new payslips/payment amounts use the saved
+    kind/role; State is retained for the upcoming statutory grouping. Pre-snapshot lines remain unknown: header notice,
+    classified outputs refused, drafts can recalculate, finalised rows never backfilled from today's masters. Stored
+    payslips/existing payments stay readable. A separately reviewed historical reconciliation is still needed for old
+    finalised lines, including their use in later TDS / previous-net comparisons; no historical writer is approved.
+    Only these three fields are frozen: taxable/PF-wage flags, component labels and employer registrations remain live
+    and need their own purpose/design before more historical snapshots are proposed.
   - [ ] Slice 3 - statutory figures and deposits: PF / ESIC / PT / LWF totals per company and month, challan references
     and dates, a due-date calendar - propose first.
   - [ ] Waiting for finance's real sample files (never a layout from memory): the bank's salary upload and result file,
@@ -1327,3 +1335,26 @@ isolation, stale/replayed/concurrent requests, invalid rows/files, true Excel sc
 - **Needs first:** token sign-in for the app (the httpOnly SameSite=Strict session cookie does not reach a bundled app or
   a widget), CORS for the app's origin, the user's approval of the new libraries, and an App Store / Play plan (Apple 4.2:
   more than a repackaged website).
+
+
+### 34. Master Control — exclusive developer operations workspace (2026-11-28)
+
+**Selected by the user:** advanced, useful and visually distinctive master controls available only to
+`core_developers@rashmigroup.com`, linked to employee `RML033903`.
+
+- **Built, first slice:** owner-only read-only operational console in both portals, selectable service map, exact
+  24-hour job counts/hourly rhythm, searchable/paged job runs with fixed safe failure advice, private mail retry
+  metadata, API runtime, storage permission/capacity and migration-record diagnostics; pause/refresh and redacted
+  diagnostic copy/download. Existing role/session/history/setup tools are linked only with ordinary active-role access.
+  No models, migrations or libraries added. Reuses JobRun and MailRetry; neither is a delivery receipt or backup record.
+- **Access:** pin `MASTER_CONTROL_ACCOUNT_ID` to the existing user account id AND verify its current exact work email.
+  No role grants it. Local activation waits because the current development database has neither the identified
+  employee/former code nor email. Do not provision a fictitious employee; needs the real account in its owning environment.
+- **Remaining release work (reuse item 31 Delivery):** real database + stored-file backups, separate recoverable encryption
+  key custody, demonstrated restore, release/migration-set comparison and deployment/worker supervision. The console
+  reports recovery as unconnected, never healthy. Needs the chosen hosting topology and real evidence sources.
+- **Later slices, not implemented:** dedicated worker heartbeat and schedule/overdue-job inventory; durable incident
+  alerts/acknowledgement, correlated error/log investigation, safe workflow-specific retries/regeneration, maintenance
+  controls, permission diagnostics, sensitive-read auditing and integration health/replay. Need each owning contract,
+  approved fields/models where required, scope/security decisions and idempotent recovery. Arbitrary "run any job",
+  raw database/secret editors and approval bypasses are not part of the console. Keep existing business permission gates.

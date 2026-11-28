@@ -6,7 +6,7 @@ import { prisma, createdBy, updatedBy, type ActorId, type DbClient, type Payment
 // one company); the rows hanging on them are reached only through them.
 
 // a person with pay worked out has at least one earning line
-const workedOut = { lines: { some: { salaryComponent: { kind: 'EARNING' as const } } } }
+const workedOut = { lines: { some: { OR: [{ kind: 'EARNING' as const }, { kind: null }] } } }
 // a payment that pays (or is about to pay) the person: a second one would pay them twice
 const ACTIVE = ['IN_BATCH', 'PAID'] as const
 
@@ -40,7 +40,7 @@ export function listUnpaid(scope: DataScope, filter: { companyId?: number | unde
 export async function netsOf(personIds: number[], db: DbClient = prisma) {
   if (!personIds.length) return new Map<number, number>()
   const sum = (kind: 'EARNING' | 'DEDUCTION') =>
-    db.payrollRunLine.groupBy({ by: ['payrollRunEmployeeId'], where: { payrollRunEmployeeId: { in: personIds }, salaryComponent: { kind } }, _sum: { amount: true } })
+    db.payrollRunLine.groupBy({ by: ['payrollRunEmployeeId'], where: { payrollRunEmployeeId: { in: personIds }, kind }, _sum: { amount: true } })
   const [earned, deducted] = await Promise.all([sum('EARNING'), sum('DEDUCTION')])
   const paise = new Map<number, number>()
   for (const g of earned) paise.set(g.payrollRunEmployeeId, Math.round((g._sum.amount?.toNumber() ?? 0) * 100))

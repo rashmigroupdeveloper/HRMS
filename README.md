@@ -442,3 +442,49 @@ statutory files follow the staged plan in BACKLOG.md, with each new model/field 
 migration. Apply the migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3:
 `payroll_stage3_days`, `payroll_stage3_amounts`; stage 4: `payroll_stage4_deductions`; stage 5: `payroll_stage5_approval`;
 stage 6: `payroll_stage6_payslips`, `payroll_stage6_payments`).
+
+### Payroll classification snapshots (2026-11-28)
+
+Apply `payroll_line_classifications` with `npm run db:migrate`. Each calculation now saves the result line's kind,
+statutory role and State alongside its amount. Later edits to a salary component's classification or a location's
+State do not reclassify those lines in totals, registers, new payslip renders or salary payment amounts.
+
+Existing lines are left unknown, without backfill. Their run opens with an unverified notice and no classified totals;
+recalculate a draft using **Work out pay**. Approved runs stay unchanged and need a separately agreed historical
+reconciliation before producing classified outputs or new payments. Old stored payslips and existing payment records
+remain available. Earlier-run tax inputs/previous-net comparisons also refuse unknown classifications. This migration
+covers only the three approved fields: component names, taxability/PF-wage flags and registrations are not snapshots.
+Statutory totals, due dates and deposits are the next payroll slice; this foundation does not implement them.
+
+
+## Master Control — private developer workspace (2026-11-28)
+
+The developer workspace at `/ess/master-control` or `/manage/master-control` shows a selectable service map,
+24-hour execution rhythm, job search/result/time filters and paging, mail retry metadata, runtime/storage/migration
+observations and a redacted diagnostic copy/download. Automatic refresh can be paused. Unknown recovery status is
+shown explicitly; there is no simulated backup/heartbeat/delivery status and no web-based arbitrary job rerun.
+
+Access belongs only to the existing account for `core_developers@rashmigroup.com`; the user identified its employee
+as `RML033903`. Set `MASTER_CONTROL_ACCOUNT_ID` in the backend environment to that employee's **user account id**,
+not employee id. Verify the employee's current work email, enabled login and ACTIVE/ON_NOTICE status first; the backend
+checks all of these every request. Restart API processes after changing environment configuration. With no pin it is
+disabled for everyone. Role grants, including Super Admin, cannot grant it; changing someone else's email does not
+transfer the pinned identity. It works in either portal and grants no HR access. `accounts.me.canMasterControl`
+controls menu visibility; direct API requests are independently protected. Optional `APP_RELEASE` supplies the actual
+release/commit label; without it the UI says "Not supplied".
+
+Local activation was not performed: neither that employee code (including former codes) nor work email exists in the
+current development database. Do not invent an employee or reset credentials to activate this screen. Map the real
+account in the environment where it exists, or establish the employee/login through the normal approved process.
+
+Observations are deliberately precise: a recent mail-retry job is worker-activity evidence, SMTP is only configuration,
+storage checks permissions/free space, and applied migration counts do not prove release alignment. A failed background
+refresh labels the retained snapshot as stale. Recipients, mail bodies/subjects, raw errors, paths and credentials are
+excluded. Business administration shortcuts retain the active role's ordinary access checks.
+
+The payroll overview shows the latest month's on-page company/headcount totals, captured pay-period dates and a
+segmented Final / In approval / Draft distribution. These are the returned page's figures, not group-wide totals.
+The run page groups net/gross/deductions/employer contributions with its recorded preparation steps; **Run details**
+expands audit timestamps and the calculation notes. The progress link opens Checks. The visual refinement uses the
+Crextio reference's open numerals, warm surfaces, charcoal focus and round navigation, with no reference photographs
+or invented performance figures. Desktop and phone loading layouts share the real labels and structure.

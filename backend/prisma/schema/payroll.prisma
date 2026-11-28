@@ -3,7 +3,7 @@
 // pay does not depend on the candidate record. Revisions (an increment, a promotion's hike, a correction) are asked as
 // job changes and approved (job-changes.prisma, 2026-11-20); each approved one is a row from its day - the salary
 // history. Pay runs (2026-11-26) take inputs and work out the days, earnings, deductions and net pay (stages 2-4,
-// 2026-11-27); approval, payslips and payment follow in later stages.
+// 2026-11-27); approval, payslips and salary payments are built (stages 5-6, 2026-11-28).
 
 // An employee's salary from a date on: the annual fixed CTC, the performance pay and the monthly breakup (lines).
 // The first one is the offer's (offer letter Annexure-I), effective from the date of joining.
@@ -341,6 +341,14 @@ model PayrollRunLine {
   id                   Int      @id @default(autoincrement())
   payrollRunEmployeeId Int      @map("payroll_run_employee_id")
   salaryComponentId    Int      @map("salary_component_id")
+  // Statutory reporting foundation (approved 2026-11-28): classification copied when pay is worked out.
+  // Null kind marks a line made before these snapshots; never infer its history from today's component or location.
+  // A draft captures them on recalculation; an approved run is never backfilled or changed.
+  kind                 SalaryComponentKind?
+  statutoryRole        StatutoryRole? @map("statutory_role")
+  // The State used by deductions: the work location at the pay period's end, copied even if the location later changes.
+  // Null is valid when no State was available (e.g. earnings retained for someone held for missing location).
+  stateCode            String? @map("state_code") @db.Char(2)
   // to the paisa: a worked-out line is rounded to the rupee, an input keeps what was typed
   amount               Decimal  @db.Decimal(12, 2)
   // what a deduction or employer contribution was worked out on (stage 4, approved 2026-11-27): the PF / EPS / EDLI

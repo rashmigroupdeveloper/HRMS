@@ -4,9 +4,9 @@ import { prisma, createdBy, updatedBy, type ActorId, type DbClient, type PayHold
 // a person of the run: the service has already found the run with whole-company Payroll scope, so these rows are reached
 // only through it.
 
-export type LineRow = { payrollRunEmployeeId: number; salaryComponentId: number; amount: number; base: number | null }
+export type LineRow = { payrollRunEmployeeId: number; salaryComponentId: number; amount: number; base: number | null; kind: SalaryComponentKind; statutoryRole: StatutoryRole | null; stateCode: string | null }
 
-// a line is about half a dozen values - well under the database's limit of 65,535 values in one statement
+// a line is nine supplied values - well under the database's limit of 65,535 values in one statement
 const BATCH = 5000
 
 // What each person's pay is worked out from: the stretches of the salary copy (each line with its component's kind and
@@ -80,7 +80,7 @@ export async function replaceLines(payrollRunId: number, rows: LineRow[], actorI
 // data access: rows of one run the service found with whole-company Payroll scope
 export async function totalsByPerson(payrollRunId: number, db: DbClient = prisma) {
   const sum = (kind: SalaryComponentKind) =>
-    db.payrollRunLine.groupBy({ by: ['payrollRunEmployeeId'], where: { runEmployee: { payrollRunId }, salaryComponent: { kind } }, _count: { _all: true }, _sum: { amount: true } })
+    db.payrollRunLine.groupBy({ by: ['payrollRunEmployeeId'], where: { runEmployee: { payrollRunId }, kind }, _count: { _all: true }, _sum: { amount: true } })
   const [earned, deducted, employer] = await Promise.all([sum('EARNING'), sum('DEDUCTION'), sum('EMPLOYER_CONTRIBUTION')])
   const totals = new Map<number, { lines: number; earned: number; deducted: number; employer: number }>()
   const of = (id: number) => totals.get(id) ?? (totals.set(id, { lines: 0, earned: 0, deducted: 0, employer: 0 }).get(id)!)
@@ -93,7 +93,7 @@ export async function totalsByPerson(payrollRunId: number, db: DbClient = prisma
 // The people of the run with a line of the component carrying this statutory role (e.g. who has PF)
 // data access: rows of one run the service found with whole-company Payroll scope
 export async function peopleWithRole(payrollRunId: number, role: StatutoryRole, db: DbClient = prisma) {
-  const rows = await db.payrollRunLine.findMany({ where: { runEmployee: { payrollRunId }, salaryComponent: { statutoryRole: role } }, select: { payrollRunEmployeeId: true } })
+  const rows = await db.payrollRunLine.findMany({ where: { runEmployee: { payrollRunId }, statutoryRole: role }, select: { payrollRunEmployeeId: true } })
   return new Set(rows.map((r) => r.payrollRunEmployeeId))
 }
 
@@ -102,7 +102,16 @@ export async function listPersonLines(payrollRunEmployeeId: number, db: DbClient
   const rows = await db.payrollRunLine.findMany({
     where: { payrollRunEmployeeId },
     orderBy: [{ salaryComponent: { displayOrder: 'asc' } }, { salaryComponent: { name: 'asc' } }],
-    select: { amount: true, base: true, salaryComponent: { select: { id: true, name: true, code: true, kind: true, enteredMonthly: true, cutForUnpaidDays: true, statutoryRole: true } } },
+    select: { amount: true, base: true, kind: true, statutoryRole: true, stateCode: true, salaryComponent: { select: { id: true, name: true, code: true, enteredMonthly: true, cutForUnpaidDays: true } } },
   })
-  return rows.map((r) => ({ component: r.salaryComponent, amount: r.amount.toNumber(), base: r.base?.toNumber() ?? null }))
+  return rows.map((r) => ({ component: { ...r.salaryComponent, kind: r.kind, statutoryRole: r.statutoryRole }, stateCode: r.stateCode, amount: r.amount.toNumber(), base: r.base?.toNumber() ?? null }))
+}
+
+// data access: one run or explicit people already checked by its Payroll / Payroll payments service; the background job
+// checks only a released run. Returns presence only, never reads other companies to a viewer.
+export async function hasUnclassifiedLines(filter: { runId: number } | { personIds: number[] }, db: DbClient = prisma) {
+  return (await db.payrollRunLine.findFirst({
+    where: { kind: null, ...('runId' in filter ? { runEmployee: { payrollRunId: filter.runId } } : { payrollRunEmployeeId: { in: filter.personIds } }) },
+    select: { id: true },
+  })) !== null
 }
